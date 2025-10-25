@@ -1,0 +1,30 @@
+/* Main tabs for AdminPeriodTracking */
+.main-tabs {
+  display: flex;
+  border-bottom: 2px solid #dee2e6;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+.main-tabs button {
+  padding: 12px 25px;
+  border: none;
+  background: #e9ecef;
+  cursor: pointer;
+  border-radius: 5px 5px 0 0;
+  font-weight: 600;
+  color: #495057;
+  transition: background-color 0.3s, color 0.3s;
+  box-shadow: inset 0 -2px 0 transparent;
+}
+
+.main-tabs button.active {
+  background: #007bff;
+  color: white;
+  box-shadow: inset 0 -2px 0 #0056b3;
+}
+
+.main-tabs button:hover:not(.active) {
+  background-color: #ced4da;
+  color: #212529;
+}

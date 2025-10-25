@@ -1,0 +1,199 @@
+/* Root colors */
+:root {
+  --primary: #ff4f85;
+  --ink: #1f2341;
+  --muted: #626a92;
+  --card: #ffffff;
+  --ring: rgba(31, 35, 65, 0.1);
+  --danger: #ff4a4a;
+  --hover-bg: #f3f4f6;
+}
+
+/* Main sidebar container */
+.helplines-sidebar {
+  width: 220px;              /* ✅ fixed width */
+  background: #f9f9f9;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+/* Sidebar sections */
+.sidebar-section {
+  margin-bottom: 24px;
+}
+
+.sidebar-section h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 12px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--ring);
+}
+
+.sidebar-section label {
+  display: block;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.sidebar-section input[type="text"],
+.sidebar-section select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--ring);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.sidebar-section input[type="checkbox"] {
+  margin-right: 8px;
+  accent-color: var(--primary);
+}
+
+/* Emergency section */
+.sidebar-section.emergency {
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.sidebar-section.emergency .sos-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: background 0.2s;
+}
+
+.sidebar-section.emergency .sos-btn:hover {
+  background: #ef4444;
+}
+
+.sidebar-section.emergency ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-section.emergency li {
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+/* Quick links, info, export, admin */
+.sidebar-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-section li,
+.sidebar-section button:not(.sos-btn) {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--hover-bg);
+  border: none;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: var(--ink);
+  transition: background 0.2s;
+}
+
+.sidebar-section li:hover,
+.sidebar-section button:not(.sos-btn):hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* Personalization */
+.sidebar-section.personalization label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.sidebar-section.personalization input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+/* Dark mode */
+.helplines-sidebar.dark {
+  background: #1a1a1a;
+  color: #e5e7eb;
+}
+
+.helplines-sidebar.dark .sidebar-section h4 {
+  color: #e5e7eb;
+}
+
+.helplines-sidebar.dark .sidebar-section input,
+.helplines-sidebar.dark .sidebar-section select {
+  background: #2d2d2d;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+.helplines-sidebar.dark .sidebar-section li,
+.helplines-sidebar.dark .sidebar-section button:not(.sos-btn) {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+.helplines-sidebar.dark .sidebar-section li:hover,
+.helplines-sidebar.dark .sidebar-section button:not(.sos-btn):hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* Scrollbar */
+.helplines-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.helplines-sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.2);
+  border-radius: 3px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .helplines-sidebar {
+    position: fixed;
+    transform: translateX(-100%);
+    z-index: 100;
+    width: 220px;  /* ✅ still 220px on mobile */
+  }
+
+  .helplines-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .helplines-layout {
+    flex-direction: column;
+  }
+
+  .helplines-main {
+    padding: 16px;
+  }
+}

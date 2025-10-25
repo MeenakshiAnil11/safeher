@@ -1,0 +1,300 @@
+/* ------------------------ CYCLE OVERVIEW ------------------------ */
+.cycle-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.cycle-progress-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 8px 32px rgba(233, 30, 99, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.progress-ring {
+  width: 60px;   /* reduced desktop size */
+  height: 60px;  /* reduced desktop size */
+  position: relative;
+}
+
+.progress-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: 0.65rem; /* reduced font size for smaller ring */
+  color: #333;
+  font-weight: 600;
+  line-height: 1.1;
+  pointer-events: none;
+}
+
+.progress-overlay div {
+  margin: 1px 0;
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 768px) {
+  .progress-ring {
+    width: 50px;   /* smaller on mobile */
+    height: 50px;  /* smaller on mobile */
+  }
+  
+  .progress-overlay {
+    font-size: 0.55rem; /* smaller font on mobile */
+    line-height: 1.0;
+  }
+  
+  .progress-overlay div {
+    margin: 0.5px 0;
+  }
+}
+
+.progress-info {
+  flex: 1;
+}
+
+.progress-info p {
+  margin: 8px 0;
+  font-size: 1rem;
+  color: #374151;
+}
+
+.phase-display-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 8px 32px rgba(233, 30, 99, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.phase-display-card h3 {
+  color: #1f2937;
+  font-weight: 700;
+  font-size: 1.4rem;
+  margin-bottom: 16px;
+}
+
+.phase-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: #f3f4f6;
+}
+
+.phase-segment {
+  flex: 1;
+  height: 100%;
+}
+
+.phase-segment.menstrual {
+  background: linear-gradient(90deg, #ff4757, #ff3742);
+}
+
+.phase-segment.follicular {
+  background: linear-gradient(90deg, #ffa726, #fb8c00);
+}
+
+.phase-segment.ovulation {
+  background: linear-gradient(90deg, #6c5ce7, #5f3dc4);
+}
+
+.phase-segment.luteal {
+  background: linear-gradient(90deg, #00b894, #00a085);
+}
+
+.mood-logging-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 8px 32px rgba(233, 30, 99, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+}
+
+.mood-button {
+  background: linear-gradient(135deg, #ff69b4, #e91e63);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(233, 30, 99, 0.3);
+}
+
+.mood-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(233, 30, 99, 0.4);
+}
+
+.mood-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.mood-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.mood-modal h4 {
+  margin: 0 0 20px 0;
+  text-align: center;
+  color: #1f2937;
+  font-size: 1.3rem;
+}
+
+.mood-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.mood-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.mood-option:hover {
+  border-color: #ff69b4;
+  background: rgba(255, 105, 180, 0.05);
+}
+
+.mood-option.selected {
+  border-color: #ff69b4;
+  background: rgba(255, 105, 180, 0.1);
+  color: #e91e63;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.modal-actions button {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modal-actions button:first-child {
+  background: #ff69b4;
+  color: white;
+  border: none;
+}
+
+.modal-actions button:first-child:hover:not(:disabled) {
+  background: #e91e63;
+}
+
+.modal-actions button:last-child {
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.modal-actions button:last-child:hover {
+  background: #f9fafb;
+}
+
+.phase-insight-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 8px 32px rgba(233, 30, 99, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.phase-insight-card h3 {
+  color: #1f2937;
+  font-weight: 700;
+  font-size: 1.4rem;
+  margin-bottom: 20px;
+}
+
+.phase-insight-card p {
+  color: #374151;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.phase-insight-card strong {
+  color: #1f2937;
+}
+
+.hormone-chart {
+  margin-top: 24px;
+}
+
+.hormone-chart h4 {
+  color: #1f2937;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+/* Responsive adjustments for cycle overview */
+@media (max-width: 768px) {
+  .cycle-progress-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .progress-ring {
+    width: 60px;  /* slightly smaller for mobile */
+    height: 60px;
+  }
+
+  .progress-overlay {
+    font-size: 0.6rem;
+  }
+
+  .mood-options {
+    grid-template-columns: 1fr;
+  }
+
+  .phase-bar {
+    height: 6px;
+  }
+}

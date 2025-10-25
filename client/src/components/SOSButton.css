@@ -1,0 +1,334 @@
+/* SOS Button Component Styles */
+.sos-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+/* Location Permission Status */
+.location-permission-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.permission-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.permission-indicator--granted {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.permission-indicator--denied {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.permission-indicator--unknown {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fed7aa;
+}
+
+.permission-icon {
+  font-size: 1rem;
+}
+
+.permission-text {
+  font-size: 0.85rem;
+}
+
+.location-error-message {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.75rem;
+  max-width: 300px;
+  text-align: center;
+}
+
+.location-error-message p {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.permission-request-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.permission-request-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.permission-request-btn:active {
+  transform: translateY(0);
+}
+
+/* Real-time Tracking Status */
+.tracking-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.tracking-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.tracking-indicator.tracking-active {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.tracking-indicator.tracking-inactive {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.tracking-icon {
+  font-size: 1rem;
+  animation: spin 2s linear infinite;
+}
+
+.tracking-indicator.tracking-inactive .tracking-icon {
+  animation: none;
+}
+
+.tracking-text {
+  font-size: 0.85rem;
+}
+
+.tracking-details {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.sos-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+  height: 80px;
+  border: none;
+  border-radius: 20px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  user-select: none;
+}
+
+.sos-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Default state - Red gradient */
+.sos-button {
+  background: linear-gradient(135deg, #ff4757, #ff3742);
+}
+
+.sos-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(255, 71, 87, 0.4);
+}
+
+/* Holding state - Orange gradient */
+.sos-button--holding {
+  background: linear-gradient(135deg, #ffa502, #ff6348);
+  animation: pulse 0.5s infinite alternate;
+}
+
+/* Active state - Bright red with glow */
+.sos-button--active {
+  background: linear-gradient(135deg, #ff0000, #cc0000);
+  animation: sosGlow 1s infinite alternate;
+  transform: scale(1.05);
+}
+
+/* Deactivate button - Green gradient */
+.sos-button--deactivate {
+  background: linear-gradient(135deg, #2ed573, #1e90ff);
+  min-width: 150px;
+  height: 60px;
+  font-size: 1rem;
+}
+
+.sos-button--deactivate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(46, 213, 115, 0.4);
+}
+
+.sos-button__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 2;
+  position: relative;
+}
+
+.sos-button__icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.sos-button__text {
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Progress bar for hold-to-activate */
+.sos-button__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+}
+
+.sos-button__progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #fff, #ffeb3b);
+  transition: width 0.1s ease;
+  border-radius: 0 0 20px 20px;
+}
+
+/* Animations */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes sosGlow {
+  0% {
+    box-shadow: 0 8px 25px rgba(255, 0, 0, 0.3);
+  }
+  100% {
+    box-shadow: 0 8px 35px rgba(255, 0, 0, 0.6), 0 0 20px rgba(255, 0, 0, 0.4);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .sos-button {
+    min-width: 180px;
+    height: 70px;
+    font-size: 1rem;
+  }
+  
+  .sos-button__icon {
+    font-size: 1.5rem;
+  }
+  
+  .sos-button__text {
+    font-size: 0.8rem;
+  }
+  
+  .sos-button--deactivate {
+    min-width: 130px;
+    height: 50px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Accessibility */
+.sos-button:focus {
+  outline: 3px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.sos-button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .sos-button {
+    border: 2px solid white;
+  }
+  
+  .sos-button--active {
+    border: 3px solid white;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .sos-button {
+    transition: none;
+  }
+  
+  .sos-button--holding {
+    animation: none;
+  }
+  
+  .sos-button--active {
+    animation: none;
+  }
+  
+  .sos-button:hover:not(:disabled) {
+    transform: none;
+  }
+}
