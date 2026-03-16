@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "postinstall": "npm install --prefix client --no-audit --no-fund && npm install --prefix backend --no-audit --no-fund",
+    "build": "npm --prefix client run build:hosting",
+    "start": "npm --prefix backend start"
+  },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",
     "@react-navigation/native": "^7.1.17",
@@ -6,7 +11,7 @@
     "leaflet": "^1.9.4",
     "lottie-react": "^2.4.1",
     "react-circular-progressbar": "^2.2.0",
-    "react-leaflet": "^5.0.0",
+    "react-leaflet": "^4.2.1",
     "react-native-animatable": "^1.4.0",
     "react-native-safe-area-context": "^5.6.1",
     "react-native-screens": "^4.16.0",
