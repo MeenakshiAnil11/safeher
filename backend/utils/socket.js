@@ -8,10 +8,26 @@ import Session from "../models/Session.js";
 let io = null;
 const connectedUsers = new Map(); // userId -> Set<socketId>
 
+const defaultAllowedOrigins = [
+  "http://localhost:3000",
+  "https://safeher-4.onrender.com",
+];
+
+const envAllowedOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
+
 export function initSocket(httpServer) {
   io = new Server(httpServer, {
     cors: {
-      origin: "http://localhost:3000",
+      origin(origin, callback) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error(`Socket CORS blocked for origin: ${origin}`));
+      },
       methods: ["GET", "POST"],
       credentials: true,
     },

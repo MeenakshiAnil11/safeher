@@ -29,16 +29,19 @@ import trackerAdminRoutes from "./routes/trackerAdminRoutes.js";
 const app = express();
 
 // Middleware
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "https://safeher-4.onrender.com"],
+    credentials: true,
+  })
+);
+
+app.options("*", cors());
 
 // Serve uploaded files - use absolute path
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Only parse JSON for non-GET requests 
-app.use((req, res, next) => {
-  if (req.method === "GET" || req.method === "HEAD") return next();
-  return express.json()(req, res, next);
-});
+app.use(express.json());
 
 // Connect to MongoDB
 connectDB();
