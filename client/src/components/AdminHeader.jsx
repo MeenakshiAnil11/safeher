@@ -1,13 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getUser } from "../services/auth";
 import "./AdminHeader.css";
 
 export default function AdminHeader({ pageTitle = "Admin Dashboard" }) {
   const navigate = useNavigate();
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [adminUser, setAdminUser] = useState(null);
   const notificationsRef = useRef(null);
   const userMenuRef = useRef(null);
+
+  // Load admin user data on mount
+  useEffect(() => {
+    const user = getUser();
+    if (user) {
+      setAdminUser(user);
+    }
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -97,9 +107,9 @@ export default function AdminHeader({ pageTitle = "Admin Dashboard" }) {
               onClick={() => setShowUserMenu(!showUserMenu)}
             >
               <div className="user-avatar">
-                <span>A</span>
+                <span>{adminUser?.name ? adminUser.name.charAt(0).toUpperCase() : "A"}</span>
               </div>
-              <span className="user-name">Admin</span>
+              <span className="user-name">{adminUser?.name || "Admin"}</span>
               <span className="dropdown-arrow">▼</span>
             </button>
 
@@ -107,11 +117,11 @@ export default function AdminHeader({ pageTitle = "Admin Dashboard" }) {
               <div className="user-dropdown">
                 <div className="user-info">
                   <div className="user-avatar-large">
-                    <span>A</span>
+                    <span>{adminUser?.name ? adminUser.name.charAt(0).toUpperCase() : "A"}</span>
                   </div>
                   <div className="user-details">
-                    <p className="user-name-large">Admin User</p>
-                    <p className="user-email">admin@safeher.com</p>
+                    <p className="user-name-large">{adminUser?.name || "Admin User"}</p>
+                    <p className="user-email">{adminUser?.email || "admin@safeher.com"}</p>
                   </div>
                 </div>
                 <div className="user-menu-items">

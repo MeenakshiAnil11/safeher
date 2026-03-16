@@ -1,0 +1,356 @@
+@startuml SafeHer Deployment Diagrams
+
+skinparam node {
+  BackgroundColor #E8F4F8
+  BorderColor #2C5F7D
+  FontSize 11
+}
+skinparam component {
+  BackgroundColor #FFF3CD
+  BorderColor #FF8C00
+}
+
+' ============================================
+' Deployment Diagram 1: Overall System Deployment
+' ============================================
+@startuml Overall_Deployment
+
+title SafeHer System Deployment Architecture
+
+node "Client Devices" {
+  component [Web Browser] as Browser
+  component [Mobile Browser] as MobileBrowser
+}
+
+cloud "CDN / Static Hosting" {
+  component [React Build] as ReactBuild
+  component [Static Assets] as StaticAssets
+}
+
+node "Application Server" {
+  component [Node.js Runtime] as NodeJS
+  component [Express Server] as Express
+  component [PM2 Process Manager] as PM2
+  component [API Controllers] as Controllers
+  component [Business Services] as Services
+}
+
+node "ML Services Server" {
+  component [Python 3.x] as Python
+  component [Flask Server 1] as Flask1 #Port 5002
+  component [Flask Server 2] as Flask2 #Port 5003
+  component [Flask Server 3] as Flask3 #Port 5004
+  component [Flask Server 4] as Flask4 #Port 5005
+  component [Flask Server 5] as Flask5 #Port 5006
+  component [Gunicorn] as Gunicorn
+}
+
+cloud "Database Server" {
+  database "MongoDB Atlas" as MongoDB
+  component [Mongoose ODM] as Mongoose
+}
+
+cloud "External Services" {
+  component [Firebase Auth] as Firebase
+  component [Email Service\n(Nodemailer)] as Email
+  component [Google Maps API] as Maps
+  component [Razorpay API] as Razorpay
+}
+
+Browser --> ReactBuild : HTTPS
+MobileBrowser --> ReactBuild : HTTPS
+ReactBuild --> StaticAssets : serves
+
+ReactBuild --> Express : API calls\n(HTTP/REST)
+Express --> NodeJS : runs on
+Express --> PM2 : managed by
+PM2 --> Express : process manager
+
+Express --> Controllers : routes to
+Controllers --> Services : uses
+Services --> Mongoose : data access
+Mongoose --> MongoDB : queries\n(MongoDB Atlas)
+
+Express --> Flask1 : HTTP requests\n(Health Risk)
+Express --> Flask2 : HTTP requests\n(Symptom Classification)
+Express --> Flask3 : HTTP requests\n(Pregnancy Health)
+Express --> Flask4 : HTTP requests\n(Mood Prediction)
+Express --> Flask5 : HTTP requests\n(Exercise Recommendation)
+
+Flask1 --> Python : runs on
+Flask2 --> Python : runs on
+Flask3 --> Python : runs on
+Flask4 --> Python : runs on
+Flask5 --> Python : runs on
+Gunicorn --> Flask1 : manages
+Gunicorn --> Flask2 : manages
+Gunicorn --> Flask3 : manages
+Gunicorn --> Flask4 : manages
+Gunicorn --> Flask5 : manages
+
+Express --> Firebase : OAuth verification
+Express --> Email : sends alerts
+ReactBuild --> Maps : location services
+ReactBuild --> Razorpay : payment gateway
+
+@enduml
+
+' ============================================
+' Deployment Diagram 2: Production Deployment
+' ============================================
+@startuml Production_Deployment
+
+title Production Deployment Architecture
+
+node "Load Balancer" {
+  component [Nginx] as Nginx
+}
+
+node "Frontend Server 1" {
+  component [React App] as React1
+  component [Nginx] as Nginx1
+}
+
+node "Frontend Server 2" {
+  component [React App] as React2
+  component [Nginx] as Nginx2
+}
+
+node "Backend Server 1" {
+  component [Node.js] as Node1
+  component [Express App] as Express1
+  component [PM2] as PM2_1
+}
+
+node "Backend Server 2" {
+  component [Node.js] as Node2
+  component [Express App] as Express2
+  component [PM2] as PM2_2
+}
+
+node "ML Services Server" {
+  component [Python] as Python
+  component [Flask APIs] as Flask
+  component [Gunicorn] as Gunicorn
+  component [Model Files] as Models
+}
+
+cloud "MongoDB Atlas\n(Replica Set)" {
+  database "Primary" as Primary
+  database "Secondary 1" as Secondary1
+  database "Secondary 2" as Secondary2
+}
+
+cloud "External Services" {
+  component [Firebase] as Firebase
+  component [SES/SendGrid] as EmailService
+  component [Google Cloud] as GoogleCloud
+}
+
+Nginx --> React1 : routes
+Nginx --> React2 : routes
+
+React1 --> Express1 : API calls
+React2 --> Express2 : API calls
+
+Express1 --> Node1 : runs on
+Express2 --> Node2 : runs on
+PM2_1 --> Express1 : manages
+PM2_2 --> Express2 : manages
+
+Express1 --> Flask : ML requests
+Express2 --> Flask : ML requests
+Flask --> Python : runs on
+Gunicorn --> Flask : manages
+Flask --> Models : loads from
+
+Express1 --> Primary : writes
+Express2 --> Primary : writes
+Primary --> Secondary1 : replicates
+Primary --> Secondary2 : replicates
+
+Express1 --> Firebase : auth
+Express2 --> Firebase : auth
+Express1 --> EmailService : emails
+Express2 --> EmailService : emails
+React1 --> GoogleCloud : maps
+React2 --> GoogleCloud : maps
+
+@enduml
+
+' ============================================
+' Deployment Diagram 3: Development Environment
+' ============================================
+@startuml Development_Deployment
+
+title Development Environment Deployment
+
+node "Developer Machine" {
+  component [VS Code] as VSCode
+  component [Terminal] as Terminal
+}
+
+node "Local Development Server" {
+  component [React Dev Server\nPort 3000] as ReactDev
+  component [Node.js Backend\nPort 5000] as ExpressDev
+  component [Flask ML Services\nPorts 5002-5006] as FlaskDev
+  component [Nodemon] as Nodemon
+  component [Flask Auto-reload] as FlaskReload
+}
+
+cloud "MongoDB Atlas\n(Development DB)" {
+  database "MongoDB" as DevDB
+}
+
+cloud "External Services" {
+  component [Firebase\n(Dev Project)] as FirebaseDev
+  component [Mailtrap] as Mailtrap
+  component [Google Maps\n(Dev Key)] as MapsDev
+}
+
+VSCode --> Terminal : runs commands
+Terminal --> ReactDev : npm start
+Terminal --> ExpressDev : npm start
+Terminal --> FlaskDev : python app.py
+
+ReactDev --> ExpressDev : API calls\n(localhost:5000)
+ExpressDev --> FlaskDev : ML requests\n(localhost:5002-5006)
+
+ExpressDev --> Nodemon : auto-reload
+FlaskDev --> FlaskReload : auto-reload
+
+ExpressDev --> DevDB : connects to
+ExpressDev --> FirebaseDev : uses
+ExpressDev --> Mailtrap : test emails
+ReactDev --> MapsDev : dev API key
+
+@enduml
+
+' ============================================
+' Deployment Diagram 4: Containerized Deployment
+' ============================================
+@startuml Container_Deployment
+
+title Containerized Deployment (Docker)
+
+node "Docker Host" {
+  component [Docker Engine] as Docker
+  
+  node "Frontend Container" {
+    component [Nginx] as NginxContainer
+    component [React Build] as ReactContainer
+  }
+  
+  node "Backend Container 1" {
+    component [Node.js] as NodeContainer1
+    component [Express App] as ExpressContainer1
+  }
+  
+  node "Backend Container 2" {
+    component [Node.js] as NodeContainer2
+    component [Express App] as ExpressContainer2
+  }
+  
+  node "ML Services Container" {
+    component [Python] as PythonContainer
+    component [Flask APIs] as FlaskContainer
+  }
+  
+  node "Database Container\n(Optional Local)" {
+    database "MongoDB" as MongoContainer
+  }
+}
+
+cloud "MongoDB Atlas\n(Production)" {
+  database "MongoDB Cloud" as MongoCloud
+}
+
+cloud "External Services" {
+  component [Firebase] as Firebase
+  component [Email Service] as Email
+}
+
+Docker --> NginxContainer : manages
+Docker --> ReactContainer : manages
+Docker --> NodeContainer1 : manages
+Docker --> NodeContainer2 : manages
+Docker --> FlaskContainer : manages
+Docker --> MongoContainer : manages (optional)
+
+NginxContainer --> ReactContainer : serves
+ReactContainer --> ExpressContainer1 : API calls
+ReactContainer --> ExpressContainer2 : API calls
+
+ExpressContainer1 --> FlaskContainer : ML requests
+ExpressContainer2 --> FlaskContainer : ML requests
+
+ExpressContainer1 --> MongoCloud : connects to
+ExpressContainer2 --> MongoCloud : connects to
+ExpressContainer1 --> MongoContainer : or local (dev)
+
+ExpressContainer1 --> Firebase : uses
+ExpressContainer2 --> Firebase : uses
+ExpressContainer1 --> Email : uses
+ExpressContainer2 --> Email : uses
+
+@enduml
+
+' ============================================
+' Deployment Diagram 5: Network Architecture
+' ============================================
+@startuml Network_Deployment
+
+title Network Deployment Architecture
+
+cloud "Internet" {
+  node "Users" {
+    component [Web Browsers] as Users
+  }
+}
+
+node "DMZ / Public Zone" {
+  component [Load Balancer] as LB
+  component [Web Server 1] as Web1
+  component [Web Server 2] as Web2
+}
+
+node "Application Zone" {
+  component [App Server 1] as App1
+  component [App Server 2] as App2
+  component [ML Server] as MLServer
+}
+
+node "Data Zone" {
+  database "MongoDB Atlas\n(Cloud)" as MongoDB
+}
+
+cloud "External APIs" {
+  component [Firebase] as Firebase
+  component [Email Service] as Email
+  component [Payment Gateway] as Payment
+}
+
+Users --> LB : HTTPS (443)
+LB --> Web1 : routes
+LB --> Web2 : routes
+
+Web1 --> App1 : internal network
+Web2 --> App2 : internal network
+
+App1 --> MLServer : internal network
+App2 --> MLServer : internal network
+
+App1 --> MongoDB : secure connection
+App2 --> MongoDB : secure connection
+
+App1 --> Firebase : HTTPS
+App2 --> Firebase : HTTPS
+App1 --> Email : SMTP/API
+App2 --> Email : SMTP/API
+Web1 --> Payment : HTTPS
+Web2 --> Payment : HTTPS
+
+@enduml
+
+@enduml
+

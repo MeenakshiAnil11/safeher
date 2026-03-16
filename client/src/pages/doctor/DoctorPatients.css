@@ -1,0 +1,430 @@
+/* Import Inter/Roboto font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;600;700&display=swap');
+
+.doctor-patients {
+  padding: 32px;
+  background: #f8fafc;
+  min-height: calc(100vh - 64px);
+  font-family: 'Inter', 'Roboto', sans-serif;
+}
+
+.doctor-patients-loading {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+}
+
+/* Header */
+.patients-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.header-left h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.header-subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.btn-export-pdf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-export-pdf:hover {
+  background: #7c3aed;
+}
+
+/* Patient Selector */
+.patient-selector-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.patient-selector-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.patient-selector {
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #1e293b;
+  background: white;
+  min-width: 200px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.patient-selector:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* Patient Information Card */
+.patient-info-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.patient-avatar-large {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.patient-avatar-icon {
+  font-size: 3rem;
+  color: #8b5cf6;
+}
+
+.patient-info-details {
+  flex: 1;
+}
+
+.patient-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+}
+
+.patient-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.patient-detail-item {
+  display: flex;
+  gap: 8px;
+}
+
+.detail-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 0.9rem;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* Tabs */
+.patient-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.tab-btn {
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: -2px;
+  font-family: inherit;
+}
+
+.tab-btn:hover {
+  color: #8b5cf6;
+}
+
+.tab-btn.active {
+  color: #8b5cf6;
+  border-bottom-color: #8b5cf6;
+}
+
+/* Tab Content */
+.tab-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.tab-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 20px 0;
+}
+
+/* Vitals Table */
+.vitals-table-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.vitals-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.vitals-table thead {
+  background: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.vitals-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vitals-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+.vitals-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.vitals-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.vitals-table td {
+  padding: 16px;
+  font-size: 0.875rem;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.vital-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vital-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.bp-icon {
+  color: #ef4444;
+}
+
+.hr-icon {
+  color: #8b5cf6;
+}
+
+.glucose-icon {
+  color: #3b82f6;
+}
+
+/* Symptoms Tab */
+.symptoms-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.symptoms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.symptom-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.symptom-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.symptom-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.symptom-date-icon {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.symptom-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.symptom-name {
+  font-size: 0.875rem;
+  color: #1e293b;
+  font-weight: 500;
+  flex: 1;
+}
+
+.symptom-severity {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+}
+
+.symptom-severity.mild {
+  background: #10b981;
+}
+
+.symptom-severity.moderate {
+  background: #eab308;
+}
+
+.symptom-severity.severe {
+  background: #ef4444;
+}
+
+/* Consultations Tab */
+.consultations-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.consultations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.consultation-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.consultation-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.consultation-date {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.consultation-details {
+  font-size: 0.875rem;
+  color: #1e293b;
+}
+
+/* Empty State */
+.empty-state-cell {
+  text-align: center;
+  padding: 4rem 2rem !important;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: #64748b;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: #cbd5e1;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .doctor-patients {
+    padding: 16px;
+  }
+
+  .patients-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .patient-info-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .patient-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vitals-table-container {
+    overflow-x: auto;
+  }
+
+  .vitals-table {
+    min-width: 800px;
+  }
+}

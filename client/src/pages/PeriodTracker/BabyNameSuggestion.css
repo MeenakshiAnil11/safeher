@@ -1,0 +1,229 @@
+.explorer-section {
+  border: 1px solid #eee7ff;
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.08);
+  position: relative;
+}
+
+.baby-explorer-page h1,
+.baby-explorer-page h2,
+.baby-explorer-page h3 {
+  font-weight: 800;
+}
+
+.baby-explorer-page h1 {
+  font-size: 24px;
+}
+
+.baby-explorer-page h2,
+.baby-explorer-page h3 {
+  font-size: 22px;
+}
+
+.baby-explorer-page p,
+.baby-explorer-page small,
+.baby-explorer-page label {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.explorer-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e9d5ff, transparent);
+}
+
+.filter-toolbar {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.8fr) repeat(3, minmax(170px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.search-block,
+.filter-select-block,
+.bookmark-action-block {
+  min-width: 0;
+}
+
+.name-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.name-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fefcff 100%);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+.trending-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.trending-chip {
+  min-width: 190px;
+  border: 1px solid #f1e8ff;
+  border-radius: 12px;
+  padding: 12px;
+  background: linear-gradient(180deg, #fff 0%, #fdf8ff 100%);
+  box-shadow: 0 6px 14px rgba(139, 92, 246, 0.08);
+}
+
+.trending-chip-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.trending-badge {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.trending-bookmark-btn {
+  border: 0;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.trending-chip strong {
+  display: block;
+  color: #4c1d95;
+}
+
+.trending-chip small {
+  color: #6b7280;
+}
+
+.random-suggestion-card {
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+  padding: 14px;
+  background: linear-gradient(120deg, #fff7fd 0%, #f5f3ff 100%);
+}
+
+.random-suggestion-card h4 {
+  margin: 2px 0 8px;
+  font-size: 28px;
+  color: #7c3aed;
+}
+
+.random-suggestion-card p {
+  margin: 4px 0;
+  color: #374151;
+}
+
+.bookmark-tabs {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  border: 1px solid #ebe7ff;
+  border-radius: 999px;
+  padding: 4px;
+  background: #faf8ff;
+}
+
+.bookmark-tabs button {
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5b6476;
+}
+
+.bookmark-tabs button.active {
+  background: linear-gradient(90deg, #f472b6 0%, #8b5cf6 100%);
+  color: #fff;
+}
+
+.compare-wrap {
+  border: 1px dashed #d8b4fe;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fcfaff;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.compare-card {
+  border: 1px solid #eadcff;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fff;
+}
+
+.compare-card h4 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  color: #5b21b6;
+}
+
+.compare-card p {
+  margin: 4px 0;
+  color: #334155;
+  font-size: 14px;
+}
+
+.compare-card button {
+  margin-top: 8px;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #fff;
+  background: linear-gradient(90deg, #06b6d4 0%, #3b82f6 100%);
+  font-weight: 600;
+}
+
+@media (max-width: 1400px) {
+  .name-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1150px) {
+  .filter-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .name-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compare-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .filter-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .name-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -7,49 +7,36 @@ import api from "../services/api";
 import "./helplines.css";
 import "../components/helplinesSidebar.css";
 
-// Static helplines with categories, availability, verification, and channels
+// Static helplines - Women-focused contacts only
 const HELPLINES = [
-  // Emergency Services
+  // Emergency Services for Women
   {
     id: "police-100",
-    name: "Police",
+    name: "Police - Emergency",
     number: "100",
     category: "Emergency",
     verified: true,
     availability: "24/7",
     description: {
-      en: "National police emergency service for immediate assistance.",
-      hi: "तत्काल सहायता के लिए राष्ट्रीय पुलिस आपातकालीन सेवा।",
+      en: "Police emergency service for immediate safety and assistance in emergencies.",
+      hi: "तत्काल सहायता और आपातकालीन सुरक्षा के लिए पुलिस आपातकालीन सेवा।",
     },
     whatsapp: null,
   },
   {
     id: "ambulance-108",
-    name: "Ambulance",
+    name: "Ambulance - Medical Emergency",
     number: "108",
     category: "Health",
     verified: true,
     availability: "24/7",
     description: {
-      en: "Emergency medical ambulance service.",
-      hi: "आपातकालीन चिकित्सा एम्बुलेंस सेवा।",
+      en: "Emergency medical ambulance service for health emergencies.",
+      hi: "स्वास्थ्य आपातकाल के लिए आपातकालीन चिकित्सा एम्बुलेंस सेवा।",
     },
     whatsapp: null,
   },
-  {
-    id: "fire-101",
-    name: "Fire & Rescue",
-    number: "101",
-    category: "Emergency",
-    verified: true,
-    availability: "24/7",
-    description: {
-      en: "Fire emergencies and rescue operations.",
-      hi: "आग से संबंधित आपात स्थिति और बचाव कार्य।",
-    },
-    whatsapp: null,
-  },
-  // Women support
+  // Women-specific support
   {
     id: "women-181",
     name: "Women Helpline",
@@ -58,63 +45,49 @@ const HELPLINES = [
     verified: true,
     availability: "24/7",
     description: {
-      en: "Women support helpline for distress and assistance.",
-      hi: "महिलाओं की सहायता के लिए हेल्पलाइन।",
+      en: "National women helpline for women in distress and seeking support.",
+      hi: "संकट में महिलाओं के लिए राष्ट्रीय महिला हेल्पलाइन।",
     },
     whatsapp: null,
   },
   {
     id: "domestic-1091",
-    name: "Domestic Violence",
+    name: "Domestic Violence Helpline",
     number: "1091",
     category: "Legal",
     verified: true,
     availability: "24/7",
     description: {
-      en: "Help for domestic violence and abuse cases.",
-      hi: "घरेलू हिंसा और दुर्व्यवहार के मामलों में सहायता।",
+      en: "Support for domestic violence victims, abuse, and harassment cases.",
+      hi: "घरेलू हिंसा, दुर्व्यवहार और उत्पीड़न के पीड़ितों के लिए सहायता।",
     },
     whatsapp: null,
   },
-  // Mental health
+  // Mental health and psychological support
   {
     id: "mental-9152987821",
-    name: "Suicide Prevention (KIRAN)",
+    name: "Suicide Prevention Support",
     number: "+91 9152987821",
     category: "Psychological",
     verified: true,
     availability: "24/7",
     description: {
-      en: "Mental health support and suicide prevention.",
-      hi: "मानसिक स्वास्थ्य सहायता और आत्महत्या रोकथाम।",
+      en: "Mental health support, counseling, and suicide prevention for women.",
+      hi: "महिलाओं के लिए मानसिक स्वास्थ्य सहायता और आत्महत्या रोकथाम।",
     },
     whatsapp: null,
   },
-  // Child
-  {
-    id: "child-1098",
-    name: "Child Helpline",
-    number: "1098",
-    category: "Child",
-    verified: true,
-    availability: "24/7",
-    description: {
-      en: "Emergency support for children in distress.",
-      hi: "संकटग्रस्त बच्चों के लिए आपातकालीन सहायता।",
-    },
-    whatsapp: null,
-  },
-  // Example NGO with WhatsApp
+  // Women's support NGO
   {
     id: "ngo-sakhi",
-    name: "Sakhi Women Support (Example)",
+    name: "Sakhi Women Support",
     number: "+91 9000000000",
     category: "NGO",
     verified: false,
     availability: "10:00–18:00",
     description: {
-      en: "Local NGO offering legal and counselling support.",
-      hi: "कानूनी और परामर्श सहायता प्रदान करने वाला स्थानीय संगठन।",
+      en: "NGO offering legal aid, counseling, and support for women's issues.",
+      hi: "महिलाओं के मुद्दों के लिए कानूनी सहायता, परामर्श और सहायता प्रदान करने वाला एनजीओ।",
     },
     whatsapp: "+919000000000",
   },
@@ -123,11 +96,10 @@ const HELPLINES = [
 const CATEGORIES = [
   "All",
   "Emergency",
+  "Health",
   "Women",
   "Legal",
   "Psychological",
-  "Health",
-  "Child",
   "NGO",
 ];
 
@@ -155,6 +127,9 @@ export default function Helplines() {
   const [locLoading, setLocLoading] = useState(false);
   const [remoteHelplines, setRemoteHelplines] = useState([]);
   const [viewMode, setViewMode] = useState('all'); // 'all', 'favorites', 'recent', 'mostCalled'
+  const [locationAccuracy, setLocationAccuracy] = useState(null);
+  const [manualAddress, setManualAddress] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
 
   // Persist favorites
   useEffect(() => {
@@ -186,25 +161,41 @@ export default function Helplines() {
     };
   }, []);
 
-  // Geolocation (uses GPS)
-  const requestLocation = () => {
+  // Geolocation with retry mechanism (uses GPS)
+  const requestLocation = (attempt = 0) => {
     if (!navigator.geolocation) {
-      setLocError("Geolocation not supported");
+      setLocError("Geolocation not supported on this device");
       return;
     }
     setLocLoading(true);
     setLocError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        const accuracy = Math.round(pos.coords.accuracy);
+        setCoords({ 
+          lat: pos.coords.latitude, 
+          lon: pos.coords.longitude 
+        });
+        setLocationAccuracy(accuracy);
+        setRetryCount(0);
         setLocLoading(false);
       },
       (err) => {
-        setCoords(null);
-        setLocLoading(false);
-        setLocError(err?.message || "Unable to get location");
+        if (attempt < 2) {
+          setLocError(`Retrying... (Attempt ${attempt + 2}/3)`);
+          setTimeout(() => requestLocation(attempt + 1), 2000);
+        } else {
+          setCoords(null);
+          setLocLoading(false);
+          setLocError("Unable to get precise GPS location. Use manual address search or try again in an open area.");
+          setRetryCount(0);
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
+      { 
+        enableHighAccuracy: true, 
+        timeout: 30000, 
+        maximumAge: 0 
+      }
     );
   };
 

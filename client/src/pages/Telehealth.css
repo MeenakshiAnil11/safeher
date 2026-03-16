@@ -1,0 +1,130 @@
+/* Full screen telehealth page */
+.telehealth-full-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  height: auto;
+}
+
+.telehealth-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f5f7fa;
+  min-height: calc(100vh - 64px);
+  padding-bottom: 80px; /* Extra bottom padding for tab bar on mobile */
+  margin-top: 64px; /* Account for fixed header */
+}
+
+.telehealth-layout {
+  flex: 1;
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  padding-left: calc(240px + 1.5rem); /* Account for fixed sidebar width */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  align-items: flex-start;
+}
+
+.telehealth-container {
+  flex: 1;
+  overflow: visible;
+  min-width: 0;
+  width: 100%;
+}
+
+/* Bottom Tab Bar */
+.bottom-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.75rem 0;
+  z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+  max-width: 120px;
+}
+
+.tab-item:hover {
+  color: #8b5cf6;
+}
+
+.tab-item.active {
+  color: #8b5cf6;
+}
+
+.tab-icon {
+  font-size: 1.25rem;
+  position: relative;
+}
+
+.tab-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 50px;
+  min-width: 14px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.tab-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Desktop: Hide bottom tab bar, show sidebar tabs */
+@media (min-width: 1024px) {
+  .bottom-tab-bar {
+    display: none;
+  }
+  
+  .telehealth-page {
+    padding-bottom: 0;
+    margin-top: 64px; /* Account for fixed header */
+    min-height: calc(100vh - 64px);
+  }
+
+  .telehealth-layout {
+    padding: 1.5rem 2rem;
+    padding-left: calc(240px + 2rem); /* Account for fixed sidebar width */
+    margin-top: 0; /* Remove duplicate margin */
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 1023.98px) {
+  .telehealth-layout {
+    padding-left: 1.5rem; /* Remove sidebar padding on mobile */
+  }
+  
+  .telehealth-page {
+    margin-top: 64px; /* Account for fixed header */
+  }
+}

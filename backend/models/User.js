@@ -28,6 +28,13 @@ const userSchema = new mongoose.Schema(
     },
     phone: { type: String },
     dateOfBirth: { type: Date },
+    pregnancy_week: { type: Number, min: 1, max: 40 },
+    pregnancy_due_date: { type: Date },
+    gender: { 
+      type: String, 
+      enum: ["Male", "Female", "Other"],
+      trim: true 
+    },
     googleId: { type: String }, // store Google profile ID for Google login
 
     // Email verification / login code
@@ -42,7 +49,7 @@ const userSchema = new mongoose.Schema(
     // Role management (admin support)
     role: {
       type: String,
-      enum: ["user", "admin", "superadmin"],
+      enum: ["user", "admin", "superadmin", "doctor"],
       default: "user",
     },
     isActive: { type: Boolean, default: true },
@@ -62,6 +69,20 @@ const userSchema = new mongoose.Schema(
         pinHash: { type: String },
       },
       locale: { type: String, default: "en" },
+    },
+
+    // Subscription settings
+    subscription: {
+      isSubscribed: { type: Boolean, default: false },
+      plan: { 
+        type: String, 
+        enum: ["free", "premium", "lifetime"],
+        default: "free"
+      },
+      startDate: { type: Date },
+      endDate: { type: Date },
+      paymentId: { type: String },
+      paymentProvider: { type: String }, // 'razorpay', 'stripe'
     },
   },
   { timestamps: true }

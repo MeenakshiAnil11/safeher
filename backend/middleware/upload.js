@@ -73,4 +73,23 @@ export const uploadEventBanner = multer({
   fileFilter: eventBannerFileFilter
 }).single('bannerImage');
 
+// File filter for product image uploads (images only)
+const productImageFileFilter = (req, file, cb) => {
+  const allowedImageTypes = /jpg|jpeg|png|gif|webp/;
+  const extname = allowedImageTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedImageTypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only JPG, JPEG, PNG, GIF, and WEBP images are allowed.'));
+  }
+};
+
+export const uploadProductImages = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit per image
+  fileFilter: productImageFileFilter
+}).array('images', 10); // Allow up to 10 images
+
 export default uploadResource;

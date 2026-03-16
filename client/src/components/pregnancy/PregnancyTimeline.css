@@ -1,0 +1,72 @@
+.pregnancy-timeline-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.pregnancy-timeline-head h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #111827;
+}
+
+.pregnancy-timeline-head p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.pregnancy-timeline-trimester {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.pregnancy-timeline-trimester strong {
+  color: #7e22ce;
+  font-size: 14px;
+}
+
+.pregnancy-timeline-trimester span {
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.pregnancy-timeline-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.pregnancy-week-btn {
+  border: 0;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #4b5563;
+  min-height: 34px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pregnancy-week-btn.active {
+  background: linear-gradient(120deg, #ec4899 0%, #9333ea 100%);
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .pregnancy-timeline-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .pregnancy-timeline-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

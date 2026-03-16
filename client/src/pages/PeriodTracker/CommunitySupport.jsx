@@ -37,20 +37,24 @@ export default function CommunitySupport() {
   const [showNewPost, setShowNewPost] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyContent, setReplyContent] = useState("");
+  const [formError, setFormError] = useState("");
 
   const handleNewPost = () => {
-    if (newPost.title && newPost.content) {
-      const post = {
-        id: posts.length + 1,
-        author: "Anonymous User",
-        title: newPost.title,
-        content: newPost.content,
-        replies: []
-      };
-      setPosts([post, ...posts]);
-      setNewPost({ title: "", content: "" });
-      setShowNewPost(false);
+    if (!newPost.title.trim() || !newPost.content.trim()) {
+      setFormError("Please add both a title and description to post.");
+      return;
     }
+    setFormError("");
+    const post = {
+      id: posts.length + 1,
+      author: "Anonymous User",
+      title: newPost.title.trim(),
+      content: newPost.content.trim(),
+      replies: []
+    };
+    setPosts([post, ...posts]);
+    setNewPost({ title: "", content: "" });
+    setShowNewPost(false);
   };
 
   const handleReply = (postId) => {
@@ -62,6 +66,9 @@ export default function CommunitySupport() {
       ));
       setReplyContent("");
       setReplyingTo(null);
+      setFormError("");
+    } else {
+      setFormError("Reply cannot be empty.");
     }
   };
 
@@ -74,7 +81,8 @@ export default function CommunitySupport() {
       </button>
 
       {showNewPost && (
-        <div className="pt-card" style={{ marginTop: 16 }}>
+        <div className="community-compose" style={{ marginTop: 16 }}>
+          {formError ? <p className="form-error">{formError}</p> : null}
           <input
             type="text"
             placeholder="Discussion Title"
@@ -95,7 +103,8 @@ export default function CommunitySupport() {
 
       <div className="posts-list">
         {posts.map(post => (
-          <div key={post.id} className="pt-card post-item">
+          <div key={post.id} className="community-post-item post-item">
+            <div className="moderation-tag">Moderated Discussion</div>
             <h4>{post.title}</h4>
             <p><strong>{post.author}:</strong> {post.content}</p>
             {post.replies.length > 0 && (

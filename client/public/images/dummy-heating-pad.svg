@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+  <rect width="800" height="800" fill="#fff7ed"/>
+  <circle cx="400" cy="300" r="140" fill="#fb923c" opacity="0.2"/>
+  <text x="400" y="325" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" fill="#9a3412">Heating Pad</text>
+  <text x="400" y="380" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#c2410c">Pain Relief</text>
+</svg>

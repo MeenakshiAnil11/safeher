@@ -1,0 +1,78 @@
+@startuml SafeHer Use Case Diagram
+
+skinparam usecase {
+    BackgroundColor #E8F4F8
+    BorderColor #2C5F7D
+}
+
+skinparam actor {
+    BackgroundColor #FFE5B4
+    BorderColor #FF8C00
+}
+
+left to right direction
+
+actor "User" as User
+actor "Admin" as Admin
+
+package "Authentication" {
+    usecase "Register" as UC1
+    usecase "Login" as UC2
+    usecase "Logout" as UC3
+}
+
+package "Period Tracking" {
+    usecase "Track Period" as UC4
+    usecase "Fertility Tracking" as UC5
+    usecase "Pregnancy Tracking" as UC6
+}
+
+package "Health Monitoring" {
+    usecase "Record Vitals" as UC7
+    usecase "Track Symptoms" as UC8
+    usecase "Log Mood" as UC9
+}
+
+package "AI Assistant" {
+    usecase "Health Risk Prediction" as UC10
+    usecase "Mood Prediction" as UC11
+    usecase "Symptom Classification" as UC12
+    usecase "Exercise Recommendation" as UC13
+}
+
+package "Safety" {
+    usecase "Trigger SOS Alert" as UC14
+    usecase "Manage Contacts" as UC15
+}
+
+package "Admin" {
+    usecase "Manage Users" as UC16
+    usecase "View Reports" as UC17
+}
+
+' User connections
+User --> UC1
+User --> UC2
+User --> UC3
+User --> UC4
+User --> UC5
+User --> UC6
+User --> UC7
+User --> UC8
+User --> UC9
+User --> UC10
+User --> UC11
+User --> UC12
+User --> UC13
+User --> UC14
+User --> UC15
+
+' Admin connections
+Admin --> UC2
+Admin --> UC16
+Admin --> UC17
+
+' Relationships
+UC14 ..> UC15 : <<include>>
+
+@enduml

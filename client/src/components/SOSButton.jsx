@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import locationService from '../services/locationService';
 import './SOSButton.css';
 
 const SOSButton = ({ 
@@ -31,20 +32,19 @@ const SOSButton = ({
 
   // Check location permission on component mount
   useEffect(() => {
-    if (requireLocation && navigator.permissions) {
-      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-        setLocationPermission(result.state);
-        result.onchange = () => {
-          setLocationPermission(result.state);
-        };
-      }).catch(() => {
-        // If permissions API is not supported, set to unknown
-        setLocationPermission('unknown');
-      });
-    } else if (requireLocation) {
-      // If permissions API is not supported, set to unknown
-      setLocationPermission('unknown');
-    }
+    const initializeLocationService = async () => {
+      if (requireLocation) {
+        try {
+          const permission = await locationService.checkPermissionStatus();
+          setLocationPermission(permission);
+        } catch (error) {
+          console.warn('Failed to check location permission:', error);
+          setLocationPermission('unknown');
+        }
+      }
+    };
+
+    initializeLocationService();
   }, [requireLocation]);
 
   // Cleanup timers on unmount
@@ -53,58 +53,28 @@ const SOSButton = ({
       if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
       if (progressTimerRef.current) clearInterval(progressTimerRef.current);
       if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-      if (trackingTimerRef.current) clearInterval(trackingTimerRef.current);
+      if (trackingTimerRef.current) {
+        trackingTimerRef.current(); // This is now an unsubscribe function
+      }
+      // Cleanup location service
+      locationService.cleanup();
     };
   }, []);
 
   // Get current location with permission handling
-  const getCurrentLocation = () => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by this browser.'));
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const location = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            timestamp: new Date().toISOString(),
-          };
-          setCurrentLocation(location);
-          setLocationError('');
-          onLocationUpdate?.(location);
-          resolve(location);
-        },
-        (error) => {
-          let errorMessage = '';
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = 'Location access denied. Please enable location permissions in your browser settings.';
-              setLocationPermission('denied');
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = 'Location information is unavailable.';
-              break;
-            case error.TIMEOUT:
-              errorMessage = 'Location request timed out.';
-              break;
-            default:
-              errorMessage = 'An unknown error occurred while retrieving location.';
-              break;
-          }
-          setLocationError(errorMessage);
-          reject(new Error(errorMessage));
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        }
-      );
-    });
+  const getCurrentLocation = async () => {
+    try {
+      const location = await locationService.requestLocationPermission();
+      setCurrentLocation(location);
+      setLocationError('');
+      setLocationPermission('granted');
+      onLocationUpdate?.(location);
+      return location;
+    } catch (error) {
+      setLocationError(error.message);
+      setLocationPermission('denied');
+      throw error;
+    }
   };
 
   // Request location permission and get location
@@ -138,19 +108,16 @@ const SOSButton = ({
     setTrackingCount(0);
     setLastTrackingTime(new Date().toISOString());
     
-    // Get initial location
-    getCurrentLocation().then((location) => {
-      console.log('📍 Initial tracking location:', location);
-      setCurrentLocation(location);
-      onLocationUpdate?.(location);
-      onTrackingUpdate?.(location, 0);
-    }).catch((error) => {
-      console.error('❌ Initial tracking location failed:', error.message);
-    });
-    
-    // Set up interval for continuous tracking
-    trackingTimerRef.current = setInterval(() => {
-      getCurrentLocation().then((location) => {
+    try {
+      // Start tracking using location service
+      locationService.startTracking({
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000
+      });
+
+      // Subscribe to tracking updates
+      const unsubscribe = locationService.subscribeToTracking((location) => {
         const newCount = trackingCount + 1;
         setTrackingCount(newCount);
         setLastTrackingTime(new Date().toISOString());
@@ -165,11 +132,15 @@ const SOSButton = ({
         
         onLocationUpdate?.(location);
         onTrackingUpdate?.(location, newCount);
-      }).catch((error) => {
-        console.error(`❌ Tracking update #${trackingCount + 1} failed:`, error.message);
-        setLocationError(error.message);
       });
-    }, trackingInterval);
+
+      // Store unsubscribe function
+      trackingTimerRef.current = unsubscribe;
+    } catch (error) {
+      console.error('❌ Failed to start tracking:', error.message);
+      setLocationError(error.message);
+      setIsTracking(false);
+    }
   };
 
   // Stop real-time location tracking
@@ -179,8 +150,12 @@ const SOSButton = ({
     console.log('🛑 Stopping real-time location tracking');
     setIsTracking(false);
     
+    // Stop tracking using location service
+    locationService.stopTracking();
+    
+    // Unsubscribe from tracking updates
     if (trackingTimerRef.current) {
-      clearInterval(trackingTimerRef.current);
+      trackingTimerRef.current();
       trackingTimerRef.current = null;
     }
   };

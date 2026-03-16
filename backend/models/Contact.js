@@ -7,6 +7,7 @@ const ContactSchema = new mongoose.Schema(
     number: { type: String, required: true }, // phone number
     relationship: { type: String, default: "" },
     email: { type: String, default: "" },
+    fcmToken: { type: String, default: "" }, // Firebase Cloud Messaging token
     notes: { type: String, default: "" },
   },
   { timestamps: true }

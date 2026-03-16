@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { logout } from "../services/auth";
+import NotificationCenter from "./NotificationCenter";
 
 export default function UserHeader({ onSidebarToggle }) {
   const navigate = useNavigate();
@@ -117,29 +118,109 @@ export default function UserHeader({ onSidebarToggle }) {
       </nav>
 
       {/* Search Bar */}
-      <div style={{ flex: 1, maxWidth: '400px', margin: '0 20px' }}>
-        <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center', background: '#f9fafb', border: '1px solid #d1d5db', borderRadius: '24px', padding: '8px 12px' }}>
+      <div style={{ 
+        flex: 1, 
+        maxWidth: '650px', 
+        margin: '0 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <form 
+          onSubmit={handleSearch} 
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            width: '100%',
+            maxWidth: '100%',
+            gap: '8px'
+          }}
+        >
           <input
             type="text"
-            placeholder="Search features..."
+            placeholder="Search for"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               flex: 1,
-              border: 'none',
-              background: 'transparent',
+              border: '1px solid #e5e7eb',
+              background: '#ffffff',
+              borderRadius: '28px',
               outline: 'none',
-              padding: '4px 8px',
-              fontSize: '14px'
+              padding: '10px 16px',
+              fontSize: '15px',
+              color: '#1f2937',
+              fontFamily: 'inherit',
+              minWidth: 0,
+              transition: 'all 0.2s ease'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = '#3b82f6';
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = '#e5e7eb';
+              e.currentTarget.style.boxShadow = 'none';
             }}
           />
-          <button type="submit" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>🔍</button>
+          <button 
+            type="submit" 
+            style={{ 
+              background: '#3b82f6',
+              border: 'none',
+              borderRadius: '22px',
+              cursor: 'pointer',
+              padding: '8px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
+              flexShrink: 0,
+              minWidth: '44px',
+              height: '40px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#2563eb';
+              e.currentTarget.style.transform = 'scale(1.02)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#3b82f6';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ color: 'white' }}
+            >
+              <path
+                d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M19 19L14.65 14.65"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
         </form>
       </div>
 
       {/* Right Side Actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', fontSize: '20px', color: '#6b7280' }}>🔔</button>
+        <NotificationCenter />
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <div 
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}

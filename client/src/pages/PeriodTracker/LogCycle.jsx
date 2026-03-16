@@ -17,15 +17,55 @@ export default function LogCycle() {
   const [restingHeartRateBpm, setRhr] = useState("");
   const [loading, setLoading] = useState(false);
   const [customSymptom, setCustomSymptom] = useState("");
+  const [errors, setErrors] = useState({});
+  const [submitMessage, setSubmitMessage] = useState("");
+  const [symptomSeverity, setSymptomSeverity] = useState({
+    cramps: 0,
+    fatigue: 0,
+    bloating: 0,
+  });
+
+  const validateForm = () => {
+    const nextErrors = {};
+    if (!startDate) nextErrors.startDate = "Start date is required.";
+    if (!endDate) nextErrors.endDate = "End date is required.";
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      nextErrors.endDate = "End date cannot be before start date.";
+    }
+    if (mood && mood.trim().length < 2) {
+      nextErrors.mood = "Mood should be at least 2 characters.";
+    }
+    if (customSymptom && customSymptom.trim().length > 40) {
+      nextErrors.customSymptom = "Custom symptom should be under 40 characters.";
+    }
+    if (basalBodyTemperatureC && (Number(basalBodyTemperatureC) < 35 || Number(basalBodyTemperatureC) > 42)) {
+      nextErrors.bbt = "Basal body temperature must be between 35C and 42C.";
+    }
+    if (restingHeartRateBpm && (Number(restingHeartRateBpm) < 40 || Number(restingHeartRateBpm) > 120)) {
+      nextErrors.rhr = "Resting heart rate must be between 40 and 120 bpm.";
+    }
+    Object.entries(symptomSeverity).forEach(([key, value]) => {
+      if (Number(value) < 0 || Number(value) > 10) {
+        nextErrors[key] = `${key} severity must be between 0 and 10.`;
+      }
+    });
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitMessage("");
+    if (!validateForm()) {
+      return;
+    }
     setLoading(true);
     try {
       const allSymptoms = [...symptoms];
       if (customSymptom.trim()) {
         allSymptoms.push(customSymptom.trim());
       }
+      const severitySummary = `Severity - Cramps:${symptomSeverity.cramps}/10, Fatigue:${symptomSeverity.fatigue}/10, Bloating:${symptomSeverity.bloating}/10`;
       const token = localStorage.getItem("token");
       const res = await fetch("/api/periods/log", {
         method: "POST",
@@ -35,7 +75,7 @@ export default function LogCycle() {
           endDate,
           intensity,
           mood,
-          notes,
+          notes: notes ? `${notes}\n${severitySummary}` : severitySummary,
           symptoms: allSymptoms,
           basalBodyTemperatureC: basalBodyTemperatureC ? Number(basalBodyTemperatureC) : undefined,
           restingHeartRateBpm: restingHeartRateBpm ? Number(restingHeartRateBpm) : undefined,
@@ -43,12 +83,14 @@ export default function LogCycle() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Error");
-      alert("Cycle logged successfully");
+      setSubmitMessage("Cycle logged successfully.");
       setStartDate(""); setEndDate("");
       setIntensity("medium"); setMood(""); setNotes(""); setSymptoms([]);
       setBbt(""); setRhr(""); setCustomSymptom("");
+      setSymptomSeverity({ cramps: 0, fatigue: 0, bloating: 0 });
+      setErrors({});
     } catch (err) {
-      alert("Failed to save: " + err.message);
+      setSubmitMessage("Failed to save: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -69,6 +111,11 @@ export default function LogCycle() {
       </div>
       
       <form className="pt-form" onSubmit={handleSubmit}>
+        {submitMessage ? (
+          <p className={`form-feedback ${submitMessage.startsWith("Failed") ? "error" : "success"}`}>
+            {submitMessage}
+          </p>
+        ) : null}
         <div className="pt-two-col">
           <div className="pt-form-group">
             <label>Start Date *</label>
@@ -79,6 +126,7 @@ export default function LogCycle() {
               required 
               max={new Date().toISOString().split('T')[0]}
             />
+            {errors.startDate ? <p className="form-error">{errors.startDate}</p> : null}
           </div>
           <div className="pt-form-group">
             <label>End Date *</label>
@@ -90,6 +138,7 @@ export default function LogCycle() {
               min={startDate}
               max={new Date().toISOString().split('T')[0]}
             />
+            {errors.endDate ? <p className="form-error">{errors.endDate}</p> : null}
           </div>
         </div>
 
@@ -104,12 +153,19 @@ export default function LogCycle() {
 
         <div className="pt-form-group">
           <label>Overall Mood</label>
-          <input 
-            type="text" 
-            placeholder="e.g., calm, stressed, energetic, moody" 
+          <select
             value={mood} 
-            onChange={(e) => setMood(e.target.value)} 
-          />
+            onChange={(e) => setMood(e.target.value)}
+          >
+            <option value="">Select mood</option>
+            <option value="calm">Calm</option>
+            <option value="energetic">Energetic</option>
+            <option value="stressed">Stressed</option>
+            <option value="moody">Moody</option>
+            <option value="happy">Happy</option>
+            <option value="low">Low</option>
+          </select>
+          {errors.mood ? <p className="form-error">{errors.mood}</p> : null}
         </div>
 
         <div className="pt-form-group">
@@ -133,6 +189,33 @@ export default function LogCycle() {
             onChange={(e) => setCustomSymptom(e.target.value)}
             style={{ marginTop: '12px' }}
           />
+          {errors.customSymptom ? <p className="form-error">{errors.customSymptom}</p> : null}
+        </div>
+
+        <div className="pt-form-group">
+          <label>Symptom Severity (0-10)</label>
+          <div className="symptom-sliders">
+            {[
+              { key: "cramps", label: "Cramps" },
+              { key: "fatigue", label: "Fatigue" },
+              { key: "bloating", label: "Bloating" },
+            ].map((item) => (
+              <div key={item.key} className="symptom-slider-item">
+                <span>{item.label}: {symptomSeverity[item.key]}/10</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="10"
+                  step="1"
+                  value={symptomSeverity[item.key]}
+                  onChange={(e) =>
+                    setSymptomSeverity((prev) => ({ ...prev, [item.key]: Number(e.target.value) }))
+                  }
+                />
+                {errors[item.key] ? <p className="form-error">{errors[item.key]}</p> : null}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="pt-form-group">
@@ -157,6 +240,7 @@ export default function LogCycle() {
               onChange={(e) => setBbt(e.target.value)}
               placeholder="e.g., 36.5"
             />
+            {errors.bbt ? <p className="form-error">{errors.bbt}</p> : null}
             <small style={{ color: '#636e72', fontSize: '0.85rem', marginTop: '4px' }}>
               Measure first thing in the morning
             </small>
@@ -172,6 +256,7 @@ export default function LogCycle() {
               onChange={(e) => setRhr(e.target.value)}
               placeholder="e.g., 72"
             />
+            {errors.rhr ? <p className="form-error">{errors.rhr}</p> : null}
             <small style={{ color: '#636e72', fontSize: '0.85rem', marginTop: '4px' }}>
               Measure when completely at rest
             </small>

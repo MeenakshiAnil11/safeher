@@ -9,6 +9,8 @@ import {
   updatePeriod,
   deletePeriod,
   exportCsv,
+  exportPdf,
+  exportExcel,
 } from "../controllers/periodController.js";
 import { protect, adminOnly } from "../middleware/auth.js"; // ✅ FIXED import
 
@@ -45,5 +47,7 @@ router.delete("/:id", protect, adminOnly, deletePeriod);
 
 // Export data (protected)
 router.get("/export.csv", protect, exportCsv);
+router.get("/export.pdf", protect, exportPdf);
+router.get("/export.xlsx", protect, exportExcel);
 
 export default router;

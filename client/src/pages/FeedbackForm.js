@@ -1,5 +1,9 @@
 import React, { useState } from "react";
 import api from "../services/api";
+import UserHeader from "../components/UserHeader";
+import UserSidebar from "../components/UserSidebar";
+import Footer from "../components/Footer";
+import "../styles/FeedbackForm.css";
 
 export default function FeedbackForm() {
   const [subject, setSubject] = useState("");
@@ -10,6 +14,7 @@ export default function FeedbackForm() {
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hoveredRating, setHoveredRating] = useState(null);
 
   const handleImageChange = (e) => {
     setScreenshot(e.target.files[0]);
@@ -40,7 +45,6 @@ export default function FeedbackForm() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // Always treat response as an object with feedback data
       if (res.data && res.status === 201) {
         setSuccess(true);
         setSubject("");
@@ -49,6 +53,11 @@ export default function FeedbackForm() {
         setRating(5);
         setScreenshot(null);
         setErrors({});
+        
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+          setSuccess(false);
+        }, 5000);
       } else {
         alert("Unexpected response from server");
       }
@@ -60,103 +69,150 @@ export default function FeedbackForm() {
     }
   };
 
-  return (
-    <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
-      <h2>Submit Feedback</h2>
+  const handleStarClick = (starValue) => {
+    setRating(starValue);
+    setErrors({ ...errors, rating: "" });
+  };
 
-      {success && (
-        <div
-          style={{
-            backgroundColor: "#d4edda",
-            color: "#155724",
-            padding: "10px",
-            marginBottom: "10px",
-            borderRadius: "5px",
-          }}
-        >
-          Feedback submitted successfully!
-        </div>
-      )}
-
-      <div style={{ marginBottom: "10px" }}>
-        <label>Subject:</label>
-        <input
-          type="text"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          style={{ width: "100%", padding: "8px", marginTop: "5px" }}
-        />
-        {errors.subject && <span style={{ color: "red" }}>{errors.subject}</span>}
-      </div>
-
-      <div style={{ marginBottom: "10px" }}>
-        <label>Category:</label>
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          style={{ width: "100%", padding: "8px", marginTop: "5px" }}
-        >
-          <option value="Bug">Bug</option>
-          <option value="Suggestion">Suggestion</option>
-          <option value="Other">Other</option>
-        </select>
-      </div>
-
-      <div style={{ marginBottom: "10px" }}>
-        <label>Message:</label>
-        <textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          rows="5"
-          style={{ width: "100%", padding: "8px", marginTop: "5px" }}
-        />
-        {errors.message && <span style={{ color: "red" }}>{errors.message}</span>}
-      </div>
-
-      <div style={{ marginBottom: "10px" }}>
-        <label>Rating (1-5):</label>
-        <input
-          type="number"
-          min="1"
-          max="5"
-          value={rating}
-          onChange={(e) => setRating(Number(e.target.value))}
-          style={{ width: "100%", padding: "8px", marginTop: "5px" }}
-        />
-        {errors.rating && <span style={{ color: "red" }}>{errors.rating}</span>}
-      </div>
-
-      <div style={{ marginBottom: "10px" }}>
-        <label>Screenshot (optional):</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleImageChange}
-          style={{ marginTop: "5px" }}
-        />
-        {screenshot && (
-          <img
-            src={URL.createObjectURL(screenshot)}
-            alt="Screenshot preview"
-            style={{ width: "100px", height: "100px", marginTop: "10px" }}
-          />
-        )}
-      </div>
-
-      <button
-        onClick={submitFeedback}
-        disabled={loading}
-        style={{
-          padding: "10px 20px",
-          backgroundColor: loading ? "#6c757d" : "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "5px",
-          cursor: loading ? "not-allowed" : "pointer",
-        }}
+  const renderStars = () => {
+    return [1, 2, 3, 4, 5].map((star) => (
+      <span
+        key={star}
+        className={`star ${star <= (hoveredRating || rating) ? 'filled' : ''}`}
+        onMouseEnter={() => setHoveredRating(star)}
+        onMouseLeave={() => setHoveredRating(null)}
+        onClick={() => handleStarClick(star)}
+        style={{ cursor: 'pointer', fontSize: '32px' }}
       >
-        {loading ? "Submitting..." : "Submit Feedback"}
-      </button>
+        ⭐
+      </span>
+    ));
+  };
+
+  return (
+    <div className="dashboard-container feedback-page">
+      <UserHeader />
+      <div className="dashboard-body">
+        <UserSidebar />
+        <main className="dashboard-main">
+          <div className="feedback-form-container">
+            <div className="feedback-header">
+              <h1 className="feedback-title">💬 Share Your Feedback</h1>
+              <p className="feedback-subtitle">We value your input! Help us improve SafeHer by sharing your thoughts, reporting issues, or suggesting new features.</p>
+            </div>
+
+            {success && (
+              <div className="success-alert">
+                <div className="success-icon">✅</div>
+                <div>
+                  <h3>Feedback Submitted Successfully!</h3>
+                  <p>Thank you for your feedback. We'll review it and get back to you soon.</p>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={(e) => { e.preventDefault(); submitFeedback(); }} className="feedback-form">
+              <div className="form-section">
+                <label className="form-label">Subject *</label>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => { setSubject(e.target.value); setErrors({ ...errors, subject: "" }); }}
+                  className="form-input"
+                  placeholder="Brief description of your feedback"
+                  disabled={loading}
+                />
+                {errors.subject && <span className="error-text">{errors.subject}</span>}
+              </div>
+
+              <div className="form-section">
+                <label className="form-label">Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="form-select"
+                  disabled={loading}
+                >
+                  <option value="Bug">🐛 Bug Report</option>
+                  <option value="Suggestion">💡 Feature Suggestion</option>
+                  <option value="Question">❓ Question</option>
+                  <option value="Other">💬 General Feedback</option>
+                </select>
+              </div>
+
+              <div className="form-section">
+                <label className="form-label">Message *</label>
+                <textarea
+                  value={message}
+                  onChange={(e) => { setMessage(e.target.value); setErrors({ ...errors, message: "" }); }}
+                  rows="6"
+                  className="form-textarea"
+                  placeholder="Please provide detailed information about your feedback..."
+                  disabled={loading}
+                />
+                {errors.message && <span className="error-text">{errors.message}</span>}
+              </div>
+
+              <div className="form-section">
+                <label className="form-label">Rating: {rating} out of 5</label>
+                <div className="star-rating-container" onMouseLeave={() => setHoveredRating(null)}>
+                  {renderStars()}
+                </div>
+                {errors.rating && <span className="error-text">{errors.rating}</span>}
+              </div>
+
+              <div className="form-section">
+                <label className="form-label">Screenshot (Optional)</label>
+                <div className="file-upload-container">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    disabled={loading}
+                    className="file-input"
+                    id="screenshot-upload"
+                  />
+                  {screenshot && (
+                    <div className="screenshot-preview">
+                      <img src={URL.createObjectURL(screenshot)} alt="Preview" />
+                      <button type="button" onClick={() => setScreenshot(null)} className="remove-screenshot">
+                        ✕ Remove
+                      </button>
+                    </div>
+                  )}
+                  {!screenshot && (
+                    <label htmlFor="screenshot-upload" className="file-label">
+                      <span className="file-icon">📷</span>
+                      <span>Click to upload or drag and drop</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`submit-button ${loading ? 'loading' : ''}`}
+                >
+                  {loading ? 'Submitting...' : '📤 Submit Feedback'}
+                </button>
+              </div>
+            </form>
+
+            <div className="feedback-tips">
+              <h3>💡 Tips for providing helpful feedback:</h3>
+              <ul>
+                <li>Be specific about what you're experiencing or suggesting</li>
+                <li>Include steps to reproduce if reporting a bug</li>
+                <li>Add screenshots when possible to help us understand better</li>
+                <li>Be constructive and respectful in your feedback</li>
+              </ul>
+            </div>
+          </div>
+        </main>
+      </div>
+      <Footer />
     </div>
   );
 }

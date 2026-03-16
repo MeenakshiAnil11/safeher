@@ -1,0 +1,604 @@
+@startuml SafeHer Class Diagrams
+
+skinparam class {
+  BackgroundColor #E8F4F8
+  BorderColor #2C5F7D
+  FontSize 11
+}
+skinparam arrow {
+  Color #2C5F7D
+  Thickness 2
+}
+
+' ============================================
+' Class Diagram 1: User & Authentication Classes
+' ============================================
+@startuml User_Authentication_Classes
+
+title User and Authentication Classes
+
+class User {
+  -_id: ObjectId
+  -name: String
+  -email: String
+  -password: String (hashed)
+  -phone: String
+  -dateOfBirth: Date
+  -googleId: String
+  -role: String (user/admin/superadmin)
+  -isActive: Boolean
+  -emailVerified: Boolean
+  -settings: Object
+  -subscription: Object
+  -createdAt: Date
+  -updatedAt: Date
+  +matchPassword(password): Boolean
+  +save(): Promise
+  +findById(id): User
+  +findOne(query): User
+}
+
+class AuthController {
+  +register(req, res): Promise
+  +login(req, res): Promise
+  +googleLogin(req, res): Promise
+  +forgotPassword(req, res): Promise
+  +resetPassword(req, res): Promise
+  +logout(req, res): Promise
+}
+
+class ProtectedRoute {
+  -token: String
+  +verifyToken(token): Boolean
+  +checkAuth(req, res, next): Middleware
+}
+
+class AdminRoute {
+  -role: String
+  +checkAdmin(req, res, next): Middleware
+}
+
+User "1" --> "*" : has
+AuthController ..> User : uses
+ProtectedRoute ..> User : validates
+AdminRoute ..> User : validates
+
+@enduml
+
+' ============================================
+' Class Diagram 2: Period Tracking Classes
+' ============================================
+@startuml Period_Tracking_Classes
+
+title Period Tracking Classes
+
+class Period {
+  -_id: ObjectId
+  -user: ObjectId (ref: User)
+  -startDate: Date
+  -endDate: Date
+  -duration: Number
+  -intensity: String (light/medium/heavy)
+  -symptoms: Array<String>
+  -mood: String
+  -notes: String
+  -basalBodyTemperatureC: Number
+  -createdAt: Date
+  +calculateDuration(): Number
+  +save(): Promise
+  +findByUser(userId): Array<Period>
+}
+
+class FertilityLog {
+  -_id: ObjectId
+  -user: ObjectId
+  -date: Date
+  -bbt: Number
+  -cervicalMucus: String
+  -ovulationTest: String
+  -intercourse: Boolean
+  -cycleDay: Number
+  -phase: String
+  -mood: String
+  -energy: Number
+  -stress: Number
+  +save(): Promise
+  +getFertilityInsights(): Object
+}
+
+class PregnancyLog {
+  -_id: ObjectId
+  -user: ObjectId
+  -date: Date
+  -week: Number
+  -trimester: String
+  -weightKg: Number
+  -symptoms: Array<Object>
+  -fetalMovement: Boolean
+  -kickCount: Number
+  -mood: String
+  -medications: Array<String>
+  +save(): Promise
+  +getPregnancyProgress(): Object
+}
+
+class PerimenopauseLog {
+  -_id: ObjectId
+  -user: ObjectId
+  -date: Date
+  -cycleLength: Number
+  -periodFlow: String
+  -hotFlashes: Boolean
+  -moodSwings: Boolean
+  -sleepHours: Number
+  -medications: Array<String>
+  +save(): Promise
+}
+
+class PeriodController {
+  +getPeriods(req, res): Promise
+  +createPeriod(req, res): Promise
+  +updatePeriod(req, res): Promise
+  +deletePeriod(req, res): Promise
+  +getPredictions(req, res): Promise
+}
+
+User "1" --> "*" Period : owns
+User "1" --> "*" FertilityLog : owns
+User "1" --> "*" PregnancyLog : owns
+User "1" --> "*" PerimenopauseLog : owns
+PeriodController ..> Period : manages
+PeriodController ..> FertilityLog : manages
+PeriodController ..> PregnancyLog : manages
+
+@enduml
+
+' ============================================
+' Class Diagram 3: Health Tracking Classes
+' ============================================
+@startuml Health_Tracking_Classes
+
+title Health Tracking Classes
+
+class Vital {
+  -_id: ObjectId
+  -user: ObjectId
+  -recordedAt: Date
+  -weightKg: Number
+  -heightCm: Number
+  -systolic: Number
+  -diastolic: Number
+  -heartRateBpm: Number
+  -bmi: Number
+  -bloodSugar: Number
+  -ironLevel: Number
+  -cholesterol: Number
+  -createdAt: Date
+  +calculateBMI(): Number
+  +save(): Promise
+}
+
+class Symptom {
+  -_id: ObjectId
+  -user: ObjectId
+  -date: Date
+  -tags: Array<String>
+  -severity: Number (1-5)
+  -notes: String
+  -createdAt: Date
+  +save(): Promise
+}
+
+class MoodLog {
+  -_id: ObjectId
+  -user: ObjectId
+  -date: Date
+  -mood: String
+  -symptoms: Array<String>
+  -notes: String
+  -createdAt: Date
+  +save(): Promise
+}
+
+class Sleep {
+  -_id: ObjectId
+  -user: ObjectId
+  -sleepHours: Number
+  -quality: String
+  -bedtime: String
+  -wakeTime: String
+  -date: Date
+  +save(): Promise
+}
+
+class Nutrition {
+  -_id: ObjectId
+  -user: ObjectId
+  -meal: String
+  -calories: Number
+  -protein: Number
+  -carbs: Number
+  -fat: Number
+  -date: Date
+  +save(): Promise
+}
+
+class HealthGoal {
+  -_id: ObjectId
+  -user: ObjectId
+  -category: String
+  -title: String
+  -targetValue: Number
+  -currentValue: Number
+  -progress: Number
+  -deadline: Date
+  -status: String
+  +calculateProgress(): Number
+  +save(): Promise
+}
+
+class HealthController {
+  +getVitals(req, res): Promise
+  +createVital(req, res): Promise
+  +getSymptoms(req, res): Promise
+  +createSymptom(req, res): Promise
+  +getHealthRisk(req, res): Promise
+}
+
+User "1" --> "*" Vital : owns
+User "1" --> "*" Symptom : owns
+User "1" --> "*" MoodLog : owns
+User "1" --> "*" Sleep : owns
+User "1" --> "*" Nutrition : owns
+User "1" --> "*" HealthGoal : owns
+HealthController ..> Vital : manages
+HealthController ..> Symptom : manages
+HealthController ..> HealthGoal : manages
+
+@enduml
+
+' ============================================
+' Class Diagram 4: ML Services Classes
+' ============================================
+@startuml ML_Services_Classes
+
+title ML Services Classes
+
+class HealthRiskService {
+  -model: KNeighborsClassifier
+  -scaler: StandardScaler
+  +loadModel(): Boolean
+  +predict(features): Object
+  +getRecommendations(riskLevel): Array<String>
+}
+
+class MoodPredictionService {
+  -model: SVC (SVM)
+  -scaler: StandardScaler
+  +loadModel(): Boolean
+  +predict(features): Object
+}
+
+class SymptomClassificationService {
+  -model: GaussianNB
+  -scaler: StandardScaler
+  +loadModel(): Boolean
+  +predictCategory(symptoms): String
+  +predictSeverity(symptoms): Number
+}
+
+class ExerciseRecommendationService {
+  -model: KNeighborsClassifier
+  -scaler: StandardScaler
+  -encoders: Dict
+  +loadModel(): Boolean
+  +recommend(features): Object
+  +getExplanation(exercise, phase): String
+}
+
+class MLController {
+  +predictHealthRisk(req, res): Promise
+  +predictMood(req, res): Promise
+  +classifySymptom(req, res): Promise
+  +recommendExercise(req, res): Promise
+}
+
+MLController ..> HealthRiskService : uses
+MLController ..> MoodPredictionService : uses
+MLController ..> SymptomClassificationService : uses
+MLController ..> ExerciseRecommendationService : uses
+
+@enduml
+
+' ============================================
+' Class Diagram 5: Safety & Emergency Classes
+' ============================================
+@startuml Safety_Emergency_Classes
+
+title Safety and Emergency Classes
+
+class SOSLog {
+  -_id: ObjectId
+  -user: ObjectId
+  -coords: Object {lat, lng}
+  -address: String
+  -message: String
+  -status: String (open/handled/closed)
+  -handledBy: ObjectId
+  -createdAt: Date
+  +save(): Promise
+  +updateStatus(status): Promise
+}
+
+class Contact {
+  -_id: ObjectId
+  -user: ObjectId
+  -name: String
+  -number: String
+  -email: String
+  -relationship: String
+  -fcmToken: String
+  +save(): Promise
+}
+
+class SafeZone {
+  -_id: ObjectId
+  -user: ObjectId
+  -name: String
+  -latitude: Number
+  -longitude: Number
+  -radius: Number
+  -isActive: Boolean
+  +save(): Promise
+  +isWithinZone(lat, lng): Boolean
+}
+
+class Helpline {
+  -_id: ObjectId
+  -name: String
+  -number: String
+  -category: String
+  -region: String
+  -active: Boolean
+  +save(): Promise
+}
+
+class SOSController {
+  +sendSOS(req, res): Promise
+  +getSOSHistory(req, res): Promise
+  +updateSOSStatus(req, res): Promise
+  +notifyContacts(contacts, sosData): Promise
+}
+
+class EmailService {
+  +sendSOSAlert(contact, sosData): Promise
+  +sendEmail(to, subject, body): Promise
+}
+
+User "1" --> "*" SOSLog : creates
+User "1" --> "*" Contact : has
+User "1" --> "*" SafeZone : defines
+SOSController ..> SOSLog : manages
+SOSController ..> Contact : uses
+SOSController ..> EmailService : uses
+EmailService ..> Contact : notifies
+
+@enduml
+
+' ============================================
+' Class Diagram 6: Medical Management Classes
+' ============================================
+@startuml Medical_Management_Classes
+
+title Medical Management Classes
+
+class Appointment {
+  -_id: ObjectId
+  -user: ObjectId
+  -title: String
+  -date: Date
+  -time: String
+  -type: String
+  -doctor: String
+  -location: String
+  -reminder: Boolean
+  -reminderTime: Number
+  +save(): Promise
+  +isUpcoming(): Boolean
+}
+
+class Medication {
+  -_id: ObjectId
+  -user: ObjectId
+  -name: String
+  -dosage: String
+  -frequency: String
+  -times: Array<String>
+  -startDate: Date
+  -endDate: Date
+  -reminder: Boolean
+  +save(): Promise
+  +isActive(): Boolean
+}
+
+class Vaccination {
+  -_id: ObjectId
+  -user: ObjectId
+  -name: String
+  -date: Date
+  -nextDue: Date
+  -doctor: String
+  -reminder: Boolean
+  +save(): Promise
+  +isDue(): Boolean
+}
+
+class Record {
+  -_id: ObjectId
+  -user: ObjectId
+  -title: String
+  -category: String
+  -fileUrl: String
+  -takenAt: Date
+  +save(): Promise
+}
+
+class MedicalController {
+  +getAppointments(req, res): Promise
+  +createAppointment(req, res): Promise
+  +getMedications(req, res): Promise
+  +createMedication(req, res): Promise
+  +getVaccinations(req, res): Promise
+  +uploadRecord(req, res): Promise
+}
+
+User "1" --> "*" Appointment : schedules
+User "1" --> "*" Medication : takes
+User "1" --> "*" Vaccination : receives
+User "1" --> "*" Record : uploads
+MedicalController ..> Appointment : manages
+MedicalController ..> Medication : manages
+MedicalController ..> Vaccination : manages
+MedicalController ..> Record : manages
+
+@enduml
+
+' ============================================
+' Class Diagram 7: Frontend React Components
+' ============================================
+@startuml Frontend_Components
+
+title Frontend React Components
+
+class Login {
+  -form: Object {email, password}
+  -error: String
+  -success: String
+  +onSubmit(e): Promise
+  +handleGoogleLogin(): Promise
+  +persistAuth(data): void
+}
+
+class Dashboard {
+  -user: Object
+  -stats: Object
+  +loadUserData(): Promise
+  +navigateToFeature(path): void
+}
+
+class PeriodTrackingOverview {
+  -trackingModes: Array<Object>
+  +handleModeSelect(path): void
+}
+
+class HealthRiskPrediction {
+  -formData: Object
+  -prediction: Object
+  +handleSubmit(): Promise
+  +displayResults(): void
+}
+
+class SymptomClassification {
+  -symptoms: Array<String>
+  -mood: String
+  -severity: Number
+  -result: Object
+  +handleSubmit(): Promise
+  +displayClassification(): void
+}
+
+class SOSButton {
+  -isActive: Boolean
+  -location: Object
+  +handleSOSClick(): Promise
+  +getLocation(): Promise
+  +sendSOSAlert(): Promise
+}
+
+class UserHeader {
+  -user: Object
+  -menuOpen: Boolean
+  +handleLogout(): void
+  +toggleMenu(): void
+}
+
+Login --> Dashboard : navigates to
+Dashboard --> PeriodTrackingOverview : navigates to
+Dashboard --> HealthRiskPrediction : navigates to
+Dashboard --> SOSButton : contains
+UserHeader --> Login : logout redirects to
+
+@enduml
+
+' ============================================
+' Class Diagram 8: Complete System Overview
+' ============================================
+@startuml System_Overview
+
+title SafeHer System Class Overview
+
+package "Frontend (React)" {
+  class ReactApp
+  class UserComponents
+  class AdminComponents
+}
+
+package "Backend (Node.js/Express)" {
+  class ExpressServer
+  class AuthController
+  class HealthController
+  class PeriodController
+  class SOSController
+  class MLController
+}
+
+package "ML Services (Python/Flask)" {
+  class FlaskAPI
+  class HealthRiskService
+  class MoodPredictionService
+  class SymptomClassificationService
+  class ExerciseRecommendationService
+}
+
+package "Database (MongoDB)" {
+  class User
+  class Period
+  class Vital
+  class Symptom
+  class SOSLog
+  class Appointment
+}
+
+package "External Services" {
+  class FirebaseAuth
+  class EmailService
+  class GoogleMapsAPI
+}
+
+ReactApp --> ExpressServer : HTTP requests
+ExpressServer --> AuthController : routes
+ExpressServer --> HealthController : routes
+ExpressServer --> PeriodController : routes
+ExpressServer --> SOSController : routes
+ExpressServer --> MLController : routes
+
+MLController --> FlaskAPI : API calls
+FlaskAPI --> HealthRiskService : uses
+FlaskAPI --> MoodPredictionService : uses
+FlaskAPI --> SymptomClassificationService : uses
+FlaskAPI --> ExerciseRecommendationService : uses
+
+AuthController --> User : queries
+HealthController --> Vital : queries
+HealthController --> Symptom : queries
+PeriodController --> Period : queries
+SOSController --> SOSLog : queries
+
+AuthController --> FirebaseAuth : uses
+SOSController --> EmailService : uses
+ReactApp --> GoogleMapsAPI : uses
+
+@enduml
+
+@enduml
+

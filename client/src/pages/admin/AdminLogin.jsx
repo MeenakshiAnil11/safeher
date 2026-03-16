@@ -19,7 +19,13 @@ export default function AdminLogin() {
       const res = await api.post("/auth/login", { email, password });
       const { token, user } = res.data;
 
-      // Save auth data
+      // Check if user is actually an admin
+      if (user.role !== "admin" && user.role !== "superadmin") {
+        setError("Access denied. Admin credentials required.");
+        return;
+      }
+
+      // Save auth data (includes role)
       saveAuth(token, user);
 
       // Navigate to admin dashboard

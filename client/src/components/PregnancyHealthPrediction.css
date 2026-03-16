@@ -1,0 +1,18 @@
+.pregnancy-health-prediction {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.pregnancy-health-prediction h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.pregnancy-health-prediction p {
+  color: #666;
+  font-size: 16px;
+  line-height: 1.6;
+}
+

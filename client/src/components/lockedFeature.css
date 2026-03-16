@@ -1,0 +1,40 @@
+.locked-feature-wrap {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.locked-feature-blur {
+  filter: blur(4px) grayscale(0.3);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.5;
+}
+.locked-feature-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+  z-index: 10;
+  text-align: center;
+  padding: 24px;
+}
+.locked-feature-icon { margin-bottom: 12px; }
+.locked-feature-title { font-size: 16px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+.locked-feature-desc { font-size: 13px; color: #6b7280; margin: 0 0 16px; }
+.locked-feature-btn {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #e879a8, #c026d3);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.locked-feature-btn:hover { opacity: 0.9; }

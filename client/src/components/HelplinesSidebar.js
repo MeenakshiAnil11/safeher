@@ -40,11 +40,11 @@ export default function HelplinesSidebar({
     <aside className={`helplines-sidebar ${darkMode ? "dark" : ""}`}>
       {/* Emergency / SOS */}
       <div className="sidebar-section emergency">
-        <button className="sos-btn" onClick={() => window.location.href="tel:112"}>🚨 Call 112</button>
+        <button className="sos-btn" onClick={() => window.location.href="tel:100"}>🚨 Call Police 100</button>
         <ul className="emergency-list">
           <li>🚔 Police: 100</li>
           <li>🚑 Ambulance: 108</li>
-          <li>🔥 Fire: 101</li>
+          <li>💬 Women Helpline: 181</li>
         </ul>
       </div>
 
@@ -72,7 +72,6 @@ export default function HelplinesSidebar({
           <option value="Women">Women</option>
           <option value="Legal">Legal</option>
           <option value="Psychological">Psychological</option>
-          <option value="Child">Child</option>
           <option value="NGO">NGO</option>
         </select>
 

@@ -1,0 +1,237 @@
+@startuml SafeHer Use Case Diagram
+
+!define RECTANGLE class
+
+skinparam usecase {
+    BackgroundColor #E8F4F8
+    BorderColor #2C5F7D
+}
+
+skinparam actor {
+    BackgroundColor #FFE5B4
+    BorderColor #FF8C00
+}
+
+skinparam package {
+    BackgroundColor #F0F0F0
+    BorderColor #808080
+}
+
+left to right direction
+
+actor "Guest User" as Guest
+actor "Registered User" as User
+actor "Admin" as Admin
+
+package "Authentication & Registration" {
+    usecase "Register Account" as UC1
+    usecase "Login" as UC2
+    usecase "Google Login" as UC3
+    usecase "Forgot Password" as UC4
+    usecase "Reset Password" as UC5
+    usecase "Logout" as UC6
+}
+
+package "Period & Reproductive Health Tracking" {
+    usecase "Track Menstrual Cycle" as UC7
+    usecase "Fertility Tracking (Conceive Mode)" as UC8
+    usecase "Pregnancy Tracking" as UC9
+    usecase "Perimenopause Tracking" as UC10
+    usecase "View Cycle History" as UC11
+    usecase "Set Period Reminders" as UC12
+    usecase "Set Ovulation Reminders" as UC13
+}
+
+package "Health Monitoring" {
+    usecase "Record Vitals" as UC14
+    usecase "Track Symptoms" as UC15
+    usecase "Log Mood" as UC16
+    usecase "Track Sleep" as UC17
+    usecase "Track Nutrition" as UC18
+    usecase "Set Health Goals" as UC19
+    usecase "View Health Dashboard" as UC20
+}
+
+package "AI Health Assistant" {
+    usecase "Health Risk Prediction" as UC21
+    usecase "Mood Prediction" as UC22
+    usecase "Symptom Classification" as UC23
+    usecase "Exercise Recommendation" as UC24
+    usecase "Pregnancy Health Prediction" as UC25
+}
+
+package "Medical Management" {
+    usecase "Schedule Appointments" as UC26
+    usecase "Track Medications" as UC27
+    usecase "Track Vaccinations" as UC28
+    usecase "Upload Medical Records" as UC29
+    usecase "Set Medication Reminders" as UC30
+    usecase "Set Appointment Reminders" as UC31
+}
+
+package "Safety & Emergency" {
+    usecase "Trigger SOS Alert" as UC32
+    usecase "View SOS History" as UC33
+    usecase "Manage Emergency Contacts" as UC34
+    usecase "View Helplines" as UC35
+    usecase "Location Tracking" as UC36
+    usecase "Manage Safe Zones" as UC37
+}
+
+package "Exercise & Wellness" {
+    usecase "Log Exercise" as UC38
+    usecase "View Exercise Recommendations" as UC39
+    usecase "Join Exercise Challenges" as UC40
+    usecase "Set Exercise Reminders" as UC41
+    usecase "View Exercise History" as UC42
+}
+
+package "Resources & Education" {
+    usecase "Browse Resources" as UC43
+    usecase "View Educational Topics" as UC44
+    usecase "Submit Resource" as UC45
+    usecase "View Pregnancy Resources" as UC45a
+    usecase "Search Baby Names" as UC46
+    usecase "Bookmark Baby Names" as UC47
+    usecase "Take Quizzes" as UC48
+    usecase "View Events" as UC49
+}
+
+package "Community & Support" {
+    usecase "Submit Feedback" as UC50
+    usecase "View Feedback Status" as UC51
+    usecase "Chat with AI Assistant" as UC52
+    usecase "Pregnancy Chat" as UC53
+    usecase "Partner Access" as UC54
+}
+
+package "Profile & Settings" {
+    usecase "View Profile" as UC55
+    usecase "Edit Profile" as UC56
+    usecase "Manage Settings" as UC57
+    usecase "Manage Notifications" as UC58
+    usecase "Privacy Settings" as UC59
+    usecase "Subscription Management" as UC60
+}
+
+package "Admin Functions" {
+    usecase "Admin Login" as UC61
+    usecase "Manage Users" as UC62
+    usecase "View SOS Logs" as UC63
+    usecase "Manage Helplines" as UC64
+    usecase "Manage Resources" as UC65
+    usecase "Manage Feedback" as UC66
+    usecase "View Reports" as UC67
+    usecase "Manage Period Tracking Data" as UC68
+    usecase "Manage Health Data" as UC69
+    usecase "Admin Settings" as UC70
+    usecase "View Analytics" as UC71
+}
+
+' Guest User connections
+Guest --> UC1 : <<include>>
+Guest --> UC2 : <<include>>
+Guest --> UC3 : <<include>>
+Guest --> UC4 : <<include>>
+
+' Registered User connections
+User --> UC2 : <<include>>
+User --> UC3 : <<include>>
+User --> UC4 : <<include>>
+User --> UC5 : <<include>>
+User --> UC6 : <<include>>
+
+User --> UC7
+User --> UC8
+User --> UC9
+User --> UC10
+User --> UC11
+User --> UC12
+User --> UC13
+
+User --> UC14
+User --> UC15
+User --> UC16
+User --> UC17
+User --> UC18
+User --> UC19
+User --> UC20
+
+User --> UC21
+User --> UC22
+User --> UC23
+User --> UC24
+User --> UC25
+
+User --> UC26
+User --> UC27
+User --> UC28
+User --> UC29
+User --> UC30
+User --> UC31
+
+User --> UC32
+User --> UC33
+User --> UC34
+User --> UC35
+User --> UC36
+User --> UC37
+
+User --> UC38
+User --> UC39
+User --> UC40
+User --> UC41
+User --> UC42
+
+User --> UC43
+User --> UC44
+User --> UC45
+User --> UC45a
+User --> UC46
+User --> UC47
+User --> UC48
+User --> UC49
+
+User --> UC50
+User --> UC51
+User --> UC52
+User --> UC53
+User --> UC54
+
+User --> UC55
+User --> UC56
+User --> UC57
+User --> UC58
+User --> UC59
+User --> UC60
+
+' Admin connections
+Admin --> UC61 : <<include>>
+Admin --> UC62
+Admin --> UC63
+Admin --> UC64
+Admin --> UC65
+Admin --> UC66
+Admin --> UC67
+Admin --> UC68
+Admin --> UC69
+Admin --> UC70
+Admin --> UC71
+
+' Relationships
+UC2 ..> UC6 : <<extend>>
+UC1 ..> UC2 : <<include>>
+UC4 ..> UC5 : <<include>>
+UC7 ..> UC11 : <<include>>
+UC8 ..> UC12 : <<include>>
+UC8 ..> UC13 : <<include>>
+UC27 ..> UC30 : <<include>>
+UC26 ..> UC31 : <<include>>
+UC32 ..> UC36 : <<include>>
+UC32 ..> UC34 : <<include>>
+UC38 ..> UC42 : <<include>>
+UC9 ..> UC45a : <<include>>
+UC9 ..> UC53 : <<include>>
+
+@enduml
+

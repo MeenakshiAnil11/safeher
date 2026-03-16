@@ -9,7 +9,11 @@ import {
   FaCogs,
   FaHeartbeat,
   FaCalendarAlt,
-  FaPhone
+  FaPhone,
+  FaShoppingCart,
+  FaComments,
+  FaStethoscope,
+  FaTasks
 } from "react-icons/fa";
 import "./AdminSidebar.css";
 
@@ -37,6 +41,34 @@ export default function AdminSidebar() {
           <li>
             <NavLink to="/admin/resources" className={({ isActive }) => (isActive ? "active" : "")}>
               <FaBook className="sidebar-icon" /> Resources
+            </NavLink>
+          </li>
+
+          {/* Forum */}
+          <li>
+            <NavLink to="/admin/forum" className={({ isActive }) => (isActive ? "active" : "")}>
+              <FaComments className="sidebar-icon" /> Forum Moderation
+            </NavLink>
+          </li>
+
+          {/* E-commerce */}
+          <li>
+            <NavLink to="/admin/ecommerce" className={({ isActive }) => (isActive ? "active" : "")}>
+              <FaShoppingCart className="sidebar-icon" /> E-commerce
+            </NavLink>
+          </li>
+
+          {/* Telehealth */}
+          <li>
+            <NavLink to="/admin/telehealth" className={({ isActive }) => (isActive ? "active" : "")}>
+              <FaStethoscope className="sidebar-icon" /> Telehealth
+            </NavLink>
+          </li>
+
+          {/* Tracker Management */}
+          <li>
+            <NavLink to="/admin/tracker" className={({ isActive }) => (isActive ? "active" : "")}>
+              <FaTasks className="sidebar-icon" /> Tracker
             </NavLink>
           </li>
 

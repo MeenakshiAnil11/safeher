@@ -1,6 +1,6 @@
 // client/src/pages/PeriodTracker.jsx
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import UserHeader from "../components/UserHeader";
 import Footer from "../components/Footer";
 
@@ -14,12 +14,15 @@ import EducationalContent from "./PeriodTracker/EducationalContent";
 import CommunitySupport from "./PeriodTracker/CommunitySupport";
 import ExerciseRecommendations from "./PeriodTracker/ExerciseRecommendations";
 import CycleOverview from "./PeriodTracker/CycleOverview";
+import CycleExerciseRecommendationsCard from "./PeriodTracker/CycleExerciseRecommendationsCard";
+import PeriodAIDoctorChatbot from "../components/PeriodAIDoctorChatbot";
 
 // Styles
 import "./PeriodTracker/periodTracker.css";
 
 export default function PeriodTracker() {
-  const [activeTab, setActiveTab] = useState("calendar");
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "calendar");
 
   const tabs = [
     { key: "cycle", label: "🔁 Cycle" },
@@ -32,6 +35,55 @@ export default function PeriodTracker() {
     { key: "education", label: "📚 Education" },
     { key: "community", label: "🤝 Community" },
   ];
+
+  const workflow = ["log", "insights", "exercises", "reminders", "history"];
+
+  const sectionMeta = {
+    cycle: {
+      title: "Cycle Overview",
+      subtitle: "Track your current phase, cycle stats, and personalized highlights.",
+    },
+    calendar: {
+      title: "Cycle Calendar",
+      subtitle: "See period, fertile, and ovulation highlights in one timeline.",
+    },
+    log: {
+      title: "Log Cycle",
+      subtitle: "Capture flow, symptoms, and wellness signals with validation guidance.",
+    },
+    history: {
+      title: "Cycle History",
+      subtitle: "Review trends, exports, and progression over recent cycles.",
+    },
+    insights: {
+      title: "Insights Analysis",
+      subtitle: "Dynamic analysis of cycle regularity, symptoms, and lifestyle factors.",
+    },
+    exercises: {
+      title: "Exercise Recommendations",
+      subtitle: "Phase-specific workouts, videos, and AI-powered fitness guidance.",
+    },
+    reminders: {
+      title: "Reminders",
+      subtitle: "Smart scheduling for period, ovulation, and exercise consistency.",
+    },
+    education: {
+      title: "Education",
+      subtitle: "Expert articles, FAQs, and trusted menstrual-health resources.",
+    },
+    community: {
+      title: "Community",
+      subtitle: "Moderated discussions and peer support in a safe space.",
+    },
+  };
+
+  const currentMeta = sectionMeta[activeTab] || sectionMeta.calendar;
+
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   return (
     <div className="pt-wrapper page-with-header">
@@ -54,65 +106,86 @@ export default function PeriodTracker() {
               </button>
             ))}
           </nav>
-          <Link to="/dashboard" className="pt-dashboard-link">Back to Dashboard</Link>
+          
+          {/* Back Button */}
+          <div className="pt-back-to-dashboard">
+            <Link to="/period-tracking" className="pt-back-link">
+              ← Back to Mode Selection
+            </Link>
+          </div>
         </aside>
 
         {/* Main Content */}
         <main className="pt-main">
-          {activeTab === "cycle" && <CycleOverview />}
-          {activeTab === "calendar" && (
-            <div className="calendar-container">
-              <h3>Your Cycle Calendar</h3>
-              <CalendarView />
+          <section className="pt-section pt-section-header">
+            <h3>{currentMeta.title}</h3>
+            <p>{currentMeta.subtitle}</p>
+            <div className="pt-workflow-nav">
+              {workflow.map((step) => (
+                <button
+                  key={step}
+                  type="button"
+                  className={activeTab === step ? "active" : ""}
+                  onClick={() => setActiveTab(step)}
+                >
+                  {tabs.find((t) => t.key === step)?.label || step}
+                </button>
+              ))}
             </div>
+          </section>
+
+          {activeTab === "cycle" && (
+            <section className="pt-section">
+              <CycleOverview />
+              <CycleExerciseRecommendationsCard />
+            </section>
+          )}
+          {activeTab === "calendar" && (
+            <section className="pt-section calendar-container">
+              <CalendarView />
+            </section>
           )}
           {activeTab === "log" && (
-            <div className="pt-card">
-              <h3>Log Your Cycle</h3>
+            <section className="pt-section">
               <LogCycle />
-            </div>
+            </section>
           )}
           {activeTab === "history" && (
-            <div className="pt-card">
-              <h3>Cycle History</h3>
+            <section className="pt-section">
               <CycleHistory />
-            </div>
+            </section>
           )}
           {activeTab === "insights" && (
-            <div className="pt-card">
-              <h3>Insights</h3>
+            <section className="pt-section">
               <HealthInsights />
-            </div>
+            </section>
           )}
           {activeTab === "exercises" && (
-            <div className="pt-card">
-              <h3>Exercise Recommendations</h3>
+            <section className="pt-section">
               <ExerciseRecommendations />
-            </div>
+            </section>
           )}
           {activeTab === "reminders" && (
-            <div className="pt-card">
-              <h3>Reminders & Notifications</h3>
+            <section className="pt-section">
               <Reminders />
-            </div>
+            </section>
           )}
           {activeTab === "education" && (
-            <div className="pt-card">
-              <h3>Educational Content</h3>
+            <section className="pt-section">
               <EducationalContent />
-            </div>
+            </section>
           )}
           {activeTab === "community" && (
-            <div className="pt-card">
-              <h3>Community Support</h3>
+            <section className="pt-section">
               <CommunitySupport />
-            </div>
+            </section>
           )}
         </main>
       </div>
 
       {/* Footer */}
       <Footer />
+      <PeriodAIDoctorChatbot />
     </div>
   );
 }

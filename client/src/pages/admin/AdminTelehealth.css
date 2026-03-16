@@ -1,0 +1,195 @@
+/* Admin Telehealth Styles */
+.admin-telehealth {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding: 2rem;
+}
+
+.telehealth-header {
+  margin-bottom: 2rem;
+}
+
+.telehealth-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+}
+
+.telehealth-header p {
+  color: #64748b;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.telehealth-layout {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+/* Sidebar */
+.telehealth-sidebar {
+  width: 300px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  position: sticky;
+  top: 2rem;
+}
+
+.telehealth-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.telehealth-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #64748b;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.telehealth-nav-item:hover {
+  background: #f8fafc;
+  color: #8b5cf6;
+  border-color: #e2e8f0;
+}
+
+.telehealth-nav-item.active {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  color: white;
+  border-color: #8b5cf6;
+}
+
+.telehealth-nav-item .nav-icon {
+  font-size: 1.25rem;
+  min-width: 24px;
+}
+
+.nav-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nav-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.nav-description {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.telehealth-nav-item.active .nav-description {
+  opacity: 0.9;
+}
+
+/* Main Content */
+.telehealth-content {
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  min-height: 600px;
+}
+
+/* Overview Grid */
+.telehealth-overview {
+  padding: 1rem 0;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.overview-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #1e293b;
+  transition: all 0.3s ease;
+}
+
+.overview-card:hover {
+  border-color: #8b5cf6;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+}
+
+.overview-card .card-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  border-radius: 16px;
+  color: white;
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+}
+
+.overview-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: #1e293b;
+}
+
+.overview-card p {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .telehealth-layout {
+    flex-direction: column;
+  }
+
+  .telehealth-sidebar {
+    width: 100%;
+    position: static;
+  }
+
+  .telehealth-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .telehealth-nav-item {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-telehealth {
+    padding: 1rem;
+  }
+
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,68 @@
+export const pregnancyExercises = [
+  {
+    name: "Walking",
+    duration: "30 minutes",
+    benefits: "Improves circulation, stamina, and mood",
+    trimester: [1, 2, 3],
+    videoUrl: "https://www.youtube.com/embed/muscmUnyP3I",
+    emoji: "🚶",
+  },
+  {
+    name: "Prenatal Yoga",
+    duration: "15 minutes",
+    benefits: "Enhances flexibility and reduces stress",
+    trimester: [1, 2, 3],
+    videoUrl: "https://www.youtube.com/embed/hJbRpHZr_d0",
+    emoji: "🧘",
+  },
+  {
+    name: "Pelvic Floor Exercises",
+    duration: "10 minutes",
+    benefits: "Supports pelvic strength for labor and recovery",
+    trimester: [1, 2, 3],
+    videoUrl: "https://www.youtube.com/embed/U0bhE67HuDY",
+    emoji: "💪",
+  },
+  {
+    name: "Breathing Mobility Flow",
+    duration: "12 minutes",
+    benefits: "Improves breathing control and relaxation",
+    trimester: [1, 2, 3],
+    videoUrl: "https://www.youtube.com/embed/4C-gxOE0j7s",
+    emoji: "🌬️",
+  },
+  {
+    name: "Swimming",
+    duration: "20 minutes",
+    benefits: "Low-impact full-body exercise",
+    trimester: [1, 2, 3],
+    videoUrl: "https://www.youtube.com/embed/UBMk30rjy0o",
+    emoji: "🏊",
+  },
+  {
+    name: "Wall Supported Squats",
+    duration: "10 minutes",
+    benefits: "Strengthens lower body safely",
+    trimester: [2, 3],
+    videoUrl: "https://www.youtube.com/embed/cZnsLVArIt8",
+    emoji: "🦵",
+  },
+  {
+    name: "Gentle Stretch Routine",
+    duration: "12 minutes",
+    benefits: "Relieves stiffness and back discomfort",
+    trimester: [2, 3],
+    videoUrl: "https://www.youtube.com/embed/lCg_gh_fppI",
+    emoji: "🤸",
+  },
+  {
+    name: "Seated Upper Body Mobility",
+    duration: "10 minutes",
+    benefits: "Improves shoulder and neck mobility",
+    trimester: [3],
+    videoUrl: "https://www.youtube.com/embed/U0bhE67HuDY",
+    emoji: "🪑",
+  },
+];
+
+export default pregnancyExercises;

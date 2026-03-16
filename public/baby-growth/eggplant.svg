@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="128" fill="#f3e8ff"/>
+  <path d="M96 64c22 2 48 18 60 40 14 26 10 70-21 90-24 15-52 7-65-16-16-29-8-74 26-98z" fill="#6d28d9"/>
+  <path d="M96 64c-6 10-17 15-30 16 10 7 25 8 36 2" stroke="#16a34a" stroke-width="8" fill="none"/>
+  <text x="128" y="206" text-anchor="middle" font-size="22" font-family="Arial" fill="#4c1d95">Eggplant</text>
+</svg>

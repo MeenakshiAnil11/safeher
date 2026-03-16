@@ -1,0 +1,108 @@
+export const communityPosts = [
+  {
+    id: "post-101",
+    user: "Emily R.",
+    pregnancyWeek: 20,
+    trimester: "Second Trimester",
+    title: "Best pregnancy pillows for side sleeping?",
+    content:
+      "I wake up with hip pain at night. Which pillow type helped you most in week 20+?",
+    likes: 24,
+    replies: 12,
+    createdAt: "2026-03-10T09:30:00.000Z",
+    category: "Sleep",
+  },
+  {
+    id: "post-102",
+    user: "Sarah M.",
+    pregnancyWeek: 21,
+    trimester: "Second Trimester",
+    title: "Baby movement more active at night",
+    content:
+      "My baby is super active in the evening and quieter during the afternoon. Is that normal?",
+    likes: 15,
+    replies: 8,
+    createdAt: "2026-03-10T12:10:00.000Z",
+    category: "Baby Movement",
+  },
+  {
+    id: "post-103",
+    user: "Jessica L.",
+    pregnancyWeek: 28,
+    trimester: "Third Trimester",
+    title: "Hospital bag checklist must-haves",
+    content:
+      "Starting my hospital bag this week. What are the items you used the most during labor?",
+    likes: 35,
+    replies: 20,
+    createdAt: "2026-03-09T16:45:00.000Z",
+    category: "Labor Prep",
+  },
+  {
+    id: "post-104",
+    user: "Amanda K.",
+    pregnancyWeek: 18,
+    trimester: "Second Trimester",
+    title: "Iron-rich snack ideas for office hours",
+    content:
+      "Looking for easy iron-rich snacks I can carry to work and eat between meetings.",
+    likes: 18,
+    replies: 10,
+    createdAt: "2026-03-11T08:15:00.000Z",
+    category: "Nutrition",
+  },
+  {
+    id: "post-105",
+    user: "Rachel B.",
+    pregnancyWeek: 12,
+    trimester: "First Trimester",
+    title: "Morning sickness survival tips",
+    content:
+      "Nausea is strongest before lunch for me. What helped you reduce it safely?",
+    likes: 27,
+    replies: 16,
+    createdAt: "2026-03-08T06:40:00.000Z",
+    category: "Symptoms",
+  },
+  {
+    id: "post-106",
+    user: "Priya N.",
+    pregnancyWeek: 23,
+    trimester: "Second Trimester",
+    title: "Safe exercise routine when back pain starts",
+    content:
+      "I want to stay active but lower back pain increases after long walks. Suggestions?",
+    likes: 19,
+    replies: 11,
+    createdAt: "2026-03-11T13:05:00.000Z",
+    category: "Exercise",
+  },
+  {
+    id: "post-107",
+    user: "Nora A.",
+    pregnancyWeek: 31,
+    trimester: "Third Trimester",
+    title: "Sleep position and nighttime anxiety",
+    content:
+      "Anyone else feeling anxious at bedtime in the third trimester? What calming routine helped?",
+    likes: 22,
+    replies: 14,
+    createdAt: "2026-03-07T20:20:00.000Z",
+    category: "Emotional Support",
+  },
+  {
+    id: "post-108",
+    user: "Meera S.",
+    pregnancyWeek: 25,
+    trimester: "Second Trimester",
+    title: "Glucose test experience this week",
+    content:
+      "I have my glucose screening this week. Any practical tips to prepare and stay comfortable?",
+    likes: 13,
+    replies: 7,
+    createdAt: "2026-03-11T10:50:00.000Z",
+    category: "Appointments",
+  },
+];
+
+export default communityPosts;

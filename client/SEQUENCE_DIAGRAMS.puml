@@ -1,0 +1,297 @@
+@startuml SafeHer Sequence Diagrams
+
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+skinparam sequenceParticipant underline
+
+!define ACTOR_COLOR #FFE5B4
+!define USER_COLOR #E8F4F8
+!define SYSTEM_COLOR #D4EDDA
+!define ML_COLOR #FFF3CD
+
+' ============================================
+' Sequence Diagram 1: User Registration & Login
+' ============================================
+@startuml User_Registration_Login
+
+title User Registration and Login Flow
+
+actor User as U #ACTOR_COLOR
+participant "React Frontend" as Frontend #USER_COLOR
+participant "Express Backend" as Backend #SYSTEM_COLOR
+participant "MongoDB" as DB #SYSTEM_COLOR
+participant "Firebase Auth" as Firebase #SYSTEM_COLOR
+
+== Registration Flow ==
+U -> Frontend: Fill registration form
+Frontend -> Frontend: Validate form data
+U -> Frontend: Submit registration
+Frontend -> Backend: POST /api/auth/register\n{name, email, password}
+Backend -> Backend: Validate input
+Backend -> Backend: Hash password (bcrypt)
+Backend -> DB: Save user to Users collection
+DB --> Backend: User created
+Backend --> Frontend: Success response\n{token, user}
+Frontend -> Frontend: Store token in localStorage
+Frontend --> U: Redirect to Dashboard
+
+== Login Flow ==
+U -> Frontend: Enter credentials
+U -> Frontend: Click Login
+Frontend -> Backend: POST /api/auth/login\n{email, password}
+Backend -> DB: Find user by email
+DB --> Backend: User data
+Backend -> Backend: Verify password
+Backend -> Backend: Generate JWT token
+Backend --> Frontend: Success response\n{token, user, role}
+Frontend -> Frontend: Store auth data
+Frontend --> U: Redirect to Dashboard\n(or Admin Dashboard)
+
+== Google Login Flow ==
+U -> Frontend: Click "Login with Google"
+Frontend -> Firebase: Sign in with Google
+Firebase --> Frontend: Google ID token
+Frontend -> Backend: POST /api/auth/google\n{idToken}
+Backend -> Firebase: Verify ID token
+Firebase --> Backend: User info
+Backend -> DB: Find or create user
+DB --> Backend: User data
+Backend -> Backend: Generate JWT token
+Backend --> Frontend: Success response\n{token, user}
+Frontend --> U: Redirect to Dashboard
+
+@enduml
+
+' ============================================
+' Sequence Diagram 2: Period Tracking
+' ============================================
+@startuml Period_Tracking_Flow
+
+title Period Tracking Flow
+
+actor User as U #ACTOR_COLOR
+participant "React Frontend" as Frontend #USER_COLOR
+participant "Express Backend" as Backend #SYSTEM_COLOR
+participant "MongoDB" as DB #SYSTEM_COLOR
+
+U -> Frontend: Navigate to Period Tracking
+Frontend -> Backend: GET /api/periods\n(Authorization: Bearer token)
+Backend -> Backend: Verify JWT token
+Backend -> DB: Query Periods collection\n{user: userId}
+DB --> Backend: Period records
+Backend --> Frontend: Period history data
+Frontend --> U: Display calendar with periods
+
+== Add New Period ==
+U -> Frontend: Enter period details\n(startDate, endDate, intensity)
+U -> Frontend: Submit period entry
+Frontend -> Backend: POST /api/periods\n{startDate, endDate, intensity, symptoms}
+Backend -> Backend: Calculate duration
+Backend -> Backend: Determine cycle phase
+Backend -> DB: Save to Periods collection
+DB --> Backend: Period saved
+Backend -> Backend: Update cycle predictions
+Backend --> Frontend: Success response\n{period, predictions}
+Frontend --> U: Show updated calendar
+
+== Get Cycle Predictions ==
+U -> Frontend: View cycle predictions
+Frontend -> Backend: GET /api/periods/predictions
+Backend -> DB: Get last 3-6 periods
+DB --> Backend: Period history
+Backend -> Backend: Calculate average cycle length
+Backend -> Backend: Predict next period date
+Backend -> Backend: Calculate fertile window
+Backend --> Frontend: Predictions\n{nextPeriod, fertileWindow, ovulation}
+Frontend --> U: Display predictions
+
+@enduml
+
+' ============================================
+' Sequence Diagram 3: Health Risk Prediction (ML)
+' ============================================
+@startuml Health_Risk_Prediction
+
+title Health Risk Prediction with ML
+
+actor User as U #ACTOR_COLOR
+participant "React Frontend" as Frontend #USER_COLOR
+participant "Express Backend" as Backend #SYSTEM_COLOR
+participant "Flask ML Service" as MLService #ML_COLOR
+participant "MongoDB" as DB #SYSTEM_COLOR
+
+U -> Frontend: Navigate to AI Health Assistant
+U -> Frontend: Fill health data\n(age, BMI, BP, cholesterol, etc.)
+U -> Frontend: Click "Predict Health Risk"
+Frontend -> Backend: POST /api/health-risk/predict\n{age, bmi, bloodPressure, ...}
+Backend -> Backend: Validate input data
+Backend -> Backend: Prepare feature array
+Backend -> MLService: POST /predict\n{features}
+MLService -> MLService: Load KNN model
+MLService -> MLService: Scale features (StandardScaler)
+MLService -> MLService: Predict risk level
+MLService --> Backend: Prediction result\n{riskLevel, confidence, recommendations}
+Backend -> DB: Save prediction log (optional)
+DB --> Backend: Log saved
+Backend --> Frontend: Response\n{riskLevel, confidence, recommendations, explanation}
+Frontend -> Frontend: Display risk with color coding\n(Green/Yellow/Orange/Red)
+Frontend --> U: Show health risk assessment
+
+@enduml
+
+' ============================================
+' Sequence Diagram 4: SOS Alert Flow
+' ============================================
+@startuml SOS_Alert_Flow
+
+title SOS Emergency Alert Flow
+
+actor User as U #ACTOR_COLOR
+participant "React Frontend" as Frontend #USER_COLOR
+participant "Express Backend" as Backend #SYSTEM_COLOR
+participant "MongoDB" as DB #SYSTEM_COLOR
+participant "Email Service" as Email #SYSTEM_COLOR
+participant "Emergency Contacts" as Contacts #SYSTEM_COLOR
+
+U -> Frontend: Click SOS Button
+Frontend -> Frontend: Get user location\n(Geolocation API)
+Frontend -> Frontend: Show confirmation dialog
+U -> Frontend: Confirm SOS alert
+Frontend -> Backend: POST /api/sos/send\n{coords, address, message}
+Backend -> Backend: Verify JWT token
+Backend -> DB: Get user's emergency contacts
+DB --> Backend: Contacts list
+Backend -> DB: Save SOS log
+DB --> Backend: SOS log saved
+Backend -> Email: Send alert emails to contacts\n{userName, location, address, timestamp}
+Email --> Contacts: Email notifications sent
+Backend -> Backend: Send SMS (if configured)
+Backend --> Frontend: Success response\n{status: "sent", contactsNotified}
+Frontend --> U: Show confirmation\n"SOS alert sent to X contacts"
+
+== Admin Viewing SOS Logs ==
+participant "Admin" as Admin #ACTOR_COLOR
+Admin -> Frontend: Navigate to Admin SOS Logs
+Frontend -> Backend: GET /api/admin/sos-logs\n(Authorization: Admin token)
+Backend -> Backend: Verify admin role
+Backend -> DB: Query SOSLogs collection
+DB --> Backend: All SOS logs
+Backend --> Frontend: SOS logs with user info
+Frontend --> Admin: Display SOS alerts dashboard
+
+@enduml
+
+' ============================================
+' Sequence Diagram 5: Exercise Recommendation
+' ============================================
+@startuml Exercise_Recommendation
+
+title Exercise Recommendation with ML
+
+actor User as U #ACTOR_COLOR
+participant "React Frontend" as Frontend #USER_COLOR
+participant "Express Backend" as Backend #SYSTEM_COLOR
+participant "Flask ML Service" as MLService #ML_COLOR
+participant "MongoDB" as DB #SYSTEM_COLOR
+
+U -> Frontend: Navigate to Exercise Recommendation
+Frontend -> Backend: GET /api/periods/current\n(Get current cycle phase)
+Backend -> DB: Get user's current period data
+DB --> Backend: Period and phase info
+Backend --> Frontend: Current cycle phase
+Frontend -> Frontend: Display form\n(phase, energy, mood, cramps, stress, sleep)
+U -> Frontend: Fill exercise form
+U -> Frontend: Click "Get Recommendation"
+Frontend -> Backend: POST /api/exercise/recommend\n{phase, energyLevel, mood, cramps, stressLevel, sleepHours}
+Backend -> Backend: Prepare features
+Backend -> MLService: POST /recommend_exercise\n{features}
+MLService -> MLService: Load KNN model (or Decision Tree)
+MLService -> MLService: Encode categorical features
+MLService -> MLService: Scale numerical features
+MLService -> MLService: Predict exercise
+MLService -> MLService: Get probabilities
+MLService --> Backend: Recommendation\n{exercise, confidence, probabilities, explanation}
+Backend -> Backend: Generate safety notes
+Backend --> Frontend: Response\n{recommendedExercise, confidence, explanation, safetyNotes}
+Frontend -> Frontend: Display recommendation with video link
+Frontend --> U: Show recommended exercise
+
+@enduml
+
+' ============================================
+' Sequence Diagram 6: Symptom Classification
+' ============================================
+@startuml Symptom_Classification
+
+title Symptom Classification with Bayesian ML
+
+actor User as U #ACTOR_COLOR
+participant "React Frontend" as Frontend #USER_COLOR
+participant "Express Backend" as Backend #SYSTEM_COLOR
+participant "Flask ML Service" as MLService #ML_COLOR
+participant "MongoDB" as DB #SYSTEM_COLOR
+
+U -> Frontend: Navigate to Symptom Analysis
+U -> Frontend: Enter symptoms\n(symptom list, mood, severity)
+U -> Frontend: Click "Analyze Symptoms"
+Frontend -> Backend: POST /api/symptom-classification/predict\n{symptoms, mood, severity}
+Backend -> Backend: Validate input
+Backend -> MLService: POST /predict_category\n{features}
+MLService -> MLService: Load Bayesian classifier\n(GaussianNB/MultinomialNB)
+MLService -> MLService: Preprocess symptoms
+MLService -> MLService: Scale features
+MLService -> MLService: Predict category
+MLService -> MLService: Predict severity
+MLService --> Backend: Classification result\n{category, severity, confidence, recommendations}
+Backend -> DB: Save symptom log (optional)
+DB --> Backend: Log saved
+Backend --> Frontend: Response\n{category, severity, confidence, recommendations}
+Frontend -> Frontend: Display classification\nwith recommendations
+Frontend --> U: Show symptom analysis results
+
+@enduml
+
+' ============================================
+' Sequence Diagram 7: Appointment Scheduling
+' ============================================
+@startuml Appointment_Scheduling
+
+title Medical Appointment Scheduling
+
+actor User as U #ACTOR_COLOR
+participant "React Frontend" as Frontend #USER_COLOR
+participant "Express Backend" as Backend #SYSTEM_COLOR
+participant "MongoDB" as DB #SYSTEM_COLOR
+participant "Notification Service" as Notif #SYSTEM_COLOR
+
+U -> Frontend: Navigate to Appointments
+Frontend -> Backend: GET /api/appointments\n(Authorization: Bearer token)
+Backend -> DB: Query Appointments collection\n{user: userId}
+DB --> Backend: User appointments
+Backend --> Frontend: Appointment list
+Frontend --> U: Display appointments calendar
+
+== Create Appointment ==
+U -> Frontend: Click "Add Appointment"
+U -> Frontend: Fill appointment form\n(title, date, time, type, doctor, location)
+U -> Frontend: Set reminder preferences
+U -> Frontend: Submit appointment
+Frontend -> Backend: POST /api/appointments\n{title, date, time, type, doctor, location, reminder}
+Backend -> Backend: Validate date/time
+Backend -> DB: Save to Appointments collection
+DB --> Backend: Appointment saved
+Backend -> Notif: Schedule reminder\n(if reminder enabled)
+Notif --> Backend: Reminder scheduled
+Backend --> Frontend: Success response\n{appointment}
+Frontend --> U: Show confirmation\n"Appointment scheduled"
+
+== Reminder Notification ==
+Notif -> Notif: Check scheduled reminders
+Notif -> Frontend: Send push notification\n(or email)
+Frontend --> U: Show reminder notification\n"Appointment in 1 hour"
+
+@enduml
+
+@enduml
+

@@ -1,0 +1,49 @@
+.wishlist-icon-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.wishlist-icon-link:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.wishlist-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  width: 24px;
+  height: 24px;
+}
+
+.wishlist-icon svg {
+  transition: fill 0.2s ease;
+}
+
+.wishlist-icon-link:hover .wishlist-icon svg {
+  fill: #ef4444;
+  stroke: #ef4444;
+}
+
+.wishlist-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.2;
+}

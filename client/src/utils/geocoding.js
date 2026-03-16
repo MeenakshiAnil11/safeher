@@ -140,6 +140,51 @@ export const formatShortAddress = (address) => {
 };
 
 /**
+ * Forward geocoding - Search for location by address/place name
+ * @param {string} query - Address or place name to search for
+ * @returns {Promise<Array>} Array of location results
+ */
+export const forwardGeocode = async (query) => {
+  if (!query || query.trim().length === 0) {
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'SafeHer-App/1.0 (contact@safeher.com)' // Required by Nominatim
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Geocoding failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map(item => ({
+        displayName: item.display_name,
+        latitude: parseFloat(item.lat),
+        longitude: parseFloat(item.lon),
+        address: item.address || {},
+        importance: item.importance || 0,
+        type: item.type || '',
+        category: item.category || ''
+      }));
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Forward geocoding error:', error);
+    return [];
+  }
+};
+
+/**
  * Clear the geocoding cache
  */
 export const clearGeocodingCache = () => {

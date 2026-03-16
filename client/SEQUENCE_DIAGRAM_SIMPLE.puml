@@ -1,0 +1,79 @@
+@startuml SafeHer Sequence Diagram
+
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+
+' ============================================
+' User Login Sequence
+' ============================================
+@startuml User_Login
+
+title User Login Flow
+
+actor User
+participant "Frontend"
+participant "Backend API"
+database "MongoDB"
+
+User -> Frontend: Enter credentials
+User -> Frontend: Click Login
+Frontend -> "Backend API": POST /api/auth/login
+"Backend API" -> "MongoDB": Find user
+"MongoDB" --> "Backend API": User data
+"Backend API" -> "Backend API": Verify & generate token
+"Backend API" --> Frontend: Return token
+Frontend --> User: Redirect to Dashboard
+
+@enduml
+
+' ============================================
+' Health Risk Prediction Sequence
+' ============================================
+@startuml Health_Prediction
+
+title Health Risk Prediction
+
+actor User
+participant "Frontend"
+participant "Backend API"
+participant "ML Service"
+
+User -> Frontend: Enter health data
+User -> Frontend: Click Predict
+Frontend -> "Backend API": POST /api/health-risk
+"Backend API" -> "ML Service": Predict request
+"ML Service" -> "ML Service": Process with ML model
+"ML Service" --> "Backend API": Risk prediction
+"Backend API" --> Frontend: Return results
+Frontend --> User: Display prediction
+
+@enduml
+
+' ============================================
+' SOS Alert Sequence
+' ============================================
+@startuml SOS_Alert
+
+title SOS Emergency Alert
+
+actor User
+participant "Frontend"
+participant "Backend API"
+participant "Email Service"
+database "MongoDB"
+
+User -> Frontend: Click SOS Button
+Frontend -> Frontend: Get location
+Frontend -> "Backend API": POST /api/sos
+"Backend API" -> "MongoDB": Get contacts
+"MongoDB" --> "Backend API": Contacts
+"Backend API" -> "MongoDB": Save SOS log
+"Backend API" -> "Email Service": Send alerts
+"Email Service" --> "Backend API": Confirmed
+"Backend API" --> Frontend: Success
+Frontend --> User: Alert sent
+
+@enduml
+
+@enduml

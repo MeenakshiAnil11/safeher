@@ -1,0 +1,208 @@
+/* Health Risk Prediction — Figma-matched */
+
+.health-risk-prediction h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.health-risk-prediction > p {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0 0 20px;
+}
+
+.prediction-form {
+  margin-bottom: 0;
+}
+
+.hrp-row-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.hrp-row-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.prediction-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prediction-form .form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.prediction-form .form-group input {
+  padding: 10px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #fafafa;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.prediction-form .form-group input:focus {
+  outline: none;
+  border-color: #c026d3;
+  box-shadow: 0 0 0 3px rgba(192, 38, 211, 0.08);
+  background: #fff;
+}
+
+.predict-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #e879a8, #c026d3);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s, transform 0.15s;
+  margin-top: 8px;
+}
+
+.predict-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.predict-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-message {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #991b1b;
+  font-size: 14px;
+}
+
+/* Result card */
+.prediction-result {
+  margin-top: 24px;
+}
+
+.prediction-result h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 16px;
+}
+
+.risk-card {
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.risk-level {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.confidence {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.model-info {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Probability bars */
+.risk-probabilities {
+  background: #faf5ff;
+  border: 1px solid #f3e8ff;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.risk-probabilities h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 14px;
+}
+
+.probability-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.probability-bar:last-child {
+  margin-bottom: 0;
+}
+
+.risk-name {
+  font-size: 13px;
+  color: #374151;
+  min-width: 100px;
+  font-weight: 500;
+}
+
+.bar-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar {
+  height: 8px;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.percentage {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 600;
+  min-width: 36px;
+}
+
+@media (max-width: 768px) {
+  .hrp-row-3 { grid-template-columns: 1fr 1fr; }
+  .hrp-row-4 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+  .hrp-row-3 { grid-template-columns: 1fr; }
+  .hrp-row-4 { grid-template-columns: 1fr; }
+}

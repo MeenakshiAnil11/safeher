@@ -1,88 +1,87 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import "./userSidebar.css"; // Reuse userSidebar styles
+import "../pages/resources.css";
 
 export default function ResourceSidebar() {
   const location = useLocation();
 
-  // Extract the active section from URL hash or default to 'all'
   const getActiveSection = () => {
-    const hash = location.hash.substring(1); // Remove the '#'
-    return hash || 'all';
+    const hash = location.hash.substring(1);
+    return hash || "all";
   };
 
   const activeSection = getActiveSection();
 
-  const resourceSections = [
-    { id: 'search', icon: '🔍', description: 'Find resources' },
-    { id: 'all', label: 'All Resources', icon: '📚' },
-    {
-      id: 'categories',
-      label: 'Categories',
-      icon: '🗂️',
-      subItems: [
-        { id: 'safety', label: 'Safety', icon: '🛡️' },
-        { id: 'legal', label: 'Legal', icon: '⚖️' },
-        { id: 'health', label: 'Health', icon: '🏥' },
-        { id: 'helplines', label: 'Helplines', icon: '📞' },
-      ]
-    },
-    { id: 'saved', label: 'Saved', icon: '⭐' },
-    { id: 'recent', label: 'Recently Viewed', icon: '⏱️' },
-    { id: 'quiz', label: 'Quiz and Assessment', icon: '🧠' },
-    { id: 'submit', label: 'Add Resources', icon: '➕' },
-    { id: 'events', label: 'Webinars & Events', icon: '🗓️' },
-    { id: 'external', label: 'External Resources', icon: '🌐'},
+  const topLink = { id: "all", label: "All Resources", icon: "🗂" };
+
+  const categoryLinks = [
+    { id: "health", label: "Health & Wellness", icon: "♡" },
+    { id: "safety", label: "Safety", icon: "🛡" },
+    { id: "career", label: "Career & Education", icon: "💼" },
+    { id: "legal", label: "Legal Rights", icon: "⚖" },
+    { id: "helplines", label: "Support Networks", icon: "👥" },
+    { id: "lifestyle", label: "Lifestyle & Inspiration", icon: "✨" },
+    { id: "finance", label: "Financial Literacy", icon: "$" },
+  ];
+
+  const quickLinks = [
+    { id: "saved", label: "Saved Resources", icon: "◷" },
+    { id: "recent", label: "Recently Viewed", icon: "◉" },
+    { id: "quiz", label: "Quizzes & Assessments", icon: "◧" },
+    { id: "events", label: "Webinars & Events", icon: "◌" },
+    { id: "external", label: "External Resources", icon: "↗" },
   ];
 
   return (
-    <aside className="user-sidebar resource-sidebar">
-      <div className="sidebar-header">
-        <div className="sidebar-title">
-          <h2>Resource Hub</h2>
-          <p>Find help and support</p>
+    <aside className="resource-left-sidebar">
+      <div className="resource-left-group resource-top-group">
+        <Link
+          to={`/resources#${topLink.id}`}
+          className={`resource-left-link resource-top-link ${activeSection === topLink.id ? "active" : ""}`}
+        >
+          <span className="resource-left-icon">{topLink.icon}</span>
+          <span>{topLink.label}</span>
+        </Link>
+      </div>
+
+      <div className="resource-left-group">
+        <div className="resource-left-title">CATEGORIES</div>
+        <div className="resource-left-links">
+          {categoryLinks.map((item) => (
+            <Link
+              key={item.id}
+              to={`/resources#${item.id}`}
+              className={`resource-left-link ${activeSection === item.id ? "active" : ""}`}
+            >
+              <span className="resource-left-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          ))}
         </div>
       </div>
 
-      <nav className="sidebar-nav">
-        {resourceSections.map(section => (
-          <div key={section.id}>
+      <div className="resource-left-group">
+        <div className="resource-left-title">QUICK LINKS</div>
+        <div className="resource-left-links">
+          {quickLinks.map((item) => (
             <Link
-              to={`/resources#${section.id}`}
-              className={`nav-item ${activeSection === section.id ? 'active' : ''}`}
+              key={item.id}
+              to={`/resources#${item.id}`}
+              className={`resource-left-link ${activeSection === item.id ? "active" : ""}`}
             >
-              <span className="nav-icon">{section.icon}</span>
-              <div className="nav-content">
-                <span className="nav-text">{section.label}</span>
-                <span className="nav-description">{section.description}</span>
-              </div>
+              <span className="resource-left-icon">{item.icon}</span>
+              <span>{item.label}</span>
             </Link>
+          ))}
+        </div>
+      </div>
 
-            {/* Render sub-items if they exist */}
-            {section.subItems && activeSection.startsWith(section.id) && (
-              <div className="sidebar-submenu">
-                {section.subItems.map(subItem => (
-                  <Link
-                    key={subItem.id}
-                    to={`/resources#${subItem.id}`}
-                    className={`nav-item submenu-item ${activeSection === subItem.id ? 'active' : ''}`}
-                  >
-                    <span className="nav-icon">{subItem.icon}</span>
-                    <div className="nav-content">
-                      <span className="nav-text">{subItem.label}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </nav>
-
-      <div className="sidebar-footer">
-        <Link to="/dashboard" className="back-to-dashboard">
-          <span className="nav-icon">⬅️</span>
-          <span className="nav-text">Back to Dashboard</span>
+      <div className="resource-left-actions">
+        <Link to="/resources#submit" className="resource-action-btn">
+          + Add Resource
+        </Link>
+        <Link to="/dashboard" className="resource-back-btn">
+          ⌫ Back to Dashboard
         </Link>
       </div>
     </aside>

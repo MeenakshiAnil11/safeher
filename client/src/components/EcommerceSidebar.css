@@ -1,0 +1,66 @@
+.ecom-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 100vh;
+  overflow-y: auto;
+  background: #f2f3f7;
+  border-right: 1px solid #dfe3ed;
+  padding: 14px 12px;
+  z-index: 50;
+  font-family: Inter, Lato, Nunito, sans-serif;
+}
+
+.ecom-sidebar-brand {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 14px;
+  padding: 4px 8px;
+}
+
+.ecom-sidebar-nav {
+  display: grid;
+  gap: 6px;
+}
+
+.ecom-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #1f2937;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ecom-sidebar-link:hover {
+  background: #e8ebf4;
+}
+
+.ecom-sidebar-link.active {
+  background: #9b7cbe;
+  color: #fff;
+}
+
+.ecom-main-with-sidebar {
+  margin-left: 240px;
+  min-height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .ecom-sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #dfe3ed;
+  }
+
+  .ecom-main-with-sidebar {
+    margin-left: 0;
+  }
+}

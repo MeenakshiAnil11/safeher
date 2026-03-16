@@ -13,6 +13,13 @@ export default function Reminders() {
     phone: "",
   });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [statusMessage, setStatusMessage] = useState("");
+  const motivationalMessages = [
+    "Small consistent habits create big wellness wins.",
+    "Your future self will thank you for today’s reminder.",
+    "Hydrate, move gently, and listen to your body today.",
+  ];
 
   useEffect(() => {
     // Load current settings
@@ -38,6 +45,45 @@ export default function Reminders() {
   };
 
   const handleSave = async () => {
+    const nextErrors = {};
+    setStatusMessage("");
+
+    if (settings.enablePeriodReminder) {
+      const daysBeforePeriod = Number(settings.reminderDaysBeforePeriod);
+      if (Number.isNaN(daysBeforePeriod) || daysBeforePeriod < 0 || daysBeforePeriod > 7) {
+        nextErrors.reminderDaysBeforePeriod = "Enter a value from 0 to 7 days.";
+      }
+    }
+
+    if (settings.enableOvulationReminder) {
+      const daysBeforeOvulation = Number(settings.reminderDaysBeforeOvulation);
+      if (Number.isNaN(daysBeforeOvulation) || daysBeforeOvulation < 0 || daysBeforeOvulation > 5) {
+        nextErrors.reminderDaysBeforeOvulation = "Enter a value from 0 to 5 days.";
+      }
+    }
+
+    if (settings.enableExerciseReminder) {
+      if (!settings.exerciseReminderTime) {
+        nextErrors.exerciseReminderTime = "Select a reminder time.";
+      }
+      if (!settings.exerciseReminderDays.length) {
+        nextErrors.exerciseReminderDays = "Choose at least one reminder day.";
+      }
+    }
+
+    if (settings.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(settings.email)) {
+      nextErrors.email = "Enter a valid email address.";
+    }
+
+    if (settings.phone && !/^\+?[0-9]{8,15}$/.test(settings.phone)) {
+      nextErrors.phone = "Enter a valid phone number (8-15 digits).";
+    }
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
+
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
@@ -63,12 +109,17 @@ export default function Reminders() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Error");
-      alert("Reminders updated successfully!");
+      setStatusMessage("Reminders updated successfully.");
     } catch (err) {
-      alert("Failed to save: " + err.message);
+      setStatusMessage("Failed to save: " + err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTestMotivation = () => {
+    const message = motivationalMessages[new Date().getSeconds() % motivationalMessages.length];
+    setStatusMessage(`Motivation: ${message}`);
   };
 
   return (
@@ -76,6 +127,11 @@ export default function Reminders() {
       <p>Customize your reminders for periods, ovulation, and other cycle events.</p>
 
       <div className="pt-form">
+        {statusMessage ? (
+          <p className={`form-feedback ${statusMessage.startsWith("Failed") ? "error" : "success"}`}>
+            {statusMessage}
+          </p>
+        ) : null}
         <div>
           <label>
             <input
@@ -96,6 +152,7 @@ export default function Reminders() {
             onChange={(e) => handleChange("reminderDaysBeforePeriod", e.target.value)}
             disabled={!settings.enablePeriodReminder}
           />
+          {errors.reminderDaysBeforePeriod ? <p className="form-error">{errors.reminderDaysBeforePeriod}</p> : null}
         </div>
 
         <div>
@@ -118,6 +175,7 @@ export default function Reminders() {
             onChange={(e) => handleChange("reminderDaysBeforeOvulation", e.target.value)}
             disabled={!settings.enableOvulationReminder}
           />
+          {errors.reminderDaysBeforeOvulation ? <p className="form-error">{errors.reminderDaysBeforeOvulation}</p> : null}
         </div>
 
         <div>
@@ -138,6 +196,7 @@ export default function Reminders() {
             onChange={(e) => handleChange("exerciseReminderTime", e.target.value)}
             disabled={!settings.enableExerciseReminder}
           />
+          {errors.exerciseReminderTime ? <p className="form-error">{errors.exerciseReminderTime}</p> : null}
         </div>
         <div>
           <label>Exercise reminder days:</label>
@@ -159,6 +218,7 @@ export default function Reminders() {
               </label>
             ))}
           </div>
+          {errors.exerciseReminderDays ? <p className="form-error">{errors.exerciseReminderDays}</p> : null}
         </div>
 
         <div>
@@ -169,6 +229,7 @@ export default function Reminders() {
             value={settings.email}
             onChange={(e) => handleChange("email", e.target.value)}
           />
+          {errors.email ? <p className="form-error">{errors.email}</p> : null}
         </div>
 
         <div>
@@ -179,11 +240,28 @@ export default function Reminders() {
             value={settings.phone}
             onChange={(e) => handleChange("phone", e.target.value)}
           />
+          {errors.phone ? <p className="form-error">{errors.phone}</p> : null}
         </div>
 
         <button onClick={handleSave} disabled={loading}>
           {loading ? "Saving..." : "Save Settings"}
         </button>
+        <button type="button" onClick={handleTestMotivation} disabled={loading}>
+          Test Motivation
+        </button>
+
+        <div className="smart-reminder-preview">
+          <strong>Smart Schedule Preview</strong>
+          <p>
+            Exercise reminders are set for {settings.exerciseReminderDays.length || 0} day(s) at{" "}
+            {settings.exerciseReminderTime || "--:--"}.
+          </p>
+          <p className="hi-muted">
+            {settings.enableExerciseReminder
+              ? "You will receive encouragement before your scheduled workout window."
+              : "Enable exercise reminders to receive motivational nudges."}
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+  <rect width="800" height="800" fill="#ecfdf5"/>
+  <circle cx="400" cy="300" r="150" fill="#10b981" opacity="0.2"/>
+  <text x="400" y="325" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" fill="#065f46">Calcium + D3</text>
+  <text x="400" y="380" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#047857">Bone Wellness</text>
+</svg>

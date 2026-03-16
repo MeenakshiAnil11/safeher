@@ -4,11 +4,18 @@ import UserHeader from "../components/UserHeader";
 import UserSidebar from "../components/UserSidebar";
 import Footer from "../components/Footer";
 import api from "../services/api";
+import { messaging } from "../firebase";
+import { getToken, onMessage } from "firebase/messaging";
+import "./MyContacts.css";
 
-export default function MyContacts() {
+export default function MyContacts({ embedded = false }) {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [fcmToken, setFcmToken] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const emptyForm = { id: null, name: "", relationship: "", number: "", email: "" };
   const [form, setForm] = useState(emptyForm);
@@ -23,6 +30,46 @@ export default function MyContacts() {
       .finally(() => setLoading(false));
   };
 
+  // Request FCM token and permission
+  const requestNotificationPermission = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const token = await getToken(messaging, {
+          vapidKey: 'BEl62iUYgUivxIkv69yViEuiBIa-IHI9Hf1Aq7zUbhdnryT99PUbMIXv6Q2yZmy3TdhVjj6dSX4M5X8iN0jd2uM'
+        });
+        
+        if (token) {
+          setFcmToken(token);
+          console.log('FCM Token:', token);
+          return token;
+        }
+      } else {
+        alert('❌ Notification permission denied. You won\'t receive SOS alerts.');
+      }
+    } catch (error) {
+      console.error('FCM error:', error);
+      alert('Failed to enable notifications');
+    }
+    return null;
+  };
+
+  // Listen for FCM messages
+  useEffect(() => {
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log('Message received:', payload);
+      // Show notification
+      if (payload.notification) {
+        new Notification(payload.notification.title, {
+          body: payload.notification.body,
+          icon: '/logo192.png'
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     load();
   }, []);
@@ -35,11 +82,11 @@ export default function MyContacts() {
     try {
       if (isEdit) {
         const { id, name, relationship, number, email } = form;
-        const res = await api.put(`/contacts/${id}`, { name, relationship, number, email });
+        const res = await api.put(`/contacts/${id}`, { name, relationship, number, email, fcmToken });
         setContacts((prev) => prev.map((c) => (c._id === id ? res.data.contact : c)));
       } else {
         const { name, relationship, number, email } = form;
-        const res = await api.post(`/contacts`, { name, relationship, number, email });
+        const res = await api.post(`/contacts`, { name, relationship, number, email, fcmToken });
         setContacts((prev) => [res.data.contact, ...prev]);
       }
       setForm(emptyForm);
@@ -60,96 +107,149 @@ export default function MyContacts() {
     setShowForm(true);
   };
 
-  const onDelete = async (id) => {
-    if (!window.confirm("Delete this contact?")) return;
+  const onDeleteClick = (contact) => {
+    setContactToDelete(contact);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!contactToDelete) return;
+    
     try {
-      await api.delete(`/contacts/${id}`);
-      setContacts((prev) => prev.filter((c) => c._id !== id));
-    } catch {
-      setError("Delete failed");
+      await api.delete(`/contacts/${contactToDelete._id}`);
+      setContacts((prev) => prev.filter((c) => c._id !== contactToDelete._id));
+      setSuccessMessage(`✅ Contact "${contactToDelete.name}" deleted successfully!`);
+      setShowDeleteDialog(false);
+      setContactToDelete(null);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete contact");
+      setShowDeleteDialog(false);
+      setContactToDelete(null);
     }
   };
 
+  const cancelDelete = () => {
+    setShowDeleteDialog(false);
+    setContactToDelete(null);
+  };
+
+  const contactsContent = (
+    <main className={`contacts-main ${embedded ? "embedded" : ""}`}>
+      <h1 className="contacts-title">My Emergency Contacts</h1>
+      <p className="contacts-subtitle">Add trusted people we can notify during SOS.</p>
+
+      {error && <div className="contacts-alert error">{error}</div>}
+      {successMessage && <div className="contacts-alert success">✅ {successMessage}</div>}
+
+      <div className="contacts-toolbar">
+        <button className="btn primary" onClick={() => { setForm(emptyForm); setShowForm(true); }}>
+          + Add New Contact
+        </button>
+        <button className="btn secondary" onClick={requestNotificationPermission}>
+          🔔 Enable Notifications
+        </button>
+      </div>
+
+      {fcmToken && (
+        <div className="contacts-alert success">
+          ✅ Notifications enabled! You will receive SOS alerts.
+        </div>
+      )}
+
+      {showForm && (
+        <form onSubmit={onSubmit} className="contacts-form-card">
+          <div className="contacts-form-grid">
+            <div>
+              <label>Name</label>
+              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div>
+              <label>Relation</label>
+              <input value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} />
+            </div>
+            <div>
+              <label>Phone</label>
+              <input required value={form.number} onChange={(e) => setForm({ ...form, number: e.target.value })} />
+            </div>
+            <div>
+              <label>Email (optional)</label>
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </div>
+          </div>
+          <div className="contacts-form-actions">
+            <button className="btn primary" type="submit">{isEdit ? "Save Changes" : "Add Contact"}</button>
+            <button className="btn ghost" type="button" onClick={() => { setShowForm(false); setForm(emptyForm); }}>Cancel</button>
+          </div>
+        </form>
+      )}
+
+      {loading ? (
+        <p className="contacts-empty">Loading...</p>
+      ) : contacts.length === 0 ? (
+        <p className="contacts-empty">No contacts yet. Click "Add New Contact" to get started.</p>
+      ) : (
+        <div className="contacts-table-wrap">
+          <table className="contacts-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Relation</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contacts.map((c) => (
+                <tr key={c._id}>
+                  <td data-label="Name">{c.name}</td>
+                  <td data-label="Relation">{c.relationship || "-"}</td>
+                  <td data-label="Phone">{c.number}</td>
+                  <td data-label="Email">{c.email || "-"}</td>
+                  <td data-label="Actions">
+                    <div className="contacts-actions">
+                      <button className="btn small action-edit" onClick={() => onEdit(c)}>✏️ Edit</button>
+                      <button className="btn ghost small action-delete" onClick={() => onDeleteClick(c)}>🗑️ Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showDeleteDialog && (
+        <div className="dialog-overlay" onClick={cancelDelete}>
+          <div className="contacts-delete-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="contacts-delete-icon">⚠️</div>
+            <h3>Delete Contact?</h3>
+            <p>
+              Are you sure you want to delete <strong>"{contactToDelete?.name}"</strong>? This action cannot be undone.
+            </p>
+            <div className="contacts-delete-actions">
+              <button className="btn" onClick={cancelDelete}>Cancel</button>
+              <button className="btn action-delete" onClick={confirmDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+
+  if (embedded) return <section className="contacts-embedded-page">{contactsContent}</section>;
+
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container contacts-page-shell">
       <UserHeader />
       <div className="dashboard-body">
         <UserSidebar />
-        <main className="dashboard-main">
-          <h1 className="dashboard-title">My Emergency Contacts</h1>
-          <p className="dashboard-subtitle">Add trusted people we can notify during SOS.</p>
-
-          {error && (
-            <div style={{ background: "#ffe2e2", color: "#a10000", padding: 10, borderRadius: 6, marginBottom: 16 }}>
-              {error}
-            </div>
-          )}
-
-          <div style={{ marginBottom: 16 }}>
-            <button className="btn primary" onClick={() => { setForm(emptyForm); setShowForm(true); }}>
-              + Add New Contact
-            </button>
-          </div>
-
-          {showForm && (
-            <form onSubmit={onSubmit} style={{ background: "#fff", padding: 16, borderRadius: 8, marginBottom: 24, boxShadow: "0 2px 6px rgba(0,0,0,0.06)" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div>
-                  <label>Name</label>
-                  <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-                </div>
-                <div>
-                  <label>Relation</label>
-                  <input value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} />
-                </div>
-                <div>
-                  <label>Phone</label>
-                  <input required value={form.number} onChange={(e) => setForm({ ...form, number: e.target.value })} />
-                </div>
-                <div>
-                  <label>Email (optional)</label>
-                  <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                </div>
-              </div>
-              <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-                <button className="btn primary" type="submit">{isEdit ? "Save Changes" : "Add Contact"}</button>
-                <button className="btn ghost" type="button" onClick={() => { setShowForm(false); setForm(emptyForm); }}>Cancel</button>
-              </div>
-            </form>
-          )}
-
-          {loading ? (
-            <p>Loading...</p>
-          ) : contacts.length === 0 ? (
-            <p>No contacts yet. Click "Add New Contact" to get started.</p>
-          ) : (
-            <table style={{ width: "100%", background: "#fff", borderRadius: 8, boxShadow: "0 2px 6px rgba(0,0,0,0.06)", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ textAlign: "left", background: "#f7f7f7" }}>
-                  <th style={{ padding: 12 }}>Name</th>
-                  <th style={{ padding: 12 }}>Relation</th>
-                  <th style={{ padding: 12 }}>Phone</th>
-                  <th style={{ padding: 12 }}>Email</th>
-                  <th style={{ padding: 12 }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contacts.map((c) => (
-                  <tr key={c._id}>
-                    <td style={{ padding: 12 }}>{c.name}</td>
-                    <td style={{ padding: 12 }}>{c.relationship || "-"}</td>
-                    <td style={{ padding: 12 }}>{c.number}</td>
-                    <td style={{ padding: 12 }}>{c.email || "-"}</td>
-                    <td style={{ padding: 12 }}>
-                      <button className="btn small" onClick={() => onEdit(c)}>Edit</button>
-                      <button className="btn ghost small" onClick={() => onDelete(c._id)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </main>
+        {contactsContent}
       </div>
       <Footer />
     </div>

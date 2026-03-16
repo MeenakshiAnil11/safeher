@@ -1,0 +1,56 @@
+@startuml SafeHer Deployment Diagram
+
+skinparam node {
+  BackgroundColor #E8F4F8
+  BorderColor #2C5F7D
+  FontSize 12
+}
+
+' ============================================
+' Simple Deployment Diagram
+' ============================================
+@startuml Deployment
+
+title SafeHer Deployment Architecture
+
+node "Client" {
+  component [Web Browser] as Browser
+}
+
+cloud "Frontend" {
+  component [React App] as React
+}
+
+node "Backend Server" {
+  component [Node.js/Express] as Express
+  component [Port 5000] as Port
+}
+
+node "ML Server" {
+  component [Python/Flask] as Flask
+  component [Ports 5002-5006] as MLPorts
+}
+
+cloud "Database" {
+  database "MongoDB Atlas" as MongoDB
+}
+
+cloud "External Services" {
+  component [Firebase] as Firebase
+  component [Email Service] as Email
+  component [Google Maps] as Maps
+}
+
+Browser --> React : HTTPS
+React --> Express : API calls
+Express --> Port : listens on
+Express --> Flask : ML requests
+Flask --> MLPorts : listens on
+Express --> MongoDB : queries
+Express --> Firebase : OAuth
+Express --> Email : notifications
+React --> Maps : location API
+
+@enduml
+
+@enduml

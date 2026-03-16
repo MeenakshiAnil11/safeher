@@ -1,0 +1,360 @@
+@startuml SafeHer Component Diagrams
+
+skinparam component {
+  BackgroundColor #E8F4F8
+  BorderColor #2C5F7D
+  FontSize 11
+}
+skinparam interface {
+  BackgroundColor #FFF3CD
+  BorderColor #FF8C00
+}
+
+' ============================================
+' Component Diagram 1: Overall System Architecture
+' ============================================
+@startuml System_Architecture
+
+title SafeHer System Component Architecture
+
+package "Frontend Layer" {
+  component [React Application] as ReactApp
+  component [User Interface] as UI
+  component [Admin Interface] as AdminUI
+}
+
+package "Backend Layer" {
+  component [Express Server] as Express
+  component [Authentication Service] as AuthService
+  component [API Controllers] as Controllers
+  component [Business Logic] as BusinessLogic
+}
+
+package "ML Services Layer" {
+  component [Flask ML API] as FlaskAPI
+  component [Health Risk Service] as HealthRiskML
+  component [Mood Prediction Service] as MoodML
+  component [Symptom Classification Service] as SymptomML
+  component [Exercise Recommendation Service] as ExerciseML
+}
+
+package "Data Layer" {
+  database "MongoDB Atlas" as MongoDB
+  component [Mongoose ODM] as Mongoose
+}
+
+package "External Services" {
+  component [Firebase Auth] as Firebase
+  component [Email Service] as EmailService
+  component [Google Maps API] as GoogleMaps
+  component [Razorpay Payment] as Razorpay
+}
+
+ReactApp --> Express : HTTP/REST API
+UI --> ReactApp : uses
+AdminUI --> ReactApp : uses
+
+Express --> AuthService : uses
+Express --> Controllers : routes to
+Controllers --> BusinessLogic : uses
+BusinessLogic --> Mongoose : uses
+Mongoose --> MongoDB : queries
+
+Controllers --> FlaskAPI : HTTP requests
+FlaskAPI --> HealthRiskML : uses
+FlaskAPI --> MoodML : uses
+FlaskAPI --> SymptomML : uses
+FlaskAPI --> ExerciseML : uses
+
+AuthService --> Firebase : OAuth
+BusinessLogic --> EmailService : sends emails
+ReactApp --> GoogleMaps : location services
+ReactApp --> Razorpay : payment processing
+
+@enduml
+
+' ============================================
+' Component Diagram 2: Frontend Components
+' ============================================
+@startuml Frontend_Components
+
+title Frontend Component Structure
+
+package "React Application" {
+  component [App Router] as Router
+  component [Authentication] as Auth
+  component [Dashboard] as Dashboard
+  component [Period Tracker] as PeriodTracker
+  component [Health Tracker] as HealthTracker
+  component [AI Health Assistant] as AIAssistant
+  component [SOS Module] as SOS
+  component [Resources] as Resources
+  component [Admin Panel] as AdminPanel
+}
+
+package "Shared Components" {
+  component [UserHeader] as Header
+  component [Sidebar] as Sidebar
+  component [ProtectedRoute] as ProtectedRoute
+  component [API Service] as APIService
+}
+
+package "State Management" {
+  component [Context API] as Context
+  component [Local Storage] as LocalStorage
+}
+
+Router --> Auth : manages
+Router --> Dashboard : routes to
+Router --> PeriodTracker : routes to
+Router --> HealthTracker : routes to
+Router --> AIAssistant : routes to
+Router --> SOS : routes to
+Router --> Resources : routes to
+Router --> AdminPanel : routes to
+
+Dashboard --> Header : uses
+Dashboard --> Sidebar : uses
+PeriodTracker --> APIService : uses
+HealthTracker --> APIService : uses
+AIAssistant --> APIService : uses
+SOS --> APIService : uses
+
+APIService --> Context : stores state
+APIService --> LocalStorage : persists data
+ProtectedRoute --> Auth : validates
+
+@enduml
+
+' ============================================
+' Component Diagram 3: Backend Components
+' ============================================
+@startuml Backend_Components
+
+title Backend Component Structure
+
+package "Express Server" {
+  component [Server] as Server
+  component [Middleware] as Middleware
+  component [Routes] as Routes
+}
+
+package "Controllers" {
+  component [AuthController] as AuthCtrl
+  component [PeriodController] as PeriodCtrl
+  component [HealthController] as HealthCtrl
+  component [SOSController] as SOSCtrl
+  component [MLController] as MLCtrl
+  component [AdminController] as AdminCtrl
+}
+
+package "Services" {
+  component [UserService] as UserService
+  component [PeriodService] as PeriodService
+  component [HealthService] as HealthService
+  component [SOSService] as SOSService
+  component [MLService] as MLService
+}
+
+package "Models" {
+  component [User Model] as UserModel
+  component [Period Model] as PeriodModel
+  component [Vital Model] as VitalModel
+  component [Symptom Model] as SymptomModel
+  component [SOS Model] as SOSModel
+}
+
+package "External" {
+  component [Email Service] as Email
+  component [Firebase Admin] as Firebase
+}
+
+Server --> Middleware : uses
+Server --> Routes : defines
+Routes --> AuthCtrl : routes to
+Routes --> PeriodCtrl : routes to
+Routes --> HealthCtrl : routes to
+Routes --> SOSCtrl : routes to
+Routes --> MLCtrl : routes to
+Routes --> AdminCtrl : routes to
+
+AuthCtrl --> UserService : uses
+PeriodCtrl --> PeriodService : uses
+HealthCtrl --> HealthService : uses
+SOSCtrl --> SOSService : uses
+MLCtrl --> MLService : uses
+
+UserService --> UserModel : queries
+PeriodService --> PeriodModel : queries
+HealthService --> VitalModel : queries
+HealthService --> SymptomModel : queries
+SOSService --> SOSModel : queries
+
+SOSService --> Email : sends alerts
+AuthCtrl --> Firebase : verifies tokens
+
+@enduml
+
+' ============================================
+' Component Diagram 4: ML Services Components
+' ============================================
+@startuml ML_Services_Components
+
+title ML Services Component Structure
+
+package "Flask ML APIs" {
+  component [Flask Server] as FlaskServer
+  component [API Router] as APIRouter
+}
+
+package "ML Models" {
+  component [KNN Health Risk] as KNNHealth
+  component [SVM Mood Prediction] as SVMMood
+  component [Bayesian Symptom] as BayesianSymptom
+  component [KNN Exercise] as KNNExercise
+  component [Decision Tree Pregnancy] as DTPregnancy
+}
+
+package "Preprocessing" {
+  component [StandardScaler] as Scaler
+  component [LabelEncoder] as Encoder
+  component [FeatureExtractor] as FeatureExtract
+}
+
+package "Model Storage" {
+  component [Model Files] as ModelFiles
+  component [Joblib Loader] as Joblib
+}
+
+FlaskServer --> APIRouter : routes
+APIRouter --> KNNHealth : /health-risk/predict
+APIRouter --> SVMMood : /mood/prediction
+APIRouter --> BayesianSymptom : /symptom-classification
+APIRouter --> KNNExercise : /exercise/recommend
+APIRouter --> DTPregnancy : /pregnancy-health/predict
+
+KNNHealth --> Scaler : uses
+KNNHealth --> FeatureExtract : uses
+SVMMood --> Scaler : uses
+BayesianSymptom --> Scaler : uses
+KNNExercise --> Scaler : uses
+KNNExercise --> Encoder : uses
+DTPregnancy --> FeatureExtract : uses
+
+KNNHealth --> Joblib : loads model
+SVMMood --> Joblib : loads model
+BayesianSymptom --> Joblib : loads model
+KNNExercise --> Joblib : loads model
+DTPregnancy --> Joblib : loads model
+
+Joblib --> ModelFiles : reads from
+
+@enduml
+
+' ============================================
+' Component Diagram 5: Data Flow Components
+' ============================================
+@startuml Data_Flow_Components
+
+title Data Flow Component Diagram
+
+package "Client Side" {
+  component [Browser] as Browser
+  component [React App] as React
+  component [Local Storage] as LocalStorage
+}
+
+package "API Gateway" {
+  component [Express Server] as Express
+  component [CORS Middleware] as CORS
+  component [Auth Middleware] as AuthMW
+}
+
+package "Application Layer" {
+  component [Controllers] as Controllers
+  component [Services] as Services
+  component [Validators] as Validators
+}
+
+package "Data Access" {
+  component [Mongoose] as Mongoose
+  component [MongoDB Driver] as Driver
+}
+
+package "Storage" {
+  database "MongoDB Atlas" as MongoDB
+  component [File Storage] as FileStorage
+}
+
+Browser --> React : renders
+React --> LocalStorage : stores token
+React --> Express : HTTP requests
+Express --> CORS : handles CORS
+Express --> AuthMW : validates JWT
+Express --> Controllers : routes
+Controllers --> Validators : validates
+Controllers --> Services : business logic
+Services --> Mongoose : data access
+Mongoose --> Driver : uses
+Driver --> MongoDB : queries
+Services --> FileStorage : uploads files
+
+@enduml
+
+' ============================================
+' Component Diagram 6: Deployment Components
+' ============================================
+@startuml Deployment_Components
+
+title Deployment Component Architecture
+
+node "Client Server" {
+  component [React Build] as ReactBuild
+  component [Static Files] as StaticFiles
+  component [CDN] as CDN
+}
+
+node "Application Server" {
+  component [Node.js Runtime] as NodeJS
+  component [Express App] as ExpressApp
+  component [PM2 Process Manager] as PM2
+}
+
+node "ML Services Server" {
+  component [Python Runtime] as Python
+  component [Flask Apps] as FlaskApps
+  component [Gunicorn] as Gunicorn
+}
+
+cloud "Database" {
+  database "MongoDB Atlas" as MongoDB
+}
+
+cloud "External Services" {
+  component [Firebase] as Firebase
+  component [Email Service] as Email
+  component [Google Maps] as Maps
+  component [Razorpay] as Payment
+}
+
+ReactBuild --> StaticFiles : generates
+StaticFiles --> CDN : serves
+CDN --> Client : delivers
+
+NodeJS --> ExpressApp : runs
+ExpressApp --> PM2 : managed by
+ExpressApp --> MongoDB : connects to
+ExpressApp --> FlaskApps : calls
+ExpressApp --> Firebase : uses
+ExpressApp --> Email : uses
+ExpressApp --> Maps : uses
+ExpressApp --> Payment : uses
+
+Python --> FlaskApps : runs
+FlaskApps --> Gunicorn : managed by
+FlaskApps --> MongoDB : reads models
+
+@enduml
+
+@enduml
+

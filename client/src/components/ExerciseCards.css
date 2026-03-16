@@ -1,0 +1,358 @@
+.exercise-cards-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 500px;
+  padding: 20px;
+}
+
+.exercise-card {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 1000px;
+  width: 100%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  display: grid;
+  grid-template-columns: 200px 1fr 260px;
+  grid-template-rows: auto 1fr auto;
+  gap: 28px;
+  align-items: start;
+  min-height: 500px;
+}
+
+/* Left Section - Title and Tags */
+.exercise-card-header {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.exercise-card-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #6b21a8;
+  margin: 0;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.exercise-card-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.tag {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.tag-phase {
+  background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
+  color: #6b21a8;
+}
+
+.tag-intensity {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+}
+
+/* Center Section - Step-by-Step Instructions */
+.exercise-card-instructions {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  padding: 0;
+  position: relative;
+  padding-left: 24px;
+}
+
+.exercise-card-instructions::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #a855f7 0%, #6366f1 100%);
+  border-radius: 2px;
+}
+
+.instructions-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  position: relative;
+  padding-left: 6px;
+}
+
+.instructions-header::before {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: #3b82f6;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px #a855f7;
+  z-index: 2;
+}
+
+.instructions-icon {
+  color: #a855f7;
+  font-size: 18px;
+}
+
+.instructions-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.instructions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.instruction-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 0;
+  background: transparent;
+}
+
+.instruction-number {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.3);
+}
+
+.instruction-text {
+  flex: 1;
+  color: #374151;
+  font-size: 15px;
+  line-height: 1.5;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+/* Right Section - Information Boxes */
+.exercise-card-info {
+  grid-column: 3;
+  grid-row: 1 / 2;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  align-content: start;
+}
+
+.info-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 16px 10px;
+  background: white;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  min-height: 110px;
+  justify-content: center;
+}
+
+.info-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.info-label {
+  font-size: 9px;
+  color: #6b7280;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.info-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* Navigation */
+.exercise-card-navigation {
+  grid-column: 3;
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding-top: 20px;
+  margin-top: auto;
+}
+
+.nav-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  background: white;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.nav-button:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+  transform: scale(1.1);
+}
+
+.nav-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.card-counter {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  min-width: 50px;
+  text-align: center;
+}
+
+.exercise-cards-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .exercise-card {
+    grid-template-columns: 200px 1fr 260px;
+    gap: 32px;
+    padding: 32px;
+  }
+
+  .exercise-card-title {
+    font-size: 28px;
+  }
+
+  .info-box {
+    min-height: 110px;
+    padding: 16px 10px;
+  }
+
+  .info-icon {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .exercise-card {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: 24px;
+    padding: 24px;
+  }
+
+  .exercise-card-header {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .exercise-card-instructions {
+    grid-column: 1;
+    grid-row: 2;
+    padding-left: 24px;
+  }
+
+  .exercise-card-info {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .exercise-card-navigation {
+    grid-column: 1;
+    grid-row: 4;
+    justify-content: center;
+  }
+
+  .exercise-card-title {
+    font-size: 24px;
+  }
+
+  .exercise-card-tags {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    width: auto;
+  }
+
+  .exercise-card-info {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .instructions-list {
+    gap: 14px;
+  }
+
+  .instruction-item {
+    gap: 14px;
+  }
+
+  .instruction-text {
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+}

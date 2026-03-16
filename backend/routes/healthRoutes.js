@@ -9,8 +9,13 @@ import {
   listChatHistory, sendMessage,
   listExercises, createExercise, updateExercise, deleteExercise,
   listSleep, createSleep, updateSleep, deleteSleep,
-  listNutrition, createNutrition, updateNutrition, deleteNutrition
+  listNutrition, createNutrition, updateNutrition, deleteNutrition,
+  connectGoogleFit, disconnectGoogleFit, getSmartwatchData
 } from "../controllers/healthController.js";
+import {
+  listGoals, createGoal, updateGoal, deleteGoal,
+  getHealthRisk, getCorrelations, getAIInsights, getComprehensiveDashboard
+} from "../controllers/enhancedHealthController.js";
 
 const router = express.Router();
 
@@ -65,5 +70,21 @@ router.get("/nutrition", protect, listNutrition);
 router.post("/nutrition", protect, createNutrition);
 router.put("/nutrition/:id", protect, updateNutrition);
 router.delete("/nutrition/:id", protect, deleteNutrition);
+
+// Enhanced Health Features
+router.get("/goals", protect, listGoals);
+router.post("/goals", protect, createGoal);
+router.put("/goals/:id", protect, updateGoal);
+router.delete("/goals/:id", protect, deleteGoal);
+
+router.get("/risk-assessment", protect, getHealthRisk);
+router.get("/correlations", protect, getCorrelations);
+router.get("/ai-insights", protect, getAIInsights);
+router.get("/comprehensive-dashboard", protect, getComprehensiveDashboard);
+
+// Smartwatch / Google Fit sync
+router.post("/smartwatch/connect", protect, connectGoogleFit);
+router.post("/smartwatch/disconnect", protect, disconnectGoogleFit);
+router.get("/smartwatch-data", protect, getSmartwatchData);
 
 export default router;

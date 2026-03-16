@@ -1,0 +1,100 @@
+@startuml SafeHer Activity Diagram
+
+skinparam activity {
+  BackgroundColor #E8F4F8
+  BorderColor #2C5F7D
+  FontSize 12
+}
+
+' ============================================
+' User Login Activity
+' ============================================
+@startuml Login_Activity
+
+title User Login Flow
+
+start
+:Enter credentials;
+:Click Login;
+:Validate inputs;
+
+if (Valid?) then (no)
+  :Show error;
+  stop
+else (yes)
+  :Verify credentials;
+  if (Valid?) then (no)
+    :Show error;
+    stop
+  else (yes)
+    :Generate token;
+    :Redirect to Dashboard;
+    stop
+  endif
+endif
+
+@enduml
+
+' ============================================
+' Health Risk Prediction Activity
+' ============================================
+@startuml Health_Prediction_Activity
+
+title Health Risk Prediction Flow
+
+start
+:Enter health data;
+:Click Predict;
+:Send to ML service;
+:Process with ML model;
+:Get risk prediction;
+
+if (Risk level?) then (Low)
+  :Show Low Risk;
+elseif (Moderate) then
+  :Show Moderate Risk;
+else (High)
+  :Show High Risk;
+endif
+
+:Display recommendations;
+stop
+
+@enduml
+
+' ============================================
+' SOS Alert Activity
+' ============================================
+@startuml SOS_Activity
+
+title SOS Alert Flow
+
+start
+:Click SOS button;
+:Get location;
+:Get contacts;
+:Save SOS log;
+:Send alerts;
+:Show confirmation;
+stop
+
+@enduml
+
+' ============================================
+' Period Tracking Activity
+' ============================================
+@startuml Period_Tracking_Activity
+
+title Period Tracking Flow
+
+start
+:Enter period details;
+:Calculate duration;
+:Save to database;
+:Calculate predictions;
+:Update calendar;
+stop
+
+@enduml
+
+@enduml

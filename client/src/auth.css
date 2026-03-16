@@ -42,7 +42,7 @@
 
 /* Card */
 .auth-card {
-  width: min(980px, 100%);
+  width: min(700px, 100%);
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px;
@@ -56,7 +56,7 @@
 /* Left panel — now white and minimal */
 .auth-hero {
   position: relative;
-  padding: 44px;
+  padding: 36px;
   background: #ffffff;
   color: var(--text-main);
   border-right: 1px solid var(--border);
@@ -88,20 +88,20 @@
 }
 
 /* Right panel — form */
-.auth-body { 
-  background: var(--card-bg); 
-  padding: 44px 40px; 
-  display: flex; 
-  flex-direction: column; 
-  justify-content: center; 
+.auth-body {
+  background: var(--card-bg);
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   position: relative;
   z-index: 2;
 }
 .auth-form-title { color: var(--text-main); font-size: 26px; font-weight: 800; letter-spacing: 0.3px; margin: 0 0 14px; }
-.auth-tip { color: var(--text-muted); font-size: 14px; margin-bottom: 22px; }
+.auth-tip { color: var(--text-muted); font-size: 14px; margin-bottom: 16px; }
 
 /* Form */
-.form-group, .auth-form { display: grid; gap: 16px; }
+.form-group, .auth-form { display: grid; gap: 12px; }
 .input {
   width: 100%; 
   padding: 14px 18px; 
@@ -288,13 +288,13 @@
   font-weight: 500;
 }
 
-.note { 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
-  color: var(--text-muted); 
-  font-size: 13px; 
-  margin-top: 14px; 
+.note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-top: 12px;
   font-weight: 500;
 }
 

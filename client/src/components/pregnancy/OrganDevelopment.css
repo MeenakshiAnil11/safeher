@@ -1,0 +1,39 @@
+.organ-development-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.organ-development-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.organ-development-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.organ-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.organ-development-item strong {
+  display: block;
+  color: #111827;
+  font-size: 15px;
+}
+
+.organ-development-item p {
+  margin: 3px 0 0;
+  color: #4b5563;
+  font-size: 14px;
+}

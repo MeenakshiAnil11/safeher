@@ -34,20 +34,80 @@ export default function Login() {
     setError("");
     setSuccess("");
 
+    // Validate form before sending
+    if (!form.email || !form.password) {
+      setError("Please enter both email and password");
+      return;
+    }
+
+    if (!form.email.includes("@")) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
     try {
+      console.log("🔐 Attempting login with email:", form.email);
       const res = await api.post("/auth/login", {
-        email: form.email,
+        email: form.email.trim(),
         password: form.password,
       });
 
+      console.log("✅ Login successful:", res.data);
       persistAuth(res.data);
       const role = res.data?.user?.role || res.data?.role;
 
       setSuccess("✅ Login successful! Redirecting...");
-      const target = role === "admin" || role === "superadmin" ? "/admin/dashboard" : "/dashboard";
+      let target = "/dashboard";
+      if (role === "admin" || role === "superadmin") {
+        target = "/admin/dashboard";
+      } else if (role === "doctor") {
+        target = "/doctor/dashboard";
+      }
       setTimeout(() => navigate(target), 500);
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      console.error("❌ Login error:", err);
+      console.error("Error response:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+      console.error("Full error object:", err);
+      
+      // Extract error message - show the actual backend message
+      let errorMessage = "Login failed";
+      
+      if (err.response?.data) {
+        // Priority 1: Check for validation errors array
+        if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+          errorMessage = err.response.data.errors.map(e => e.msg || e.message || "Validation error").join(", ");
+        }
+        // Priority 2: Check for message field
+        else if (err.response.data.message) {
+          errorMessage = err.response.data.message;
+        }
+        // Priority 3: Check if data is a string
+        else if (typeof err.response.data === 'string') {
+          errorMessage = err.response.data;
+        }
+        // Priority 4: Check for hint field (from our improved error messages)
+        else if (err.response.data.hint) {
+          errorMessage = `${err.response.data.message || "Login failed"}. ${err.response.data.hint}`;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      // Check for specific error types
+      if (err.response?.status === 503) {
+        errorMessage = "Database connection error. Please check if the backend server is running and MongoDB is connected.";
+      } else if (err.response?.status === 400) {
+        // Keep the actual backend message, but add context if it's generic
+        if (errorMessage === "Invalid credentials" || errorMessage === "Invalid email or password") {
+          errorMessage = "Invalid email or password. Please check your credentials and try again.";
+        }
+      }
+      
+      // Log the final error message for debugging
+      console.error("📋 Final error message shown to user:", errorMessage);
+      
+      setError(errorMessage);
     }
   };
 
@@ -70,7 +130,12 @@ export default function Login() {
       const role = res.data?.user?.role || res.data?.role;
 
       setSuccess("✅ Google login successful! Redirecting...");
-      const target = role === "admin" || role === "superadmin" ? "/admin/dashboard" : "/dashboard";
+      let target = "/dashboard";
+      if (role === "admin" || role === "superadmin") {
+        target = "/admin/dashboard";
+      } else if (role === "doctor") {
+        target = "/doctor/dashboard";
+      }
       setTimeout(() => navigate(target), 500);
     } catch (err) {
       console.error("Google sign-in error:", err);

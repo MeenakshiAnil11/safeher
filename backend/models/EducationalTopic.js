@@ -46,6 +46,15 @@ const educationalTopicSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  // Paid/Free content fields
+  isPaid: {
+    type: Boolean,
+    default: false
+  },
+  fullContent: {
+    type: String,
+    default: ""
+  },
   // New fields for enhanced functionality
   isTip: {
     type: Boolean,

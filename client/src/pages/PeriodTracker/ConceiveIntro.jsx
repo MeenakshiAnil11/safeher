@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import UserHeader from "../../components/UserHeader";
 
 export default function ConceiveIntro() {
   const navigate = useNavigate();
@@ -23,7 +24,8 @@ export default function ConceiveIntro() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-8">
+      <UserHeader />
+      <div className="container mx-auto px-4 py-8" style={{ marginTop: '64px' }}>
         {/* Header */}
         <div className="text-center mb-12">
           <div className="text-6xl mb-6">🤰</div>

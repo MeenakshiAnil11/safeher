@@ -1,0 +1,215 @@
+.care-plan-page {
+  display: grid;
+  gap: 14px;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(236, 72, 153, 0.1), transparent 28%),
+    radial-gradient(circle at 92% 18%, rgba(139, 92, 246, 0.12), transparent 30%),
+    linear-gradient(180deg, #fff7fd 0%, #f8fbff 100%);
+  border-radius: 16px;
+  padding: 14px;
+  border: 1px solid #f3e8ff;
+}
+
+.care-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.care-plan-header h2 {
+  margin: 0;
+  font-size: 28px;
+  color: #111827;
+}
+
+.care-plan-header p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.care-plan-trimester-badge {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.care-plan-progress-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.care-plan-progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  color: #111827;
+  font-size: 14px;
+}
+
+.care-plan-progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #f3e8ff;
+  overflow: hidden;
+}
+
+.care-plan-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c084fc 0%, #8b5cf6 100%);
+}
+
+.care-plan-loading {
+  margin: 0;
+  color: #7c3aed;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.care-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.care-plan-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fcfaff 100%);
+  border: 1px solid #eadcff;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.08);
+}
+
+.care-plan-card h3 {
+  margin: 0 0 8px;
+  color: #4c1d95;
+  font-size: 16px;
+}
+
+.care-plan-card ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.care-plan-card li {
+  margin-bottom: 6px;
+  color: #374151;
+  font-size: 14px;
+}
+
+.care-plan-meta {
+  margin: 0 0 10px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.care-plan-checklist {
+  display: grid;
+  gap: 8px;
+}
+
+.care-plan-checklist label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #374151;
+  font-size: 14px;
+}
+
+.care-plan-score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.care-plan-score strong {
+  font-size: 22px;
+  color: #7c3aed;
+}
+
+.care-plan-score span {
+  background: #f3e8ff;
+  color: #6d28d9;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.care-plan-score-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+}
+
+.care-plan-score-grid p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.care-plan-wide {
+  grid-column: 1 / -1;
+}
+
+.care-plan-encouragement {
+  background: linear-gradient(120deg, #fdf4ff 0%, #eef2ff 100%);
+  border-color: #ddd6fe;
+}
+
+.care-plan-encouragement p {
+  margin: 0 0 8px;
+  color: #312e81;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.care-plan-encouragement small {
+  color: #6d28d9;
+  font-size: 12px;
+}
+
+.care-plan-alerts {
+  margin-top: 10px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 8px 10px;
+}
+
+.care-plan-alerts p {
+  margin: 0 0 6px;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.care-plan-alerts p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 1024px) {
+  .care-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .care-plan-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .care-plan-score-grid {
+    grid-template-columns: 1fr;
+  }
+}

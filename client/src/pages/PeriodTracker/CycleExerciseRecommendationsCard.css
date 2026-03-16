@@ -1,0 +1,45 @@
+.cycle-exercise-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fef7fb 100%);
+  border: 1px solid #f5d6e7;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.08);
+}
+
+.cycle-exercise-card h3 {
+  margin: 0 0 10px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.cycle-exercise-phase {
+  margin: 0;
+  font-size: 16px;
+  color: #374151;
+}
+
+.cycle-exercise-list-wrap {
+  margin-top: 14px;
+}
+
+.cycle-exercise-subtitle {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #4b5563;
+}
+
+.cycle-exercise-list-wrap ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: #1f2937;
+  font-size: 16px;
+}
+
+.cycle-exercise-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 14px;
+}

@@ -12,15 +12,6 @@ export default function CycleOverview() {
   const [selectedMoods, setSelectedMoods] = useState([]);
   const [progress, setProgress] = useState(0);
 
-  // Mock data for demonstration
-  const mockPhaseData = {
-    phase: "follicular",
-    daysSinceLastPeriod: 5,
-    avgCycleLength: 28,
-    note: "Your body is preparing for ovulation. Energy levels are rising!",
-    lastPeriodStart: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-  };
-
   useEffect(() => {
     fetchCurrentPhase();
   }, []);
@@ -41,8 +32,11 @@ export default function CycleOverview() {
 
   const fetchCurrentPhase = async () => {
     try {
-      // Use mock data for now
-      setPhaseData(mockPhaseData);
+      setLoading(true);
+      setError(null);
+
+      const response = await api.get("/periods/current-phase");
+      setPhaseData(response.data);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching phase:", err);

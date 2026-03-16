@@ -20,10 +20,12 @@ export default function ForgotPassword() {
 
     try {
       // This endpoint should exist in your backend
-      await api.post("/auth/forgot-password", { email });
-      setSuccess("✅ If an account exists, a reset link has been sent to your email.");
+      const response = await api.post("/auth/forgot-password", { email });
+      setSuccess(response.data?.message || "✅ If an account exists, a reset link has been sent to your email.");
     } catch (err) {
-      setError(err.response?.data?.message || "Unable to process request right now");
+      console.error("Forgot password error:", err);
+      const errorMessage = err.response?.data?.message || err.message || "Unable to process request right now";
+      setError(errorMessage);
     }
   };
 

@@ -22,6 +22,7 @@ export default function CalendarView() {
   const [periodDaysSet, setPeriodDaysSet] = useState(new Set());
   const [predictedDaysSet, setPredictedDaysSet] = useState(new Set());
   const [fertileDaysSet, setFertileDaysSet] = useState(new Set());
+  const [symptomDaysSet, setSymptomDaysSet] = useState(new Set());
   const [ovulationDay, setOvulationDay] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +43,14 @@ export default function CalendarView() {
           expandRange(c.startDate, c.endDate).forEach(d => days.add(d));
         });
         setPeriodDaysSet(days);
+
+        const symptomDays = new Set();
+        (hist.cycles || []).forEach((cycle) => {
+          if (Array.isArray(cycle.symptoms) && cycle.symptoms.length) {
+            symptomDays.add(ymd(cycle.startDate));
+          }
+        });
+        setSymptomDaysSet(symptomDays);
 
         // Extend predictions for the next 8 cycles (≈ 8 months)
         const avgCycleLength = pred.avgCycleLength || 28;
@@ -85,6 +94,7 @@ export default function CalendarView() {
     if (view !== "month") return null;
     const key = ymd(date);
     if (periodDaysSet.has(key)) return "pt-period-day";
+    if (symptomDaysSet.has(key)) return "pt-symptom-day";
     if (ovulationDay === key) return "pt-ovulation-day";
     if (fertileDaysSet.has(key)) return "pt-fertile-day";
     if (predictedDaysSet.has(key)) return "pt-predicted-day";
@@ -99,6 +109,7 @@ export default function CalendarView() {
       <Calendar tileClassName={tileClassName} />
       <div className="pt-legend">
         <span><i className="dot period"></i> Period day</span>
+        <span><i className="dot symptom"></i> Symptom logged</span>
         <span><i className="dot predicted"></i> Predicted day</span>
         <span><i className="dot fertile"></i> Fertile window</span>
         <span><i className="dot ovulation"></i> Ovulation</span>

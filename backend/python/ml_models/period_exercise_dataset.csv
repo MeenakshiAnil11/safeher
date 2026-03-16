@@ -1,0 +1,145 @@
+phase,energy_level,mood,cramps,sleep_hours,stress_level,recommended_exercise
+Menstruation,2,Sad,8,6,High,Rest
+Menstruation,3,Tired,7,7,High,Light Yoga
+Menstruation,4,Irritable,6,6,Medium,Stretching
+Menstruation,5,Calm,5,8,Low,Walking
+Menstruation,6,Happy,4,7,Low,Light Yoga
+Menstruation,7,Energetic,3,8,Low,Walking
+Follicular,6,Calm,2,7,Medium,Walking
+Follicular,7,Happy,1,8,Low,Strength Training
+Follicular,8,Energetic,1,8,Low,Cardio
+Follicular,9,Energetic,0,8,Low,Cardio
+Follicular,8,Happy,1,7,Low,Strength Training
+Follicular,7,Calm,2,7,Medium,Walking
+Follicular,8,Energetic,0,8,Low,Cardio
+Follicular,9,Energetic,0,8,Low,Cardio
+Follicular,8,Happy,1,7,Low,Strength Training
+Follicular,7,Calm,2,7,Medium,Walking
+Ovulation,9,Energetic,0,8,Low,Cardio
+Ovulation,10,Energetic,0,8,Low,Cardio
+Ovulation,9,Happy,0,8,Low,Strength Training
+Ovulation,8,Energetic,1,7,Low,Cardio
+Ovulation,9,Energetic,0,8,Low,Cardio
+Ovulation,10,Energetic,0,8,Low,Cardio
+Ovulation,9,Happy,0,8,Low,Strength Training
+Ovulation,8,Energetic,1,7,Low,Cardio
+Luteal,6,Calm,3,7,Medium,Walking
+Luteal,5,Tired,4,6,High,Light Yoga
+Luteal,4,Irritable,5,6,High,Meditation
+Luteal,5,Sad,4,7,High,Stretching
+Luteal,6,Calm,3,7,Medium,Walking
+Luteal,5,Tired,4,6,High,Light Yoga
+Luteal,4,Irritable,5,6,High,Meditation
+Luteal,5,Sad,4,7,High,Stretching
+Luteal,6,Calm,3,7,Medium,Walking
+Luteal,5,Tired,4,6,High,Light Yoga
+Luteal,4,Irritable,5,6,High,Meditation
+Luteal,5,Sad,4,7,High,Stretching
+Menstruation,2,Sad,9,5,High,Rest
+Menstruation,3,Tired,8,6,High,Rest
+Menstruation,4,Irritable,7,6,High,Light Yoga
+Menstruation,5,Calm,6,7,Medium,Stretching
+Menstruation,6,Happy,5,7,Low,Walking
+Menstruation,7,Energetic,4,8,Low,Light Yoga
+Follicular,6,Calm,3,7,Medium,Walking
+Follicular,7,Happy,2,8,Low,Strength Training
+Follicular,8,Energetic,1,8,Low,Cardio
+Follicular,9,Energetic,0,8,Low,Cardio
+Follicular,8,Happy,1,7,Low,Strength Training
+Follicular,7,Calm,2,7,Medium,Walking
+Follicular,8,Energetic,0,8,Low,Cardio
+Follicular,9,Energetic,0,8,Low,Cardio
+Follicular,8,Happy,1,7,Low,Strength Training
+Follicular,7,Calm,2,7,Medium,Walking
+Ovulation,9,Energetic,0,8,Low,Cardio
+Ovulation,10,Energetic,0,8,Low,Cardio
+Ovulation,9,Happy,0,8,Low,Strength Training
+Ovulation,8,Energetic,1,7,Low,Cardio
+Ovulation,9,Energetic,0,8,Low,Cardio
+Ovulation,10,Energetic,0,8,Low,Cardio
+Ovulation,9,Happy,0,8,Low,Strength Training
+Ovulation,8,Energetic,1,7,Low,Cardio
+Luteal,6,Calm,4,7,Medium,Walking
+Luteal,5,Tired,5,6,High,Light Yoga
+Luteal,4,Irritable,6,6,High,Meditation
+Luteal,5,Sad,5,7,High,Stretching
+Luteal,6,Calm,4,7,Medium,Walking
+Luteal,5,Tired,5,6,High,Light Yoga
+Luteal,4,Irritable,6,6,High,Meditation
+Luteal,5,Sad,5,7,High,Stretching
+Luteal,6,Calm,4,7,Medium,Walking
+Luteal,5,Tired,5,6,High,Light Yoga
+Luteal,4,Irritable,6,6,High,Meditation
+Luteal,5,Sad,5,7,High,Stretching
+Menstruation,1,Sad,10,4,High,Rest
+Menstruation,2,Tired,9,5,High,Rest
+Menstruation,3,Irritable,8,6,High,Rest
+Menstruation,4,Calm,7,6,High,Light Yoga
+Menstruation,5,Happy,6,7,Medium,Stretching
+Menstruation,6,Energetic,5,7,Low,Walking
+Follicular,6,Calm,4,7,Medium,Walking
+Follicular,7,Happy,3,8,Low,Strength Training
+Follicular,8,Energetic,2,8,Low,Cardio
+Follicular,9,Energetic,1,8,Low,Cardio
+Follicular,8,Happy,2,7,Low,Strength Training
+Follicular,7,Calm,3,7,Medium,Walking
+Follicular,8,Energetic,1,8,Low,Cardio
+Follicular,9,Energetic,0,8,Low,Cardio
+Follicular,8,Happy,1,7,Low,Strength Training
+Follicular,7,Calm,2,7,Medium,Walking
+Ovulation,9,Energetic,0,8,Low,Cardio
+Ovulation,10,Energetic,0,8,Low,Cardio
+Ovulation,9,Happy,0,8,Low,Strength Training
+Ovulation,8,Energetic,1,7,Low,Cardio
+Ovulation,9,Energetic,0,8,Low,Cardio
+Ovulation,10,Energetic,0,8,Low,Cardio
+Ovulation,9,Happy,0,8,Low,Strength Training
+Ovulation,8,Energetic,1,7,Low,Cardio
+Luteal,6,Calm,5,7,Medium,Walking
+Luteal,5,Tired,6,6,High,Light Yoga
+Luteal,4,Irritable,7,6,High,Meditation
+Luteal,5,Sad,6,7,High,Stretching
+Luteal,6,Calm,5,7,Medium,Walking
+Luteal,5,Tired,6,6,High,Light Yoga
+Luteal,4,Irritable,7,6,High,Meditation
+Luteal,5,Sad,6,7,High,Stretching
+Luteal,6,Calm,5,7,Medium,Walking
+Luteal,5,Tired,6,6,High,Light Yoga
+Luteal,4,Irritable,7,6,High,Meditation
+Luteal,5,Sad,6,7,High,Stretching
+Menstruation,2,Sad,8,6,High,Rest
+Menstruation,3,Tired,7,7,High,Light Yoga
+Menstruation,4,Irritable,6,6,Medium,Stretching
+Menstruation,5,Calm,5,8,Low,Walking
+Menstruation,6,Happy,4,7,Low,Light Yoga
+Menstruation,7,Energetic,3,8,Low,Walking
+Follicular,6,Calm,2,7,Medium,Walking
+Follicular,7,Happy,1,8,Low,Strength Training
+Follicular,8,Energetic,1,8,Low,Cardio
+Follicular,9,Energetic,0,8,Low,Cardio
+Follicular,8,Happy,1,7,Low,Strength Training
+Follicular,7,Calm,2,7,Medium,Walking
+Follicular,8,Energetic,0,8,Low,Cardio
+Follicular,9,Energetic,0,8,Low,Cardio
+Follicular,8,Happy,1,7,Low,Strength Training
+Follicular,7,Calm,2,7,Medium,Walking
+Ovulation,9,Energetic,0,8,Low,Cardio
+Ovulation,10,Energetic,0,8,Low,Cardio
+Ovulation,9,Happy,0,8,Low,Strength Training
+Ovulation,8,Energetic,1,7,Low,Cardio
+Ovulation,9,Energetic,0,8,Low,Cardio
+Ovulation,10,Energetic,0,8,Low,Cardio
+Ovulation,9,Happy,0,8,Low,Strength Training
+Ovulation,8,Energetic,1,7,Low,Cardio
+Luteal,6,Calm,3,7,Medium,Walking
+Luteal,5,Tired,4,6,High,Light Yoga
+Luteal,4,Irritable,5,6,High,Meditation
+Luteal,5,Sad,4,7,High,Stretching
+Luteal,6,Calm,3,7,Medium,Walking
+Luteal,5,Tired,4,6,High,Light Yoga
+Luteal,4,Irritable,5,6,High,Meditation
+Luteal,5,Sad,4,7,High,Stretching
+Luteal,6,Calm,3,7,Medium,Walking
+Luteal,5,Tired,4,6,High,Light Yoga
+Luteal,4,Irritable,5,6,High,Meditation
+Luteal,5,Sad,4,7,High,Stretching

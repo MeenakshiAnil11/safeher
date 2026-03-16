@@ -1,328 +1,278 @@
-import React, { useState, useEffect } from "react";
-import { FaHeartbeat, FaLeaf, FaBookMedical, FaBrain, FaUserMd, FaSearch, FaExternalLinkAlt, FaLightbulb, FaGraduationCap, FaEye, FaMousePointer } from "react-icons/fa";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  FaBookOpen,
+  FaClock,
+  FaFilter,
+  FaLock,
+  FaPlayCircle,
+  FaSearch,
+  FaVolumeUp,
+} from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { educationArticles } from "../../data/educationArticles";
+import "./educationalContent.css";
 
-// Icon mapping for database storage
-const iconMap = {
-  FaHeartbeat: FaHeartbeat,
-  FaLeaf: FaLeaf,
-  FaBookMedical: FaBookMedical,
-  FaBrain: FaBrain,
-  FaUserMd: FaUserMd
-};
+const videoLearning = [
+  {
+    id: "video-cycle-basics",
+    title: "Menstrual Cycle Basics Explained",
+    duration: "7 min",
+    embedUrl: "https://www.youtube.com/embed/WOi2Bwvp6hw?rel=0",
+  },
+  {
+    id: "video-period-pain",
+    title: "How to Manage Period Cramps Safely",
+    duration: "9 min",
+    embedUrl: "https://www.youtube.com/embed/4aA4rP8WfVA?rel=0",
+  },
+  {
+    id: "video-hormone-balance",
+    title: "Hormone Health and Lifestyle Tips",
+    duration: "8 min",
+    embedUrl: "https://www.youtube.com/embed/0Yz2mYf4N4M?rel=0",
+  },
+];
 
-const categories = ["All", "Basics", "Wellness", "Advanced", "Mental Health", "Health"];
+const audioGuides = [
+  {
+    id: "audio-breathwork",
+    title: "Guided Breathwork for Period Comfort",
+    description: "A short calm breathing practice for pain and stress relief.",
+    file: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+  },
+  {
+    id: "audio-sleep",
+    title: "Cycle-Friendly Sleep Reset",
+    description: "Audio guidance for better sleep during PMS and menstruation.",
+    file: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+  },
+  {
+    id: "audio-mindset",
+    title: "Mental Wellness Check-In",
+    description: "A reflective health audio for emotional balance across phases.",
+    file: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+  },
+];
+
+function getPreviewParagraphs(article) {
+  const firstPage = article.pages?.[0] || "";
+  const paragraphs = firstPage.split("\n\n").filter(Boolean);
+  return paragraphs.slice(0, 2).join("\n\n");
+}
 
 export default function EducationalContent() {
-  const [topics, setTopics] = useState([]);
-  const [tips, setTips] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [expandedIndex, setExpandedIndex] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
 
   useEffect(() => {
-    loadTopics();
-    loadTips();
+    const localStatus = localStorage.getItem("isSubscribed");
+    if (localStatus === "true") {
+      setIsSubscribed(true);
+    }
+
+    const fetchSubscription = async () => {
+      try {
+        const response = await api.get("/payment/subscription-status");
+        const subscribed = Boolean(response?.data?.isSubscribed);
+        setIsSubscribed(subscribed);
+        localStorage.setItem("isSubscribed", subscribed ? "true" : "false");
+      } catch (error) {
+        // Keep local fallback only if API is unavailable.
+      } finally {
+        setLoadingSubscription(false);
+      }
+    };
+
+    fetchSubscription();
   }, []);
 
-  const loadTopics = async () => {
-    try {
-      const response = await api.get("/educational-content/topics?isTip=false");
-      setTopics(response.data);
-    } catch (error) {
-      console.error("Error loading topics:", error);
-    } finally {
-      setLoading(false);
-    }
+  const categories = useMemo(() => {
+    const set = new Set(educationArticles.map((item) => item.category));
+    return ["All", ...Array.from(set)];
+  }, []);
+
+  const filteredArticles = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return educationArticles.filter((article) => {
+      const inCategory = selectedCategory === "All" || article.category === selectedCategory;
+      const inSearch =
+        !keyword ||
+        article.title.toLowerCase().includes(keyword) ||
+        article.category.toLowerCase().includes(keyword) ||
+        article.pages.some((p) => p.toLowerCase().includes(keyword));
+      return inCategory && inSearch;
+    });
+  }, [search, selectedCategory]);
+
+  const featuredArticle = filteredArticles[0] || educationArticles[0];
+  const freeArticles = filteredArticles.filter((a) => a.type === "free");
+  const premiumArticles = filteredArticles.filter((a) => a.type === "premium");
+
+  const goToReader = (articleId) => {
+    navigate(`/education/article/${articleId}`);
   };
 
-  const loadTips = async () => {
-    try {
-      const response = await api.get("/educational-content/tips");
-      setTips(response.data);
-    } catch (error) {
-      console.error("Error loading tips:", error);
-    }
+  const goToSubscribe = () => {
+    navigate("/payment-page");
   };
-
-  // Track topic view when expanded
-  const trackTopicView = async (topicId) => {
-    try {
-      await api.post(`/educational-content/topics/${topicId}/track-view`);
-    } catch (error) {
-      console.error("Error tracking view:", error);
-    }
-  };
-
-  // Track topic click when link is clicked
-  const trackTopicClick = async (topicId) => {
-    try {
-      await api.post(`/educational-content/topics/${topicId}/track-click`);
-    } catch (error) {
-      console.error("Error tracking click:", error);
-    }
-  };
-
-  // Track search query
-  const trackSearchQuery = async (query) => {
-    if (query.trim()) {
-      try {
-        await api.post("/educational-content/topics/track-search", { query });
-      } catch (error) {
-        console.error("Error tracking search:", error);
-      }
-    }
-  };
-
-  // Track link click
-  const trackLinkClick = async (topicId, linkLabel, linkUrl) => {
-    try {
-      await api.post(`/educational-content/topics/${topicId}/track-link-click`, {
-        linkLabel,
-        linkUrl
-      });
-    } catch (error) {
-      console.error("Error tracking link click:", error);
-    }
-  };
-
-  const filteredTopics = topics.filter(topic => {
-    const matchesSearch = topic.title.toLowerCase().includes(search.toLowerCase()) ||
-                         topic.content.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || topic.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const handleExpand = (index, topicId) => {
-    const newExpandedIndex = expandedIndex === index ? null : index;
-    setExpandedIndex(newExpandedIndex);
-
-    // Track view when topic is expanded
-    if (newExpandedIndex !== null && topicId) {
-      trackTopicView(topicId);
-    }
-  };
-
-  const handleSearchChange = (e) => {
-    const query = e.target.value;
-    setSearch(query);
-    trackSearchQuery(query);
-  };
-
-  const handleLinkClick = (topicId, linkLabel, linkUrl) => {
-    trackLinkClick(topicId, linkLabel, linkUrl);
-    trackTopicClick(topicId);
-  };
-
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case "Beginner": return "#4CAF50";
-      case "Intermediate": return "#FF9800";
-      case "Important": return "#F44336";
-      default: return "#2196F3";
-    }
-  };
-
-  const renderIcon = (iconName) => {
-    const IconComponent = iconMap[iconName];
-    return IconComponent ? <IconComponent /> : <FaBookMedical />;
-  };
-
-  if (loading) {
-    return (
-      <div className="educational-content">
-        <div className="loading">
-          <div className="loading-spinner"></div>
-          <p>Loading educational content...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="educational-content">
-      <div className="education-header">
-        <h2><FaGraduationCap /> Learn About Menstrual Health</h2>
-        <p>Explore evidence-based information to better understand your cycle and reproductive health.</p>
-      </div>
+    <div className="education-hub">
+      <section className="education-featured">
+        <div>
+          <p className="section-label">Featured Article</p>
+          <h2>{featuredArticle.title}</h2>
+          <p>
+            {featuredArticle.pages?.[0]?.split("\n\n")[0]}
+          </p>
+          <div className="featured-meta">
+            <span>{featuredArticle.category}</span>
+            <span>{featuredArticle.readingTime}</span>
+            <span>{featuredArticle.difficulty}</span>
+          </div>
+          <button type="button" onClick={() => goToReader(featuredArticle.id)}>
+            <FaBookOpen /> Read Featured
+          </button>
+        </div>
+      </section>
 
-      {/* Search and Filters */}
-      <div className="education-controls">
-        <div className="search-bar">
-          <FaSearch className="search-icon" />
+      <section className="education-search">
+        <div className="search-input-wrap">
+          <FaSearch />
           <input
             type="text"
-            placeholder="Search topics, content, or keywords..."
+            placeholder="Search health articles, categories, or keywords..."
             value={search}
-            onChange={handleSearchChange}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+      </section>
 
-        <div className="category-filters">
-          {categories.map(category => (
+      <section className="education-filters">
+        <div className="filter-title">
+          <FaFilter />
+          <span>Category filters</span>
+        </div>
+        <div className="filter-pills">
+          {categories.map((category) => (
             <button
               key={category}
-              className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
+              type="button"
+              className={selectedCategory === category ? "active" : ""}
               onClick={() => setSelectedCategory(category)}
             >
               {category}
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Results Info */}
-      <div className="results-info">
-        <span>Showing {filteredTopics.length} of {topics.length} topics</span>
-        {search && <span className="search-term">for "{search}"</span>}
-      </div>
-
-      {/* Topics Grid */}
-      <div className="topics-grid">
-        {filteredTopics.map((topic, index) => (
-          <div key={topic._id} className="topic-card">
-            <div className="topic-header">
-              <div className="topic-icon-wrapper">
-                {renderIcon(topic.icon)}
-              </div>
-              <div className="topic-meta">
-                <h3>{topic.title}</h3>
-                <div className="topic-badges">
-                  <span className="category-badge">{topic.category}</span>
-                  <span
-                    className="difficulty-badge"
-                    style={{ backgroundColor: getDifficultyColor(topic.difficulty) }}
-                  >
-                    {topic.difficulty}
-                  </span>
-                  <span className="read-time">{topic.readTime}</span>
-                  {topic.views > 0 && (
-                    <span className="view-count">
-                      <FaEye /> {topic.views}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="topic-preview">
-              <p>{topic.content.substring(0, 120)}...</p>
-            </div>
-
-            <button
-              className={`expand-btn ${expandedIndex === index ? "active" : ""}`}
-              onClick={() => handleExpand(index, topic._id)}
-            >
-              {expandedIndex === index ? "Show Less" : "Read More"}
-            </button>
-
-            {expandedIndex === index && (
-              <div className="topic-expanded">
-                <div className="topic-full-content">
-                  <p>{topic.content}</p>
-
-                  {topic.keyPoints && topic.keyPoints.length > 0 && (
-                    <div className="key-points">
-                      <h4>Key Points:</h4>
-                      <ul>
-                        {topic.keyPoints.map((point, i) => (
-                          <li key={i}>{point}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {topic.links && topic.links.length > 0 && (
-                    <div className="external-links">
-                      <h4>Learn More:</h4>
-                      <div className="links-grid">
-                        {topic.links.map((link, i) => (
-                          <a
-                            key={i}
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="external-link"
-                            onClick={() => handleLinkClick(topic._id, link.label, link.url)}
-                          >
-                            <span>{link.label}</span>
-                            <FaExternalLinkAlt />
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {filteredTopics.length === 0 && (
-        <div className="no-results">
-          <FaSearch size={48} />
-          <h3>No topics found</h3>
-          <p>Try adjusting your search terms or category filter.</p>
+      <section className="education-section">
+        <div className="section-head">
+          <h3>Free Articles</h3>
+          <span>{freeArticles.length} results</span>
         </div>
-      )}
+        <div className="articles-grid">
+          {freeArticles.map((article) => (
+            <article key={article.id} className="article-card free">
+              <h4>{article.title}</h4>
+              <p className="card-preview">{article.pages?.[0]?.split("\n\n")[0]}</p>
+              <div className="card-meta">
+                <span>{article.category}</span>
+                <span><FaClock /> {article.readingTime}</span>
+                <span>{article.difficulty}</span>
+              </div>
+              <button type="button" onClick={() => goToReader(article.id)}>
+                Read Full Article
+              </button>
+            </article>
+          ))}
+          {!freeArticles.length && <p className="empty-note">No free articles match your search.</p>}
+        </div>
+      </section>
 
-      {/* Did You Know Section */}
-      <div className="tips-section">
-        <h3><FaLightbulb /> Did You Know?</h3>
-        <div className="tips-grid">
-          {tips.map((tip, i) => (
-            <div key={tip._id} className="tip-card">
-              <span className="tip-icon">{tip.icon}</span>
-              <p>{tip.content || tip.text}</p>
-            </div>
+      <section className="education-section">
+        <div className="section-head">
+          <h3>Video Learning</h3>
+        </div>
+        <div className="video-grid">
+          {videoLearning.map((video) => (
+            <article key={video.id} className="video-card">
+              <div className="video-frame">
+                <iframe
+                  src={video.embedUrl}
+                  title={video.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+              <h4>{video.title}</h4>
+              <p>{video.duration}</p>
+            </article>
           ))}
         </div>
+      </section>
 
-        {tips.length === 0 && (
-          <div className="no-tips">
-            <p>No tips available at the moment. Check back later!</p>
-          </div>
-        )}
-      </div>
-
-      {/* Quick Resources */}
-      <div className="quick-resources">
-        <h3>Trusted Medical Resources</h3>
-        <div className="resources-grid">
-          <a
-            href="https://www.plannedparenthood.org/learn/health-and-wellness/menstruation"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="resource-card"
-          >
-            <h4>Planned Parenthood</h4>
-            <p>Comprehensive menstrual health information</p>
-            <FaExternalLinkAlt />
-          </a>
-          <a
-            href="https://www.mayoclinic.org/healthy-lifestyle/womens-health/in-depth/menstrual-cycle/art-20047186"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="resource-card"
-          >
-            <h4>Mayo Clinic</h4>
-            <p>Medical insights on menstrual cycles</p>
-            <FaExternalLinkAlt />
-          </a>
-          <a
-            href="https://www.acog.org/womens-health/faqs/the-menstrual-cycle"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="resource-card"
-          >
-            <h4>ACOG</h4>
-            <p>Professional gynecological guidance</p>
-            <FaExternalLinkAlt />
-          </a>
+      <section className="education-section">
+        <div className="section-head">
+          <h3>Audio Guides</h3>
         </div>
-      </div>
+        <div className="audio-grid">
+          {audioGuides.map((audio) => (
+            <article key={audio.id} className="audio-card">
+              <h4><FaVolumeUp /> {audio.title}</h4>
+              <p>{audio.description}</p>
+              <audio controls preload="metadata">
+                <source src={audio.file} type="audio/mpeg" />
+              </audio>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="education-section">
+        <div className="section-head">
+          <h3>Premium Articles</h3>
+          <span>{premiumArticles.length} results</span>
+        </div>
+        <div className="articles-grid">
+          {premiumArticles.map((article) => (
+            <article key={article.id} className="article-card premium">
+              <h4>{article.title}</h4>
+              <p className="card-preview">{getPreviewParagraphs(article)}</p>
+              {!isSubscribed && (
+                <div className="premium-banner">
+                  <FaLock />
+                  <span>Unlock full article with subscription</span>
+                  <button type="button" onClick={goToSubscribe}>Subscribe Now</button>
+                </div>
+              )}
+              <div className="card-meta">
+                <span>{article.category}</span>
+                <span><FaClock /> {article.readingTime}</span>
+                <span>{article.difficulty}</span>
+              </div>
+              <button type="button" onClick={() => goToReader(article.id)}>
+                {isSubscribed ? "Read Full Premium Article" : "Read Preview"}
+              </button>
+            </article>
+          ))}
+          {!premiumArticles.length && <p className="empty-note">No premium articles match your search.</p>}
+        </div>
+      </section>
+
+      {!isSubscribed && !loadingSubscription && (
+        <section className="education-subscribe-strip">
+          <p>Unlock full premium learning paths, advanced guides, and expert wellness content.</p>
+          <button type="button" onClick={goToSubscribe}>
+            <FaPlayCircle /> Subscribe Now
+          </button>
+        </section>
+      )}
     </div>
   );
 }

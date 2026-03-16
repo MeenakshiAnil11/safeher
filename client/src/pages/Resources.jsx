@@ -1,6 +1,6 @@
 // client/src/pages/Resources.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import UserHeader from "../components/UserHeader";
 import ResourceSidebar from "../components/ResourceSidebar";
 import Footer from "../components/Footer";
@@ -136,45 +136,82 @@ const RESOURCES = [
   },
 ];
 
-const CATEGORIES = [
-  "All",
-  "Legal Rights & Laws",
+const FAV_KEY = "safeher_resources_bookmarks";
+const RECENT_KEY = "safeher_resources_recent";
+const ALL_PAGE_TABS = ["All Resources", "Recommended for You", "Saved", "Recently Viewed"];
+const ALL_PAGE_CATEGORIES = [
+  "All Categories",
   "Health & Wellness",
   "Safety & Security",
   "Education & Skills",
+  "Legal Rights & Laws",
   "Support Networks",
 ];
+const ALL_PAGE_TYPES = ["All Types", "Article", "Video", "Guide", "Checklist", "PDF", "External Link"];
+const HERO_SLIDES = [
+  {
+    id: "slide-1",
+    title: "Breaking Barriers: Women in Leadership Masterclass",
+    description: "Learn from successful women leaders about navigating career challenges and achieving professional excellence.",
+    category: "Career & Education",
+    badge: "Trending Now",
+    image: "https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?auto=format&fit=crop&w=1400&q=80",
+  },
+  {
+    id: "slide-2",
+    title: "Financial Freedom: Smart Money Management for Women",
+    description: "Master the essentials of budgeting, investing, and building long-term financial security.",
+    category: "Financial Literacy",
+    badge: "Editor's Pick",
+    image: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=1400&q=80",
+  },
+  {
+    id: "slide-3",
+    title: "Mindfulness and Wellness for Everyday Strength",
+    description: "Build emotional resilience through guided practices, stress management, and self-care routines.",
+    category: "Health & Wellness",
+    badge: "Popular",
+    image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1400&q=80",
+  },
+];
+const HERO_FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=1400&q=80";
+const HASH_TO_CATEGORY = {
+  health: "Health & Wellness",
+  safety: "Safety & Security",
+  legal: "Legal Rights & Laws",
+  helplines: "Support Networks",
+  career: "Education & Skills",
+  lifestyle: "Health & Wellness",
+  finance: "Education & Skills",
+};
 
-const TYPES = ["All", "Article", "PDF", "Guide", "Video", "Checklist", "External Link"];
-const FAV_KEY = "safeher_resources_bookmarks";
-const RECENT_KEY = "safeher_resources_recent";
-
-function SectionHeader({ title, description }) {
-  return (
-    <div className="hv-head container">
-      <div>
-        <h1 className="page-title">{title}</h1>
-        {description && <p className="page-subtitle">{description}</p>}
-      </div>
-    </div>
-  );
-}
+const CATEGORY_DESCRIPTIONS = {
+  "All Resources": "Browse trusted and verified resources curated for women's wellbeing and growth.",
+  "Health & Wellness": "Fitness, nutrition, mental health guides, and wellness resources.",
+  "Safety & Security": "Safety checklists, emergency preparedness, and practical self-protection resources.",
+  "Education & Skills": "Learning opportunities, scholarships, career growth, and skill-building resources.",
+  "Legal Rights & Laws": "Understand your rights, legal protections, and access to law-related support.",
+  "Support Networks": "Find helplines, communities, services, and trusted support organizations.",
+};
 
 export default function Resources() {
   const location = useLocation();
-  const navigate = useNavigate();
 
-  // Get active section from URL hash, default to 'all'
   const getActiveTab = () => {
-    const hash = location.hash.substring(1); // Remove the '#'
-    return hash || 'all';
+    const hash = location.hash.substring(1);
+    return hash || "all";
   };
 
   const [tab, setTab] = useState(getActiveTab());
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("All");
-  const [type, setType] = useState("All");
-  const [lang, setLang] = useState("en");
+  const [category, setCategory] = useState("All Categories");
+  const [allQuery, setAllQuery] = useState("");
+  const [allCategory, setAllCategory] = useState("All Categories");
+  const [allType, setAllType] = useState("All Types");
+  const [allVerifiedOnly, setAllVerifiedOnly] = useState(false);
+  const [allViewTab, setAllViewTab] = useState("All Resources");
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [heroImageFailed, setHeroImageFailed] = useState(false);
   const [bookmarks, setBookmarks] = useState(() => {
     try {
       const raw = localStorage.getItem(FAV_KEY);
@@ -194,10 +231,34 @@ export default function Resources() {
   const [remoteResources, setRemoteResources] = useState([]);
   const [events, setEvents] = useState([]);
 
-  // Update tab when hash changes
   useEffect(() => {
     setTab(getActiveTab());
   }, [location.hash]);
+
+  useEffect(() => {
+    if (HASH_TO_CATEGORY[tab]) setCategory(HASH_TO_CATEGORY[tab]);
+    if (tab === "all") setCategory("All Categories");
+  }, [tab]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    setHeroImageFailed(false);
+  }, [heroIndex]);
+
+  useEffect(() => {
+    if (tab !== "all") return;
+    setAllCategory("All Categories");
+    setAllType("All Types");
+    setAllQuery("");
+    setAllVerifiedOnly(false);
+    setAllViewTab("All Resources");
+  }, [tab]);
 
   useEffect(() => {
     localStorage.setItem(FAV_KEY, JSON.stringify(bookmarks));
@@ -207,7 +268,6 @@ export default function Resources() {
     localStorage.setItem(RECENT_KEY, JSON.stringify(recentlyViewed));
   }, [recentlyViewed]);
 
-  // Load approved resources from server (public)
   useEffect(() => {
     let mounted = true;
     api
@@ -224,7 +284,7 @@ export default function Resources() {
           source: { name: r.region || "", url: r.url || "#" },
           link: r.url || "#",
           description: r.description || "",
-          tags: [],
+          tags: [r.category || "resource"],
         }));
         setRemoteResources(list);
       })
@@ -234,7 +294,6 @@ export default function Resources() {
     };
   }, []);
 
-  // Load published events from server (public)
   useEffect(() => {
     let mounted = true;
     api
@@ -244,13 +303,8 @@ export default function Resources() {
         const list = (res.data?.events || []).map((e) => ({
           id: e._id,
           title: e.title,
-          type: e.type,
+          type: e.type || "Event",
           date: e.date,
-          time: e.time,
-          location: e.location,
-          url: e.url,
-          description: e.description,
-          bannerImage: e.bannerImage,
         }));
         setEvents(list);
       })
@@ -260,34 +314,40 @@ export default function Resources() {
     };
   }, []);
 
+  const allResources = useMemo(
+    () => (remoteResources.length > 0 ? [...RESOURCES, ...remoteResources] : RESOURCES),
+    [remoteResources]
+  );
+
+  const withAssets = useMemo(
+    () =>
+      allResources.map((r, i) => ({
+        ...r,
+        duration: r.duration || `${8 + (i % 53)} min read`,
+        image:
+          r.image ||
+          [
+            "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=800&q=80",
+          ][i % 6],
+      })),
+    [allResources]
+  );
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    // 🚀 Merge static and API resources
-    const base =
-      remoteResources.length > 0
-        ? [...RESOURCES, ...remoteResources]
-        : RESOURCES;
-    let list = base.filter(
-      (r) =>
-        (category === "All" || r.category === category) &&
-        (type === "All" || r.type === type) &&
-        (r.lang?.includes?.(lang) ?? true) &&
-        (!q ||
-          r.title.toLowerCase().includes(q) ||
-          (r.description || "").toLowerCase().includes(q) ||
-          (r.category || "").toLowerCase().includes(q) ||
-          (r.type || "").toLowerCase().includes(q) ||
-          (r.tags || []).some((t) => (t || "").toLowerCase().includes(q)))
+    let list = withAssets.filter(
+      (r) => category === "All Categories" || r.category === category
     );
     list.sort((a, b) => {
-      const favA = bookmarks.includes(a.id) ? 1 : 0;
-      const favB = bookmarks.includes(b.id) ? 1 : 0;
-      if (favA !== favB) return favB - favA;
       if (a.verified !== b.verified) return (b.verified ? 1 : 0) - (a.verified ? 1 : 0);
       return a.title.localeCompare(b.title);
     });
     return list;
-  }, [query, category, type, lang, bookmarks, remoteResources]);
+  }, [category, withAssets]);
 
   const toggleBookmark = (id) => {
     setBookmarks((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -295,9 +355,9 @@ export default function Resources() {
 
   const addToRecentlyViewed = (id) => {
     setRecentlyViewed((prev) => {
-      const filtered = prev.filter(item => item.id !== id); // Remove if already exists
+      const filtered = prev.filter((item) => item.id !== id);
       const newEntry = { id, timestamp: Date.now() };
-      return [newEntry, ...filtered].slice(0, 10); // Keep only 10 most recent
+      return [newEntry, ...filtered].slice(0, 10);
     });
   };
 
@@ -326,457 +386,343 @@ export default function Resources() {
     }
   };
 
-  const saved = [...RESOURCES, ...remoteResources].filter((r) => bookmarks.includes(r.id));
+  const saved = withAssets.filter((r) => bookmarks.includes(r.id));
 
-  const recent = [...RESOURCES, ...remoteResources]
-    .filter((r) => recentlyViewed.some(item => item.id === r.id))
+  const recent = withAssets
+    .filter((r) => recentlyViewed.some((item) => item.id === r.id))
     .sort((a, b) => {
-      const aTime = recentlyViewed.find(item => item.id === a.id)?.timestamp || 0;
-      const bTime = recentlyViewed.find(item => item.id === b.id)?.timestamp || 0;
-      return bTime - aTime; // Most recent first
+      const aTime = recentlyViewed.find((item) => item.id === a.id)?.timestamp || 0;
+      const bTime = recentlyViewed.find((item) => item.id === b.id)?.timestamp || 0;
+      return bTime - aTime;
     });
 
-  const renderSearchSection = () => (
-    <section className="container res-section">
-      <div className="search-section">
-        <h2>🔍 Search Resources</h2>
-        <p>Find resources by keywords, categories, or content type</p>
-
-        <div className="search-controls">
-          <div className="search-wrap">
-            <span className="icon">🔎</span>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search keywords (e.g., rights, mental health, scholarship)"
-            />
-          </div>
-          <div className="filters">
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            <select value={type} onChange={(e) => setType(e.target.value)}>
-              {TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <select value={lang} onChange={(e) => setLang(e.target.value)}>
-              <option value="en">English</option>
-              <option value="hi">हिन्दी (beta)</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="res-grid">
-          {filtered.map((r) => (
-            <article key={r.id} className="res-card">
-              <div className="res-badges">
-                {r.verified && <span className="verified">✅ Verified</span>}
-                <span className="pill type">{r.type}</span>
-              </div>
-              <h3 className="res-title-text">{r.title}</h3>
-              <p className="res-desc">{r.description}</p>
-              <div className="res-meta">
-                <span className="pill cat">{r.category}</span>
-                <a href={r.source.url} target="_blank" rel="noreferrer" className="source">
-                  Source: {r.source.name}
-                </a>
-              </div>
-              <div className="res-card-actions">
-                <a className="btn primary small" href={r.link} target="_blank" rel="noreferrer" onClick={() => addToRecentlyViewed(r.id)}>
-                  Open
-                </a>
-                {r.type === "PDF" && (
-                  <button className="btn ghost small" onClick={() => downloadIfPdf(r)}>
-                    Download
-                  </button>
-                )}
-                <button className="btn ghost small" onClick={() => share(r)}>
-                  Share
-                </button>
-                <button
-                  className={`btn small ${bookmarks.includes(r.id) ? "fav" : ""}`}
-                  onClick={() => toggleBookmark(r.id)}
-                  title="Bookmark"
-                >
-                  {bookmarks.includes(r.id) ? "★ Bookmarked" : "☆ Bookmark"}
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-        {filtered.length === 0 && (
-          <div className="empty">No resources found. Try a different keyword, category, or type.</div>
-        )}
-      </div>
-    </section>
-  );
-
-  const renderAllResourcesSection = () => (
-    <section className="container res-section">
-      <div className="all-resources-section">
-        <h2>📚 All Resources</h2>
-        <p>Browse our complete collection of verified resources</p>
-
-        <div className="res-grid">
-          {filtered.map((r) => (
-            <article key={r.id} className="res-card">
-              <div className="res-badges">
-                {r.verified && <span className="verified">✅ Verified</span>}
-                <span className="pill type">{r.type}</span>
-              </div>
-              <h3 className="res-title-text">{r.title}</h3>
-              <p className="res-desc">{r.description}</p>
-              <div className="res-meta">
-                <span className="pill cat">{r.category}</span>
-                <a href={r.source.url} target="_blank" rel="noreferrer" className="source">
-                  Source: {r.source.name}
-                </a>
-              </div>
-              <div className="res-card-actions">
-                <a className="btn primary small" href={r.link} target="_blank" rel="noreferrer" onClick={() => addToRecentlyViewed(r.id)}>
-                  Open
-                </a>
-                {r.type === "PDF" && (
-                  <button className="btn ghost small" onClick={() => downloadIfPdf(r)}>
-                    Download
-                  </button>
-                )}
-                <button className="btn ghost small" onClick={() => share(r)}>
-                  Share
-                </button>
-                <button
-                  className={`btn small ${bookmarks.includes(r.id) ? "fav" : ""}`}
-                  onClick={() => toggleBookmark(r.id)}
-                  title="Bookmark"
-                >
-                  {bookmarks.includes(r.id) ? "★ Bookmarked" : "☆ Bookmark"}
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-
-  const renderCategorySection = () => {
-    const categoryMap = {
-      safety: "Safety & Security",
-      legal: "Legal Rights & Laws",
-      health: "Health & Wellness",
-      helplines: "Support Networks"
-    };
-
-    const displayCategory = categoryMap[tab] || "All";
-
-    return (
-      <section className="container res-section">
-        <div className="category-section">
-          <h2>🗂️ {displayCategory}</h2>
-          <p>Resources in the {displayCategory.toLowerCase()} category</p>
-
-          <div className="res-grid">
-            {filtered.filter(r => displayCategory === "All" || r.category === displayCategory).map((r) => (
-              <article key={r.id} className="res-card">
-                <div className="res-badges">
-                  {r.verified && <span className="verified">✅ Verified</span>}
-                  <span className="pill type">{r.type}</span>
-                </div>
-                <h3 className="res-title-text">{r.title}</h3>
-                <p className="res-desc">{r.description}</p>
-                <div className="res-meta">
-                  <span className="pill cat">{r.category}</span>
-                  <a href={r.source.url} target="_blank" rel="noreferrer" className="source">
-                    Source: {r.source.name}
-                  </a>
-                </div>
-                <div className="res-card-actions">
-                  <a className="btn primary small" href={r.link} target="_blank" rel="noreferrer" onClick={() => addToRecentlyViewed(r.id)}>
-                    Open
-                  </a>
-                  {r.type === "PDF" && (
-                    <button className="btn ghost small" onClick={() => downloadIfPdf(r)}>
-                      Download
-                    </button>
-                  )}
-                  <button className="btn ghost small" onClick={() => share(r)}>
-                    Share
-                  </button>
-                  <button
-                    className={`btn small ${bookmarks.includes(r.id) ? "fav" : ""}`}
-                    onClick={() => toggleBookmark(r.id)}
-                    title="Bookmark"
-                  >
-                    {bookmarks.includes(r.id) ? "★ Bookmarked" : "☆ Bookmark"}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+  const allFiltered = useMemo(() => {
+    const q = allQuery.trim().toLowerCase();
+    let list = withAssets.filter(
+      (r) =>
+        (allCategory === "All Categories" || r.category === allCategory) &&
+        (allType === "All Types" || r.type === allType) &&
+        (!allVerifiedOnly || r.verified) &&
+        (!q ||
+          r.title.toLowerCase().includes(q) ||
+          (r.description || "").toLowerCase().includes(q) ||
+          (r.category || "").toLowerCase().includes(q) ||
+          (r.type || "").toLowerCase().includes(q) ||
+          (r.tags || []).some((t) => (t || "").toLowerCase().includes(q)))
     );
+    list.sort((a, b) => {
+      if (a.verified !== b.verified) return (b.verified ? 1 : 0) - (a.verified ? 1 : 0);
+      return a.title.localeCompare(b.title);
+    });
+    return list;
+  }, [allCategory, allType, allVerifiedOnly, allQuery, withAssets]);
+
+  const displayedAllResources = useMemo(() => {
+    if (allViewTab === "Saved") return saved;
+    if (allViewTab === "Recently Viewed") return recent;
+    if (allViewTab === "Recommended for You") return allFiltered.slice(0, 9);
+    return allFiltered;
+  }, [allFiltered, allViewTab, recent, saved]);
+
+  const getDisplayedResources = () => {
+    if (tab === "saved") return saved;
+    if (tab === "recent") return recent;
+    return filtered;
   };
 
-  const renderSavedSection = () => (
-    <section className="container res-section">
-      <div className="saved-section">
-        <h2>⭐ Saved / Bookmarked Resources</h2>
-        <p>Your personal collection of saved resources</p>
-
-        {saved.length > 0 ? (
-          <div className="res-grid">
-            {saved.map((r) => (
-              <article key={r.id} className="res-card">
-                <div className="res-badges">
-                  {r.verified && <span className="verified">✅ Verified</span>}
-                  <span className="pill type">{r.type}</span>
-                </div>
-                <h3 className="res-title-text">{r.title}</h3>
-                <p className="res-desc">{r.description}</p>
-                <div className="res-meta">
-                  <span className="pill cat">{r.category}</span>
-                  <a href={r.source.url} target="_blank" rel="noreferrer" className="source">
-                    Source: {r.source.name}
-                  </a>
-                </div>
-                <div className="res-card-actions">
-                  <a className="btn primary small" href={r.link} target="_blank" rel="noreferrer">
-                    Open
-                  </a>
-                  {r.type === "PDF" && (
-                    <button className="btn ghost small" onClick={() => downloadIfPdf(r)}>
-                      Download
-                    </button>
-                  )}
-                  <button className="btn ghost small" onClick={() => share(r)}>
-                    Share
-                  </button>
-                  <button className="btn small fav" onClick={() => toggleBookmark(r.id)}>
-                    ★ Saved
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <p>You haven't saved any resources yet.</p>
-            <p>Browse resources and click the bookmark button to save them here.</p>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-
-  const renderRecentSection = () => (
-    <section className="container res-section">
-      <div className="recent-section">
-        <h2>⏱️ Recently Viewed Resources</h2>
-        <p>Resources you've accessed recently</p>
-
-        {recent.length > 0 ? (
-          <div className="res-grid">
-            {recent.map((r) => (
-              <article key={r.id} className="res-card">
-                <div className="res-badges">
-                  {r.verified && <span className="verified">✅ Verified</span>}
-                  <span className="pill type">{r.type}</span>
-                </div>
-                <h3 className="res-title-text">{r.title}</h3>
-                <p className="res-desc">{r.description}</p>
-                <div className="res-meta">
-                  <span className="pill cat">{r.category}</span>
-                  <a href={r.source.url} target="_blank" rel="noreferrer" className="source">
-                    Source: {r.source.name}
-                  </a>
-                </div>
-                <div className="res-card-actions">
-                  <a className="btn primary small" href={r.link} target="_blank" rel="noreferrer" onClick={() => addToRecentlyViewed(r.id)}>
-                    Open
-                  </a>
-                  {r.type === "PDF" && (
-                    <button className="btn ghost small" onClick={() => downloadIfPdf(r)}>
-                      Download
-                    </button>
-                  )}
-                  <button className="btn ghost small" onClick={() => share(r)}>
-                    Share
-                  </button>
-                  <button
-                    className={`btn small ${bookmarks.includes(r.id) ? "fav" : ""}`}
-                    onClick={() => toggleBookmark(r.id)}
-                    title="Bookmark"
-                  >
-                    {bookmarks.includes(r.id) ? "★ Bookmarked" : "☆ Bookmark"}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <p>You haven't viewed any resources yet.</p>
-            <p>Browse resources and click "Open" to see them here.</p>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-
-  const renderSubmitSection = () => (
-    <section className="container res-section">
-      <div className="submit-section">
-        <h2>➕ Submit a Resource</h2>
-        <p>Help expand our resource collection by contributing valuable content</p>
-
-        <div className="submit-card">
-          <p>Know of a helpful resource that could benefit others in our community?</p>
-          <p>We welcome submissions of articles, guides, videos, and other educational materials related to women's safety, health, and empowerment.</p>
-          <button className="btn primary" onClick={() => navigate("/submit-resource")}>
-            Submit Resource
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-
-  const renderEventsSection = () => (
-    <section className="container res-section">
-      <div className="events-section">
-        <h2>🗓️ Events & Webinars</h2>
-        <p>Upcoming events, workshops, and online webinars</p>
-
-        {events.length > 0 ? (
-          <div className="res-grid">
-            {events.map((e) => (
-              <article key={e.id} className="res-card">
-                <div className="res-badges">
-                  <span className="pill type">{e.type}</span>
-                </div>
-                {e.bannerImage && (
-                  <img src={e.bannerImage} alt={e.title} className="event-banner" />
-                )}
-                <h3 className="res-title-text">{e.title}</h3>
-                <p className="res-desc">{e.description}</p>
-                <div className="res-meta">
-                  <span className="pill cat">📅 {new Date(e.date).toLocaleDateString()}</span>
-                  {e.time && <span className="pill cat">🕒 {e.time}</span>}
-                  {e.location && <span className="pill cat">📍 {e.location}</span>}
-                </div>
-                <div className="res-card-actions">
-                  {e.url && (
-                    <a className="btn primary small" href={e.url} target="_blank" rel="noreferrer">
-                      Register / Join
-                    </a>
-                  )}
-                  <button className="btn ghost small" onClick={() => share({ title: e.title, link: e.url || "#" })}>
-                    Share
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="events-placeholder">
-            <p>No upcoming events at the moment.</p>
-            <p>Stay tuned for announcements about upcoming workshops, seminars, and online sessions.</p>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-
-  const renderExternalSection = () => (
-    <section className="container res-section">
-      <div className="external-section">
-        <h2>🌐 External Resource Directories</h2>
-        <p>Links to comprehensive external resource collections</p>
-
-        <div className="external-links">
-          <div className="external-card">
-            <h3>Government Portals</h3>
-            <p>Official government resources and schemes</p>
-            <a href="https://wcd.nic.in/" target="_blank" rel="noopener noreferrer" className="btn primary small">
-              Visit WCD Portal
-            </a>
-          </div>
-          <div className="external-card">
-            <h3>NGO Directories</h3>
-            <p>Find NGOs and support organizations</p>
-            <a href="https://ngodarpan.gov.in/" target="_blank" rel="noopener noreferrer" className="btn primary small">
-              Visit NGO Darpan
-            </a>
-          </div>
-          <div className="external-card">
-            <h3>International Organizations</h3>
-            <p>Global resources from WHO, UNICEF, and others</p>
-            <a href="https://www.who.int/" target="_blank" rel="noopener noreferrer" className="btn primary small">
-              Visit WHO
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-
-  const renderInteractiveSection = () => (
-    <section className="container res-section">
-      <div className="interactive-section">
-        <h2>Interactive Tools</h2>
-        <div className="interactive-grid">
-          <div className="quiz-card">
-            <div>
-              <h3>Quiz: Know Your Legal Rights</h3>
-              <p>Test your knowledge and discover gaps to learn more.</p>
-            </div>
-            <button className="btn primary" onClick={() => navigate("/quiz")}>
-              Start Quiz
-            </button>
-          </div>
-          <div className="quiz-card">
-            <div>
-              <h3>Self-Assessment: Stress Check</h3>
-              <p>Quick 2-minute check-in with suggested resources.</p>
-            </div>
-            <button className="btn primary" onClick={() => navigate("/assessment")}>
-              Start Assessment
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+  const displayedResources = getDisplayedResources();
+  const heroSlide = HERO_SLIDES[heroIndex];
+  const activeCategoryLabel = category === "All Categories" ? "All Resources" : category;
+  const categoryDescription = CATEGORY_DESCRIPTIONS[activeCategoryLabel] || CATEGORY_DESCRIPTIONS["All Resources"];
+  const metricPool = tab === "saved" || tab === "recent" ? displayedResources : filtered;
+  const totalCount = metricPool.length;
+  const verifiedCount = metricPool.filter((r) => r.verified).length;
+  const bookmarkedCount = metricPool.filter((r) => bookmarks.includes(r.id)).length;
 
   return (
-    <div className="dashboard-container page-with-header">
+    <div className="resource-page-shell page-with-header">
       <UserHeader />
-      <div className="dashboard-body">
+      <div className="resource-layout">
         <ResourceSidebar />
+        <main className="resource-main-wrap">
+          {tab === "all" ? (
+            <>
+              <section className="all-resource-main-header">
+                <h1>Resource Hub</h1>
+                <p>Trusted, Verified Knowledge for Women's Safety, Health, and Growth</p>
+                <div className="all-resource-toolbar-chips">
+                  <button type="button">🌐 Language</button>
+                  <button type="button">🔊 Text-to-Speech</button>
+                  <button type="button">☀ High Contrast</button>
+                </div>
+              </section>
 
-        <main className="dashboard-main">
-          <SectionHeader
-            title="Resource Hub"
-            description="Trusted, verified knowledge for safety, health, and growth."
-          />
+              <section className="all-resource-hero-banner">
+                <img
+                  src={heroImageFailed ? HERO_FALLBACK_IMAGE : heroSlide.image}
+                  alt={heroSlide.title}
+                  onError={() => setHeroImageFailed(true)}
+                />
+                <div className="all-resource-hero-overlay">
+                  <div className="all-resource-hero-badges">
+                    <span>{heroSlide.badge}</span>
+                    <span>{heroSlide.category}</span>
+                  </div>
+                  <h2>{heroSlide.title}</h2>
+                  <p>{heroSlide.description}</p>
+                  <button type="button">Read More</button>
+                </div>
+                <button className="all-hero-arrow left" type="button" onClick={() => setHeroIndex((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}>
+                  ‹
+                </button>
+                <button className="all-hero-arrow right" type="button" onClick={() => setHeroIndex((prev) => (prev + 1) % HERO_SLIDES.length)}>
+                  ›
+                </button>
+                <div className="all-hero-dots">
+                  {HERO_SLIDES.map((s, i) => (
+                    <button key={s.id} type="button" className={i === heroIndex ? "active" : ""} onClick={() => setHeroIndex(i)} />
+                  ))}
+                </div>
+              </section>
 
-          {tab === "search" && renderSearchSection()}
-          {tab === "all" && renderAllResourcesSection()}
-          {(tab === "categories" || tab === "safety" || tab === "legal" || tab === "health" || tab === "helplines") && renderCategorySection()}
-          {tab === "saved" && renderSavedSection()}
-          {tab === "recent" && renderRecentSection()}
-          {tab === "quiz" && renderInteractiveSection()}
-          {tab === "submit" && renderSubmitSection()}
-          {tab === "events" && renderEventsSection()}
-          {tab === "external" && renderExternalSection()}
+              <section className="all-resource-search-filter-wrap">
+                <div className="all-resource-search-box">
+                  <span>⌕</span>
+                  <input
+                    type="text"
+                    value={allQuery}
+                    onChange={(e) => setAllQuery(e.target.value)}
+                    placeholder="Search resources by title, description, or tags..."
+                  />
+                </div>
+                <select value={allCategory} onChange={(e) => setAllCategory(e.target.value)}>
+                  {ALL_PAGE_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                <select value={allType} onChange={(e) => setAllType(e.target.value)}>
+                  {ALL_PAGE_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <label className="all-verified-toggle">
+                  <input type="checkbox" checked={allVerifiedOnly} onChange={(e) => setAllVerifiedOnly(e.target.checked)} />
+                  <span>Verified Only</span>
+                </label>
+              </section>
+
+              <section className="all-resource-view-tabs">
+                {ALL_PAGE_TABS.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    className={allViewTab === item ? "active" : ""}
+                    onClick={() => setAllViewTab(item)}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </section>
+
+              <div className="all-resource-results-meta">
+                <span>Showing {displayedAllResources.length} resources</span>
+                <select>
+                  <option>Sort by: Most Recent</option>
+                  <option>Sort by: A-Z</option>
+                </select>
+              </div>
+
+              <section className="all-resource-cards-grid">
+                {displayedAllResources.map((r) => (
+                  <article key={r.id} className="all-resource-hub-card">
+                    <div className="all-resource-card-image-wrap">
+                      <img src={r.image} alt={r.title} />
+                      {r.verified && <span className="verified-mark">✓</span>}
+                    </div>
+                    <div className="all-resource-card-body">
+                      <div className="all-resource-card-top-row">
+                        <span className="all-resource-category-badge">{r.category}</span>
+                        <span className="all-resource-type">{r.type}</span>
+                      </div>
+                      <h3>{r.title}</h3>
+                      <p>{r.description}</p>
+                      <div className="all-resource-card-source-row">
+                        <span>Source: {r.source?.name || "SafeHer"}</span>
+                        <span>{r.duration}</span>
+                      </div>
+                      <div className="all-resource-tag-row">
+                        {(r.tags || []).slice(0, 3).map((tag) => (
+                          <span key={`${r.id}-${tag}`}>{tag}</span>
+                        ))}
+                      </div>
+                      <div className="all-resource-card-actions">
+                        <a
+                          className="all-resource-open-btn"
+                          href={r.link}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={() => addToRecentlyViewed(r.id)}
+                        >
+                          <span>↗</span>
+                          Open
+                        </a>
+                        <button className="all-resource-icon-btn" type="button" onClick={() => share(r)} aria-label="Share resource">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <circle cx="18" cy="5" r="3" stroke="currentColor" strokeWidth="2" />
+                            <circle cx="6" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+                            <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="2" />
+                            <path d="M8.7 10.9L15.3 7.1M8.7 13.1L15.3 16.9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          </svg>
+                        </button>
+                        <button
+                          className={`all-resource-icon-btn ${bookmarks.includes(r.id) ? "active" : ""}`}
+                          type="button"
+                          onClick={() => toggleBookmark(r.id)}
+                          aria-label="Save resource"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(r.id) ? "currentColor" : "none"}>
+                            <path d="M6 4h12v16l-6-3-6 3V4z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </section>
+
+              <section className="all-resource-events-strip">
+                <div className="all-events-strip-head">
+                  <h3>📅 Upcoming Webinars & Events</h3>
+                  <button type="button">View All</button>
+                </div>
+                <div className="all-events-strip-grid">
+                  {(events.length > 0
+                    ? events.slice(0, 3).map((e) => ({
+                        id: e.id,
+                        title: e.title,
+                        date: new Date(e.date).toLocaleDateString(),
+                        type: e.type || "Event",
+                      }))
+                    : [
+                        { id: "e1", title: "Financial Planning Workshop", date: "Mar 15, 2026", type: "Free" },
+                        { id: "e2", title: "Career Coaching Session", date: "Mar 18, 2026", type: "Live" },
+                        { id: "e3", title: "Mental Health Awareness Week", date: "Mar 20, 2026", type: "Series" },
+                      ]
+                  ).map((event) => (
+                    <article key={event.id} className="all-event-pill-card">
+                      <span>{event.type}</span>
+                      <h4>{event.title}</h4>
+                      <p>{event.date}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            </>
+          ) : (
+            <>
+              <section className="resource-category-hero">
+                <div className="resource-category-icon-wrap">
+                  <span className="resource-category-icon">♡</span>
+                </div>
+                <div>
+                  <h2>{activeCategoryLabel}</h2>
+                  <p>{categoryDescription}</p>
+                </div>
+              </section>
+
+              <section className="resource-metrics-grid">
+                <article className="resource-metric-card">
+                  <div className="resource-metric-label">Total Resources</div>
+                  <div className="resource-metric-value">{totalCount}</div>
+                  <span className="resource-metric-icon pink">♡</span>
+                </article>
+                <article className="resource-metric-card">
+                  <div className="resource-metric-label">Verified</div>
+                  <div className="resource-metric-value">{verifiedCount}</div>
+                  <span className="resource-metric-icon green">✓</span>
+                </article>
+                <article className="resource-metric-card">
+                  <div className="resource-metric-label">Bookmarked</div>
+                  <div className="resource-metric-value">{bookmarkedCount}</div>
+                  <span className="resource-metric-icon coral">🔖</span>
+                </article>
+              </section>
+
+              <section className="resource-list-head">
+                <h3>Available Resources</h3>
+              </section>
+
+              <section className="resource-cards-grid">
+                {displayedResources.map((r) => (
+                  <article key={r.id} className="resource-hub-card">
+                    <div className="resource-card-image-wrap">
+                      <img src={r.image} alt={r.title} />
+                      {r.verified && <span className="verified-mark">✓</span>}
+                    </div>
+                    <div className="resource-card-body">
+                      <div className="resource-card-top-row">
+                        <span className="resource-category-badge">{r.category}</span>
+                        <span className={`resource-type-badge ${r.type.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{r.type}</span>
+                        {r.verified && <span className="resource-verified-badge">Verified</span>}
+                      </div>
+                      <h3>{r.title}</h3>
+                      <p>{r.description}</p>
+                      <div className="resource-card-source-row">
+                        <span>Source: {r.source?.name || "SafeHer"}</span>
+                      </div>
+                      <div className="resource-card-actions">
+                        <a
+                          className="resource-open-btn"
+                          href={r.link}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={() => addToRecentlyViewed(r.id)}
+                        >
+                          <span>↗</span>
+                          Open
+                        </a>
+                        <button className="resource-icon-btn" type="button" onClick={() => share(r)} aria-label="Share resource">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <circle cx="18" cy="5" r="3" stroke="currentColor" strokeWidth="2" />
+                            <circle cx="6" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+                            <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="2" />
+                            <path d="M8.7 10.9L15.3 7.1M8.7 13.1L15.3 16.9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          </svg>
+                        </button>
+                        <button
+                          className={`resource-icon-btn ${bookmarks.includes(r.id) ? "active" : ""}`}
+                          type="button"
+                          onClick={() => toggleBookmark(r.id)}
+                          aria-label="Save resource"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill={bookmarks.includes(r.id) ? "currentColor" : "none"}>
+                            <path d="M6 4h12v16l-6-3-6 3V4z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                        {r.type === "PDF" && (
+                          <button className="resource-icon-btn" type="button" onClick={() => downloadIfPdf(r)} aria-label="Download PDF">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                              <path d="M12 3v11m0 0l4-4m-4 4l-4-4M5 20h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                ))}
+                {displayedResources.length === 0 && (
+                  <div className="resource-empty-state">
+                    <h4>No resources found</h4>
+                    <p>Try another category from the sidebar.</p>
+                  </div>
+                )}
+              </section>
+            </>
+          )}
         </main>
       </div>
       <Footer />

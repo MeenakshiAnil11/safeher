@@ -1,0 +1,358 @@
+/* Period Tracking Overview Landing Page Styles */
+
+.period-tracking-overview {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fef7ff 0%, #f0f9ff 25%, #fef3c7 50%, #fce7f3 75%, #fef7ff 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  position: relative;
+  overflow-x: hidden;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.period-tracking-overview::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.period-tracking-container {
+  position: relative;
+  z-index: 1;
+  padding-top: 80px;
+  padding-bottom: 60px;
+}
+
+/* Header Section */
+.period-tracking-header {
+  text-align: center;
+  margin-bottom: 60px;
+  animation: fadeInDown 0.8s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.period-tracking-header h1 {
+  font-size: 3.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 20px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.period-tracking-header p {
+  font-size: 1.25rem;
+  color: #6b7280;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+/* Mode Cards Grid */
+.period-modes-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto 32px;
+  padding: 0 24px;
+}
+
+/* Mode Card */
+.period-mode-card {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(18px);
+  border-radius: 18px;
+  padding: 22px 18px;
+  box-shadow: 
+    0 3px 5px -1px rgba(0, 0, 0, 0.08),
+    0 1px 3px -1px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.6s ease-out backwards;
+}
+
+.period-mode-card:nth-child(1) { animation-delay: 0.1s; }
+.period-mode-card:nth-child(2) { animation-delay: 0.2s; }
+.period-mode-card:nth-child(3) { animation-delay: 0.3s; }
+.period-mode-card:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.period-mode-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+
+.period-mode-card:hover::before {
+  transform: scaleX(1);
+}
+
+.period-mode-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 
+    0 12px 18px -6px rgba(0, 0, 0, 0.12),
+    0 6px 8px -4px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(236, 72, 153, 0.18);
+}
+
+/* Icon Container */
+.period-mode-icon {
+  text-align: center;
+  margin-bottom: 18px;
+  position: relative;
+}
+
+.period-mode-icon div {
+  font-size: 3.1rem;
+  display: inline-block;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.period-mode-card:hover .period-mode-icon div {
+  transform: scale(1.15) rotate(5deg);
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.15));
+}
+
+/* Card Content */
+.period-mode-content {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.period-mode-content h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.period-mode-content p {
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+/* Action Button */
+.period-mode-button {
+  width: 100%;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(236, 72, 153, 0.3);
+  letter-spacing: 0.01em;
+}
+
+.period-mode-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.period-mode-button:hover::before {
+  left: 100%;
+}
+
+.period-mode-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(236, 72, 153, 0.4);
+  background: linear-gradient(135deg, #db2777 0%, #7c3aed 100%);
+}
+
+.period-mode-button:active {
+  transform: translateY(0);
+}
+
+/* Footer */
+.period-tracking-footer {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9ca3af;
+  font-size: 0.95rem;
+  position: relative;
+  z-index: 1;
+}
+
+.period-tracking-footer p {
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .period-tracking-header h1 {
+    font-size: 2.75rem;
+  }
+  
+  .period-modes-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .period-tracking-container {
+    padding-top: 60px;
+    padding-bottom: 40px;
+  }
+
+  .period-tracking-header {
+    margin-bottom: 40px;
+  }
+
+  .period-tracking-header h1 {
+    font-size: 2.25rem;
+    padding: 0 20px;
+  }
+
+  .period-tracking-header p {
+    font-size: 1.1rem;
+    padding: 0 20px;
+  }
+
+  .period-modes-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 0 16px;
+  }
+
+  .period-mode-card {
+    padding: 32px 24px;
+  }
+
+  .period-mode-icon div {
+    font-size: 4rem;
+  }
+
+  .period-mode-content h3 {
+    font-size: 1.5rem;
+  }
+
+  .period-mode-content p {
+    font-size: 0.95rem;
+  }
+
+  .period-mode-button {
+    padding: 14px 28px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .period-tracking-header h1 {
+    font-size: 1.875rem;
+  }
+
+  .period-tracking-header p {
+    font-size: 1rem;
+  }
+
+  .period-mode-card {
+    padding: 28px 20px;
+    border-radius: 20px;
+  }
+
+  .period-mode-icon div {
+    font-size: 3.5rem;
+  }
+
+  .period-mode-content h3 {
+    font-size: 1.35rem;
+  }
+
+  .period-mode-button {
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    border-radius: 12px;
+  }
+}
+
+/* Decorative Elements */
+.period-tracking-overview::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: float 20s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-30px, 30px) scale(1.1);
+  }
+}
+
+

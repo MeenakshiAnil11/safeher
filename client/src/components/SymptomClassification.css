@@ -1,0 +1,312 @@
+/* Symptom Classification — Figma-matched */
+
+.sc-page {}
+
+.sc-title {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.sc-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0 0 16px;
+}
+
+.sc-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #faf5ff;
+  border: 1px solid #f3e8ff;
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: #6b21a8;
+  margin-bottom: 20px;
+}
+
+.sc-info-bar svg { flex-shrink: 0; }
+
+/* Form */
+.sc-form {
+  margin-bottom: 24px;
+}
+
+.sc-field {
+  margin-bottom: 14px;
+}
+
+.sc-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.sc-field input,
+.sc-field select,
+.sc-field textarea {
+  padding: 10px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #fafafa;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sc-field input:focus,
+.sc-field select:focus,
+.sc-field textarea:focus {
+  outline: none;
+  border-color: #c026d3;
+  box-shadow: 0 0 0 3px rgba(192, 38, 211, 0.08);
+  background: #fff;
+}
+
+.sc-field textarea { resize: vertical; }
+
+.sc-symptom-input {
+  display: flex;
+  gap: 8px;
+}
+
+.sc-symptom-input select { flex: 1; }
+
+.sc-add-btn {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #e879a8, #c026d3);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sc-add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: #fce7f3;
+  color: #be185d;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sc-tag button {
+  background: none;
+  border: none;
+  color: #be185d;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+}
+
+.sc-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.sc-submit-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #e879a8, #c026d3);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.sc-submit-btn:hover { opacity: 0.9; }
+.sc-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.sc-error {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #991b1b;
+  font-size: 14px;
+}
+
+/* Section title */
+.sc-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 24px 0 14px;
+}
+
+/* Symptom grid */
+.sc-symptom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.sc-symptom-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #f3e8ff;
+  border-radius: 12px;
+}
+
+.sc-symptom-card strong {
+  display: block;
+  font-size: 14px;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.sc-occur {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.sc-freq-badge {
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.sc-freq-badge.frequent {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.sc-freq-badge.moderate {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.sc-freq-badge.occasional {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* Pattern items */
+.sc-pattern-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.sc-pattern-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  margin-top: 1px;
+}
+
+.sc-pattern-item strong {
+  display: block;
+  font-size: 14px;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.sc-pattern-item p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Recommendation items */
+.sc-rec-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #faf5ff;
+  border: 1px solid #f3e8ff;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.sc-rec-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+/* Slider (fallback if not in health page context) */
+.sc-form .sym-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #1e1b4b 0%, #1e1b4b var(--slider-pct, 50%), #e5e7eb var(--slider-pct, 50%), #e5e7eb 100%);
+  outline: none;
+  cursor: pointer;
+  margin: 8px 0 0;
+}
+
+.sc-form .sym-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #6366f1;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.sc-form .sym-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #6366f1;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+/* Reset button reuse from mood prediction */
+.sc-page .mp-reset-btn {
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .sc-symptom-grid { grid-template-columns: 1fr; }
+  .sc-form-row { grid-template-columns: 1fr; }
+}

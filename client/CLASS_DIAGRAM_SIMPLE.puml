@@ -1,0 +1,98 @@
+@startuml SafeHer Class Diagram
+
+skinparam class {
+  BackgroundColor #E8F4F8
+  BorderColor #2C5F7D
+  FontSize 12
+}
+
+title SafeHer - Class Diagram
+
+' Core Model Classes
+class User {
+  -_id: ObjectId
+  -name: String
+  -email: String
+  -password: String
+  -role: String
+  +matchPassword(): Boolean
+}
+
+class Period {
+  -_id: ObjectId
+  -user: ObjectId
+  -startDate: Date
+  -endDate: Date
+  -intensity: String
+  +calculateDuration(): Number
+}
+
+class Vital {
+  -_id: ObjectId
+  -user: ObjectId
+  -weightKg: Number
+  -systolic: Number
+  -diastolic: Number
+  -bmi: Number
+  +calculateBMI(): Number
+}
+
+class Symptom {
+  -_id: ObjectId
+  -user: ObjectId
+  -date: Date
+  -tags: Array
+  -severity: Number
+}
+
+class SOSLog {
+  -_id: ObjectId
+  -user: ObjectId
+  -coords: Object
+  -address: String
+  -status: String
+}
+
+' Service Classes
+class HealthRiskService {
+  -model: KNN
+  +predict(features): Object
+  +getRecommendations(): Array
+}
+
+class ExerciseService {
+  -model: KNN
+  +recommend(features): Object
+}
+
+' Controller Classes
+class AuthController {
+  +register(): Promise
+  +login(): Promise
+}
+
+class HealthController {
+  +getVitals(): Promise
+  +getHealthRisk(): Promise
+}
+
+class PeriodController {
+  +getPeriods(): Promise
+  +createPeriod(): Promise
+}
+
+' Relationships
+User "1" --> "*" Period
+User "1" --> "*" Vital
+User "1" --> "*" Symptom
+User "1" --> "*" SOSLog
+
+HealthController ..> Vital
+HealthController ..> HealthRiskService
+PeriodController ..> Period
+AuthController ..> User
+
+HealthRiskService ..> Vital
+ExerciseService ..> Period
+
+@enduml

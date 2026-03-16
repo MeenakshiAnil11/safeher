@@ -1,0 +1,26 @@
+.ai-appt-reco-card {
+  background: linear-gradient(120deg, #fdf4ff 0%, #f5f3ff 100%);
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.ai-appt-reco-card h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: #5b21b6;
+}
+
+.ai-appt-reco-card p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.ai-appt-reco-card small {
+  display: block;
+  margin-top: 6px;
+  color: #6b7280;
+  font-size: 12px;
+}

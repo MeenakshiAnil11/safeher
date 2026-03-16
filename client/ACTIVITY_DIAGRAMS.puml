@@ -1,0 +1,407 @@
+@startuml SafeHer Activity Diagrams
+
+skinparam activity {
+  BackgroundColor #E8F4F8
+  BorderColor #2C5F7D
+  FontSize 12
+}
+skinparam arrow {
+  Color #2C5F7D
+  Thickness 2
+}
+
+' ============================================
+' Activity Diagram 1: User Registration Process
+' ============================================
+@startuml User_Registration_Activity
+
+title User Registration Activity Flow
+
+start
+
+:User opens registration page;
+:Fill registration form\n(name, email, password, phone);
+:Click "Create Account";
+
+if (Form validation passed?) then (yes)
+  :Send POST request to /api/auth/register;
+  :Backend validates input data;
+  
+  if (Email already exists?) then (yes)
+    :Display error: "Email already registered";
+    stop
+  else (no)
+    :Hash password using bcrypt;
+    :Create user object;
+    :Save to MongoDB Users collection;
+    
+    if (Save successful?) then (yes)
+      :Generate JWT token;
+      :Return success response;
+      :Store token in localStorage;
+      :Redirect to Dashboard;
+      stop
+    else (no)
+      :Display error: "Registration failed";
+      stop
+    endif
+  endif
+else (no)
+  :Display validation errors;
+  stop
+endif
+
+@enduml
+
+' ============================================
+' Activity Diagram 2: Period Tracking Process
+' ============================================
+@startuml Period_Tracking_Activity
+
+title Period Tracking Activity Flow
+
+start
+
+:User navigates to Period Tracking;
+:View existing period history;
+:Click "Add New Period";
+
+:Enter period details\n(startDate, endDate, intensity);
+:Select symptoms (optional);
+:Enter mood and notes (optional);
+:Click "Save Period";
+
+:Calculate period duration\n(endDate - startDate);
+:Determine cycle phase\n(Menstrual/Follicular/Ovulatory/Luteal);
+:Save to MongoDB Periods collection;
+
+if (Save successful?) then (yes)
+  :Calculate cycle statistics;
+  :Update cycle predictions;
+  :Predict next period date;
+  :Calculate fertile window;
+  :Calculate ovulation date;
+  
+  :Display success message;
+  :Update calendar view;
+  :Show cycle predictions;
+  stop
+else (no)
+  :Display error message;
+  stop
+endif
+
+@enduml
+
+' ============================================
+' Activity Diagram 3: Health Risk Prediction Process
+' ============================================
+@startuml Health_Risk_Prediction_Activity
+
+title Health Risk Prediction Activity Flow
+
+start
+
+:User navigates to AI Health Assistant;
+:Select "Health Risk Prediction" tab;
+:Fill health data form;
+
+:Enter age;
+:Enter BMI or weight/height;
+:Select blood pressure level;
+:Select cholesterol level;
+:Select exercise frequency;
+:Select diet type;
+:Click "Predict Health Risk";
+
+:Frontend validates input;
+:Send POST request to /api/health-risk/predict;
+
+:Backend receives request;
+:Prepare feature array;
+:Send request to Flask ML Service;
+
+:ML Service loads KNN model;
+:Scale features using StandardScaler;
+:Predict risk level using KNN;
+:Calculate confidence score;
+:Generate recommendations;
+
+if (Risk level?) then (Low)
+  :Return "Low Risk" with green indicator;
+elseif (Moderate) then
+  :Return "Moderate Risk" with yellow indicator;
+elseif (High) then
+  :Return "High Risk" with orange indicator;
+else (Very High)
+  :Return "Very High Risk" with red indicator;
+endif
+
+:Display risk assessment;
+:Show recommendations;
+:Display confidence score;
+stop
+
+@enduml
+
+' ============================================
+' Activity Diagram 4: SOS Alert Process
+' ============================================
+@startuml SOS_Alert_Activity
+
+title SOS Emergency Alert Activity Flow
+
+start
+
+:User clicks SOS button;
+:Show confirmation dialog;
+
+if (User confirms?) then (no)
+  :Cancel SOS alert;
+  stop
+else (yes)
+  :Request GPS location permission;
+  
+  if (Location permission granted?) then (no)
+    :Display error: "Location access required";
+    stop
+  else (yes)
+    :Get current GPS coordinates;
+    :Reverse geocode to get address;
+    
+    :Send POST request to /api/sos/send\n{coords, address, message};
+    :Backend verifies JWT token;
+    :Query MongoDB for user's emergency contacts;
+    
+    if (Contacts found?) then (no)
+      :Display warning: "No emergency contacts";
+      stop
+    else (yes)
+      :Save SOS log to MongoDB;
+      :For each contact;
+      
+      :Send email alert\n(userName, location, timestamp);
+      :Send SMS alert (if configured);
+      
+      :Update SOS status to "sent";
+      :Return success response;
+      
+      :Display confirmation\n"SOS sent to X contacts";
+      :Show location on map;
+      :Log SOS event;
+      stop
+    endif
+  endif
+endif
+
+@enduml
+
+' ============================================
+' Activity Diagram 5: Exercise Recommendation Process
+' ============================================
+@startuml Exercise_Recommendation_Activity
+
+title Exercise Recommendation Activity Flow
+
+start
+
+:User navigates to Exercise Recommendation;
+:Get current cycle phase from period data;
+
+:Display exercise form;
+:User selects cycle phase;
+:User enters energy level (1-10);
+:User selects mood;
+:User enters cramps level (0-10);
+:User enters sleep hours;
+:User selects stress level;
+:Click "Get Recommendation";
+
+:Frontend validates input;
+:Send POST request to /api/exercise/recommend;
+
+:Backend prepares features;
+:Encode categorical features\n(phase, mood, stress_level);
+:Send to Flask ML Service;
+
+:ML Service loads KNN model;
+:Scale numerical features;
+:Predict exercise type;
+:Calculate probabilities for all exercises;
+:Select exercise with highest probability;
+:Generate explanation based on inputs;
+:Generate safety notes based on phase;
+
+:Return recommendation\n{exercise, confidence, explanation, safetyNotes};
+
+:Display recommended exercise;
+:Show confidence score;
+:Display explanation;
+:Show safety notes;
+:Display exercise video link (if available);
+stop
+
+@enduml
+
+' ============================================
+' Activity Diagram 6: Symptom Classification Process
+' ============================================
+@startuml Symptom_Classification_Activity
+
+title Symptom Classification Activity Flow
+
+start
+
+:User navigates to Symptom Analysis;
+:Enter symptoms (multiple selection);
+:Select current mood;
+:Enter severity level (1-10);
+:Click "Analyze Symptoms";
+
+:Frontend validates input;
+:Send POST request to /api/symptom-classification/predict;
+
+:Backend receives request;
+:Preprocess symptoms (tokenize, normalize);
+:Prepare feature array;
+:Send to Flask ML Service;
+
+:ML Service loads Bayesian classifier\n(GaussianNB/MultinomialNB);
+:Scale features;
+:Predict symptom category;
+:Predict severity level;
+:Calculate confidence score;
+:Generate recommendations based on category;
+
+if (Category?) then (Neurological)
+  :Return "Neurological" category;
+  :Recommend: Rest, hydration, consult neurologist;
+elseif (Reproductive) then
+  :Return "Reproductive" category;
+  :Recommend: Track cycle, consult gynecologist;
+elseif (Digestive) then
+  :Return "Digestive" category;
+  :Recommend: Dietary changes, consult gastroenterologist;
+elseif (Cardiovascular) then
+  :Return "Cardiovascular" category;
+  :Recommend: Monitor vitals, consult cardiologist;
+else (General)
+  :Return "General" category;
+  :Recommend: Rest, hydration, monitor;
+endif
+
+:Display classification result;
+:Show confidence score;
+:Display recommendations;
+:Show severity assessment;
+stop
+
+@enduml
+
+' ============================================
+' Activity Diagram 7: Appointment Scheduling Process
+' ============================================
+@startuml Appointment_Scheduling_Activity
+
+title Appointment Scheduling Activity Flow
+
+start
+
+:User navigates to Appointments;
+:View existing appointments calendar;
+:Click "Add New Appointment";
+
+:Fill appointment form;
+:Enter appointment title;
+:Select appointment type\n(prenatal, ultrasound, consultation, etc.);
+:Select date from calendar;
+:Enter time;
+:Enter doctor name (optional);
+:Enter location (optional);
+:Enter notes (optional);
+:Enable/disable reminder;
+:Set reminder time (hours before);
+:Click "Save Appointment";
+
+:Frontend validates date/time;
+:Check if date is in future;
+
+if (Valid date/time?) then (no)
+  :Display error: "Invalid date/time";
+  stop
+else (yes)
+  :Send POST request to /api/appointments;
+  :Backend verifies JWT token;
+  :Save to MongoDB Appointments collection;
+  
+  if (Save successful?) then (yes)
+    if (Reminder enabled?) then (yes)
+      :Schedule reminder notification;
+      :Calculate reminder time\n(appointmentTime - reminderHours);
+      :Store reminder in notification queue;
+    else (no)
+    endif
+    
+    :Display success message;
+    :Update appointments calendar;
+    :Show appointment in list;
+    stop
+  else (no)
+    :Display error: "Failed to save appointment";
+    stop
+  endif
+endif
+
+@enduml
+
+' ============================================
+' Activity Diagram 8: Medication Tracking Process
+' ============================================
+@startuml Medication_Tracking_Activity
+
+title Medication Tracking Activity Flow
+
+start
+
+:User navigates to Medications;
+:View medication list;
+:Click "Add Medication";
+
+:Fill medication form;
+:Enter medication name;
+:Enter dosage;
+:Select frequency\n(daily, twice_daily, weekly, etc.);
+:Set medication times\n(e.g., 08:00, 20:00);
+:Select start date;
+:Enter end date (optional);
+:Enter notes (optional);
+:Enable/disable reminder;
+:Click "Save Medication";
+
+:Frontend validates input;
+:Send POST request to /api/medications;
+
+:Backend validates data;
+:Save to MongoDB Medications collection;
+
+if (Save successful?) then (yes)
+  if (Reminder enabled?) then (yes)
+    :Schedule daily reminders;
+    :Set reminder times;
+    :Store in notification system;
+  else (no)
+  endif
+  
+  :Display success message;
+  :Add to medication list;
+  :Show in medication calendar;
+  stop
+else (no)
+  :Display error message;
+  stop
+endif
+
+@enduml
+
+@enduml
+

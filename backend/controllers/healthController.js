@@ -7,6 +7,265 @@ import ChatHistory from "../models/ChatHistory.js";
 import Exercise from "../models/Exercise.js";
 import Sleep from "../models/Sleep.js";
 import Nutrition from "../models/Nutrition.js";
+import axios from "axios";
+import HealthMetric from "../models/HealthMetric.js";
+import SmartwatchConnection from "../models/SmartwatchConnection.js";
+
+const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+const GOOGLE_FIT_AGGREGATE_ENDPOINT = "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate";
+
+const toNumber = (value, fallback = 0) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+};
+
+const extractPointValue = (point) => {
+  if (!point || !Array.isArray(point.value) || point.value.length === 0) return null;
+  const first = point.value[0];
+  if (typeof first.fpVal === "number") return first.fpVal;
+  if (typeof first.intVal === "number") return first.intVal;
+  return null;
+};
+
+const extractLatestDatasetValue = (aggregateResponse) => {
+  const buckets = aggregateResponse?.bucket || [];
+  let latestPoint = null;
+  for (const bucket of buckets) {
+    const datasets = bucket?.dataset || [];
+    for (const dataset of datasets) {
+      const points = dataset?.point || [];
+      for (const point of points) {
+        if (!latestPoint) {
+          latestPoint = point;
+          continue;
+        }
+        const currentEnd = Number(point?.endTimeNanos || 0);
+        const latestEnd = Number(latestPoint?.endTimeNanos || 0);
+        if (currentEnd > latestEnd) latestPoint = point;
+      }
+    }
+  }
+  return extractPointValue(latestPoint);
+};
+
+const aggregateGoogleFitData = async ({ accessToken, dataTypeName, startTimeMs, endTimeMs }) => {
+  const body = {
+    aggregateBy: [{ dataTypeName }],
+    bucketByTime: { durationMillis: Math.max(1, endTimeMs - startTimeMs) },
+    startTimeMillis: startTimeMs,
+    endTimeMillis: endTimeMs,
+  };
+  const response = await axios.post(GOOGLE_FIT_AGGREGATE_ENDPOINT, body, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    timeout: 15000,
+  });
+  return extractLatestDatasetValue(response.data);
+};
+
+const refreshGoogleFitAccessTokenIfNeeded = async (connection) => {
+  const now = Date.now();
+  const expiry = connection?.tokenExpiryDate ? new Date(connection.tokenExpiryDate).getTime() : 0;
+  const hasValidToken = connection?.accessToken && (!expiry || expiry - now > 60 * 1000);
+  if (hasValidToken) return connection.accessToken;
+
+  if (!connection?.refreshToken) {
+    throw new Error("Google Fit token expired. Reconnect smartwatch.");
+  }
+
+  const clientId = process.env.GOOGLE_FIT_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_FIT_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error("Google Fit OAuth client is not configured on server.");
+  }
+
+  const tokenResponse = await axios.post(
+    GOOGLE_TOKEN_ENDPOINT,
+    new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "refresh_token",
+      refresh_token: connection.refreshToken,
+    }),
+    { headers: { "Content-Type": "application/x-www-form-urlencoded" }, timeout: 15000 }
+  );
+
+  connection.accessToken = tokenResponse.data.access_token;
+  connection.tokenExpiryDate = new Date(now + toNumber(tokenResponse.data.expires_in, 3600) * 1000);
+  await connection.save();
+  return connection.accessToken;
+};
+
+export const connectGoogleFit = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const {
+      accessToken,
+      refreshToken,
+      expiresIn,
+      tokenExpiryDate,
+      scopes = [],
+    } = req.body || {};
+
+    if (!accessToken) {
+      return res.status(400).json({ message: "accessToken is required" });
+    }
+
+    const expiryDate = tokenExpiryDate
+      ? new Date(tokenExpiryDate)
+      : new Date(Date.now() + toNumber(expiresIn, 3600) * 1000);
+
+    const connection = await SmartwatchConnection.findOneAndUpdate(
+      { userId },
+      {
+        userId,
+        provider: "google_fit",
+        accessToken,
+        refreshToken: refreshToken || undefined,
+        tokenExpiryDate: expiryDate,
+        scopes: Array.isArray(scopes) ? scopes : [],
+        connected: true,
+        connectedAt: new Date(),
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    return res.status(200).json({
+      connected: true,
+      provider: "google_fit",
+      connectedAt: connection.connectedAt,
+      tokenExpiryDate: connection.tokenExpiryDate,
+    });
+  } catch (error) {
+    console.error("connectGoogleFit error", error);
+    return res.status(500).json({ message: "Failed to connect Google Fit" });
+  }
+};
+
+export const disconnectGoogleFit = async (req, res) => {
+  try {
+    const userId = req.userId;
+    await SmartwatchConnection.findOneAndUpdate(
+      { userId },
+      { connected: false, accessToken: "", refreshToken: "", tokenExpiryDate: null },
+      { new: true }
+    );
+    return res.json({ connected: false, message: "Smartwatch disconnected" });
+  } catch (error) {
+    console.error("disconnectGoogleFit error", error);
+    return res.status(500).json({ message: "Failed to disconnect smartwatch" });
+  }
+};
+
+export const getSmartwatchData = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const connection = await SmartwatchConnection.findOne({ userId, provider: "google_fit", connected: true });
+
+    const latestSaved = await HealthMetric.findOne({ userId }).sort({ timestamp: -1 }).lean();
+    const latestVital = await Vital.findOne({ user: userId }).sort({ recordedAt: -1, createdAt: -1 }).lean();
+
+    if (!connection) {
+      return res.json({
+        connected: false,
+        provider: "google_fit",
+        stepsToday: toNumber(latestSaved?.steps, 0),
+        heartRate: toNumber(latestSaved?.heartRate, latestVital?.heartRateBpm || 0),
+        spo2: toNumber(latestSaved?.spo2, 0),
+        weight: toNumber(latestSaved?.weight, latestVital?.weightKg || 0),
+        height: toNumber(latestSaved?.height, (latestVital?.heightCm || 0) / 100),
+        bmi: toNumber(latestSaved?.bmi, latestVital?.bmi || 0),
+        lastSyncAt: latestSaved?.timestamp || null,
+        timestamp: new Date(),
+        recent: await HealthMetric.find({ userId }).sort({ timestamp: -1 }).limit(7).lean(),
+      });
+    }
+
+    const accessToken = await refreshGoogleFitAccessTokenIfNeeded(connection);
+    const now = Date.now();
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const [stepsRaw, heartRateRaw, spo2Raw, weightRaw, heightRaw] = await Promise.all([
+      aggregateGoogleFitData({
+        accessToken,
+        dataTypeName: "com.google.step_count.delta",
+        startTimeMs: startOfDay.getTime(),
+        endTimeMs: now,
+      }),
+      aggregateGoogleFitData({
+        accessToken,
+        dataTypeName: "com.google.heart_rate.bpm",
+        startTimeMs: now - 24 * 60 * 60 * 1000,
+        endTimeMs: now,
+      }),
+      aggregateGoogleFitData({
+        accessToken,
+        dataTypeName: "com.google.oxygen_saturation",
+        startTimeMs: now - 24 * 60 * 60 * 1000,
+        endTimeMs: now,
+      }),
+      aggregateGoogleFitData({
+        accessToken,
+        dataTypeName: "com.google.weight",
+        startTimeMs: now - 30 * 24 * 60 * 60 * 1000,
+        endTimeMs: now,
+      }),
+      aggregateGoogleFitData({
+        accessToken,
+        dataTypeName: "com.google.height",
+        startTimeMs: now - 365 * 24 * 60 * 60 * 1000,
+        endTimeMs: now,
+      }),
+    ]);
+
+    const stepsToday = Math.max(0, Math.round(toNumber(stepsRaw, latestSaved?.steps || 0)));
+    const heartRate = Number(toNumber(heartRateRaw, latestSaved?.heartRate || latestVital?.heartRateBpm || 0).toFixed(1));
+
+    let spo2 = toNumber(spo2Raw, latestSaved?.spo2 || 0);
+    if (spo2 > 0 && spo2 <= 1.2) spo2 *= 100;
+    spo2 = Number(spo2.toFixed(1));
+
+    const weight = Number(toNumber(weightRaw, latestSaved?.weight || latestVital?.weightKg || 0).toFixed(1));
+    const height = Number(toNumber(heightRaw, latestSaved?.height || ((latestVital?.heightCm || 0) / 100)).toFixed(2));
+    const bmi = weight > 0 && height > 0 ? Number((weight / (height * height)).toFixed(1)) : 0;
+
+    const synced = await HealthMetric.create({
+      userId,
+      steps: stepsToday,
+      heartRate,
+      spo2,
+      weight,
+      height,
+      bmi,
+      timestamp: new Date(),
+    });
+
+    connection.lastSyncAt = synced.timestamp;
+    await connection.save();
+
+    const recent = await HealthMetric.find({ userId }).sort({ timestamp: -1 }).limit(7).lean();
+
+    return res.json({
+      connected: true,
+      provider: "google_fit",
+      stepsToday,
+      heartRate,
+      spo2,
+      weight,
+      height,
+      bmi,
+      lastSyncAt: synced.timestamp,
+      timestamp: synced.timestamp,
+      recent,
+    });
+  } catch (error) {
+    console.error("getSmartwatchData error", error?.response?.data || error.message);
+    return res.status(500).json({
+      message: "Failed to sync smartwatch data",
+      connected: false,
+    });
+  }
+};
 
 // GET /api/health/vitals
 export const listVitals = async (req, res) => {

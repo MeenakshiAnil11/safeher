@@ -15,7 +15,7 @@ export const listContacts = async (req, res) => {
 // POST /api/contacts - create contact
 export const createContact = async (req, res) => {
   try {
-    const { name, number, relationship = "", email = "", notes = "" } = req.body || {};
+    const { name, number, relationship = "", email = "", fcmToken = "", notes = "" } = req.body || {};
     if (!name || !number) {
       return res.status(400).json({ message: "Name and Phone are required" });
     }
@@ -26,6 +26,7 @@ export const createContact = async (req, res) => {
       number,
       relationship,
       email,
+      fcmToken, // Save FCM token
       notes,
     });
 
@@ -40,11 +41,11 @@ export const createContact = async (req, res) => {
 export const updateContact = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, number, relationship, email, notes } = req.body || {};
+    const { name, number, relationship, email, fcmToken, notes } = req.body || {};
 
     const contact = await Contact.findOneAndUpdate(
       { _id: id, user: req.userId },
-      { $set: { name, number, relationship, email, notes } },
+      { $set: { name, number, relationship, email, fcmToken, notes } },
       { new: true }
     );
 
@@ -67,5 +68,36 @@ export const deleteContact = async (req, res) => {
   } catch (err) {
     console.error("deleteContact error", err);
     res.status(500).json({ message: "Failed to delete contact" });
+  }
+};
+
+// POST /api/contacts/:id/fcm-token - update FCM token for a contact
+export const updateFCMToken = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fcmToken } = req.body;
+
+    if (!fcmToken) {
+      return res.status(400).json({ message: "FCM token is required" });
+    }
+
+    const contact = await Contact.findOneAndUpdate(
+      { _id: id, user: req.userId },
+      { $set: { fcmToken } },
+      { new: true }
+    );
+
+    if (!contact) {
+      return res.status(404).json({ message: "Contact not found" });
+    }
+
+    res.json({ 
+      success: true, 
+      message: "FCM token updated successfully",
+      contact 
+    });
+  } catch (err) {
+    console.error("updateFCMToken error", err);
+    res.status(500).json({ message: "Failed to update FCM token" });
   }
 };

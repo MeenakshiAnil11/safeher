@@ -1,5 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import UserHeader from "../../components/UserHeader";
+import "./PeriodTrackingOverview.css";
 
 export default function PeriodTrackingOverview() {
   const navigate = useNavigate();
@@ -8,37 +10,34 @@ export default function PeriodTrackingOverview() {
     {
       id: "period",
       title: "Period Tracking Mode",
-      description: "Track your menstrual cycle, symptoms, and hormonal phases.",
+      description: "Track your menstrual cycle, symptoms, and hormonal phases with detailed insights.",
       icon: "🩸",
-      path: "/period-tracker"
+      path: "/period-tracker",
+      gradient: "from-pink-500 to-rose-500"
     },
     {
       id: "conceive",
       title: "Conceive Mode",
-      description: "Plan conception by monitoring your ovulation and fertile window.",
+      description: "Plan conception by monitoring your ovulation and fertile window with precision tracking.",
       icon: "👶",
-      path: "/period-tracking/conceive-intro"
+      path: "/period-tracking/conceive",
+      gradient: "from-blue-500 to-cyan-500"
     },
     {
       id: "pregnancy",
       title: "Pregnancy Mode",
-      description: "Track your pregnancy week by week with helpful health insights.",
+      description: "Track your pregnancy week by week with helpful health insights and baby development.",
       icon: "🤰",
-      path: "/period-tracking/pregnancy-intro"
-    },
-    {
-      id: "track",
-      title: "Track Without Period",
-      description: "Log your daily moods and health without period data.",
-      icon: "🌙",
-      path: "/period-tracking/track"
+      path: "/period-tracking/pregnancy",
+      gradient: "from-purple-500 to-pink-500"
     },
     {
       id: "perimenopause",
       title: "Perimenopause Mode",
-      description: "Monitor symptoms and cycle changes during perimenopause.",
+      description: "Monitor symptoms and cycle changes during perimenopause with personalized support.",
       icon: "🧬",
-      path: "/perimenopause-intro"
+      path: "/period-tracking/perimenopause",
+      gradient: "from-indigo-500 to-purple-500"
     }
   ];
 
@@ -47,55 +46,46 @@ export default function PeriodTrackingOverview() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-8">
+    <div className="period-tracking-overview">
+      <UserHeader />
+      <div className="period-tracking-container">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4 font-poppins">
-            Period & Reproductive Health Tracking
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Select a mode to begin monitoring your cycle, fertility, or reproductive health.
+        <div className="period-tracking-header">
+          <h1>Period & Reproductive Health Tracking</h1>
+          <p>
+            Select a mode to begin monitoring your cycle, fertility, or reproductive health journey.
           </p>
         </div>
 
         {/* Mode Selection Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
+        <div className="period-modes-grid">
           {trackingModes.map((mode) => (
             <div
               key={mode.id}
-              className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 p-6"
+              className="period-mode-card"
             >
               {/* Icon */}
-              <div className="text-center mb-4">
-                <div className="text-5xl mb-3">{mode.icon}</div>
+              <div className="period-mode-icon">
+                <div>{mode.icon}</div>
               </div>
 
               {/* Title and Description */}
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-3 font-poppins">
-                  {mode.title}
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {mode.description}
-                </p>
+              <div className="period-mode-content">
+                <h3>{mode.title}</h3>
+                <p>{mode.description}</p>
               </div>
 
               {/* Action Button */}
               <button
                 onClick={() => handleModeSelect(mode.path)}
-                className="w-full bg-gradient-to-r from-pink-300 to-pink-400 hover:from-pink-400 hover:to-pink-500 text-white py-3 px-6 rounded-xl font-semibold text-lg shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-300"
+                className="period-mode-button"
               >
-                Start Tracking
+                Start Tracking →
               </button>
             </div>
           ))}
         </div>
 
-        {/* Footer */}
-        <div className="text-center text-gray-400 text-sm">
-          <p>Developed by Meenakshi Anil | MCA Mini Project 2025</p>
-        </div>
       </div>
     </div>
   );

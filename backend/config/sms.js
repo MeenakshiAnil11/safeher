@@ -23,17 +23,22 @@ if (sid && token && fromNumber) {
  */
 export async function sendSMS({ to, body }) {
   if (!smsClient) {
-    console.log("📵 SMS skipped:", { to, body });
-    return;
+    console.log("📵 SMS skipped (Twilio not configured):", { to, body });
+    return { sid: "skipped" };
   }
+  
+  console.log(`📱 Sending SMS to ${to}...`);
+  
   try {
     const res = await smsClient.messages.create({
       from: fromNumber,
       to,
       body,
     });
+    console.log(`✅ SMS sent successfully to ${to}. Message SID: ${res.sid}`);
     return res;
   } catch (err) {
     console.error("❌ SMS send failed", to, err?.message || err);
+    throw err;
   }
 }

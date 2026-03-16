@@ -16,7 +16,9 @@ api.interceptors.request.use(
     if (
       !url.includes("/auth/login") &&
       !url.includes("/auth/register") &&
-      !url.includes("/auth/google")
+      !url.includes("/auth/google") &&
+      !url.includes("/auth/forgot-password") &&
+      !url.includes("/auth/reset-password")
     ) {
       const token = localStorage.getItem("token");
       if (token) {

@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import UserHeader from "../../components/UserHeader";
 
 export default function PerimenopauseIntroSimple() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function PerimenopauseIntroSimple() {
       padding: '2rem',
       fontFamily: 'Arial, sans-serif'
     }}>
+      <UserHeader />
       <div style={{ 
         maxWidth: '800px', 
         margin: '0 auto',

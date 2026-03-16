@@ -420,7 +420,7 @@ export default function AdminExercises() {
                   name="videoLink"
                   value={formData.videoLink}
                   onChange={handleInputChange}
-                  placeholder="https://www.youtube.com/watch?v=..."
+                  placeholder="https://www.youtube.com/embed/VIDEO_ID"
                 />
               </label>
               <label>

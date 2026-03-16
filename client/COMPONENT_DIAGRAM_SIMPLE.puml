@@ -1,0 +1,52 @@
+@startuml SafeHer Component Diagram
+
+skinparam component {
+  BackgroundColor #E8F4F8
+  BorderColor #2C5F7D
+  FontSize 12
+}
+
+title SafeHer - Component Diagram
+
+package "Frontend" {
+  component [React App] as React
+  component [UI Components] as UI
+}
+
+package "Backend" {
+  component [Express Server] as Express
+  component [Controllers] as Controllers
+  component [Services] as Services
+}
+
+package "ML Services" {
+  component [Flask API] as Flask
+  component [ML Models] as ML
+}
+
+package "Database" {
+  database "MongoDB" as MongoDB
+}
+
+package "External" {
+  component [Firebase Auth] as Firebase
+  component [Email Service] as Email
+  component [Google Maps] as Maps
+}
+
+' Main connections
+React --> Express : HTTP/REST
+UI --> React : uses
+
+Express --> Controllers : routes
+Controllers --> Services : uses
+Services --> MongoDB : queries
+
+Controllers --> Flask : API calls
+Flask --> ML : uses
+
+Services --> Firebase : OAuth
+Services --> Email : notifications
+React --> Maps : location
+
+@enduml
