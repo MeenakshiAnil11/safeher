@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api";
+import { API_ORIGIN } from "../config/apiConfig";
 import { getProductImage, getImageUrl } from "../utils/imageUtils";
 import "./ProductCard.css";
 
@@ -31,7 +32,7 @@ const ProductCard = ({
         const resolvedUrl = getImageUrl(imageUrl);
         // If getImageUrl returns null, manually construct the URL
         if (!resolvedUrl) {
-          const backendUrl = "http://localhost:5000";
+          const backendUrl = API_ORIGIN;
           if (imageUrl.startsWith("/uploads/")) {
             return `${backendUrl}${imageUrl}`;
           } else if (imageUrl.startsWith("/")) {

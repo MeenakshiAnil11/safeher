@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
 import SuccessDialog from "../components/SuccessDialog";
 import RichTextEditor from "../components/RichTextEditor";
+import { resolveApiPath } from "../config/apiConfig";
 import "./CreatePost.css";
 
 const CreatePost = () => {
@@ -327,7 +328,7 @@ const CreatePost = () => {
                 {imagePreviews.map((preview, idx) => (
                   <div key={idx} className="image-preview">
                     <img
-                      src={typeof preview === 'string' && preview.startsWith('http') ? preview : typeof preview === 'string' ? `http://localhost:5000${preview}` : preview}
+                      src={typeof preview === "string" ? resolveApiPath(preview) : preview}
                       alt={`Preview ${idx + 1}`}
                     />
                     <button

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "../../../api";
 import ProductForm from "./ProductForm";
 import SuccessDialog from "../../../components/SuccessDialog";
+import { resolveApiPath } from "../../../config/apiConfig";
 import "./EcommercePages.css";
 
 export default function EcommerceProducts() {
@@ -178,11 +179,7 @@ export default function EcommerceProducts() {
                   <td>
                     <div className="product-info">
                       <img
-                        src={
-                          product.images?.[0]?.url?.startsWith("/uploads/")
-                            ? `http://localhost:5000${product.images[0].url}`
-                            : product.images?.[0]?.url || "/images/placeholder-product.jpg"
-                        }
+                        src={product.images?.[0]?.url ? resolveApiPath(product.images[0].url) : "/images/placeholder-product.jpg"}
                         alt={product.name}
                         className="product-thumb"
                       />

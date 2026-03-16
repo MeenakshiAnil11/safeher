@@ -6,6 +6,7 @@ import SuccessDialog from "../components/SuccessDialog";
 import PostReactions from "../components/PostReactions";
 import ShareButton from "../components/ShareButton";
 import RichTextEditor from "../components/RichTextEditor";
+import { resolveApiPath } from "../config/apiConfig";
 import "./PostDetail.css";
 
 const PostDetail = () => {
@@ -274,7 +275,7 @@ const PostDetail = () => {
                 {post.images.map((img, idx) => (
                   <img
                     key={idx}
-                    src={img.startsWith("http") ? img : `http://localhost:5000${img}`}
+                    src={resolveApiPath(img)}
                     alt={`Post image ${idx + 1}`}
                     className="post-image"
                   />

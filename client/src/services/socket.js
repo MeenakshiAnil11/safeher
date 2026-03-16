@@ -1,4 +1,5 @@
 import { io } from "socket.io-client";
+import { API_ORIGIN } from "../config/apiConfig";
 
 let socket = null;
 
@@ -8,7 +9,7 @@ export function connectSocket() {
   const token = localStorage.getItem("token");
   if (!token) return null;
 
-  const clientSocket = io("http://localhost:5000", {
+  const clientSocket = io(API_ORIGIN, {
     auth: { token },
     transports: ["websocket", "polling"],
     reconnection: true,

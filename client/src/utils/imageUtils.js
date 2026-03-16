@@ -2,6 +2,8 @@
  * Utility function to resolve product image URLs
  * Handles different URL formats and prepends backend URL when needed
  */
+import { API_ORIGIN } from "../config/apiConfig";
+
 export const getImageUrl = (url) => {
   if (!url || typeof url !== 'string') return null;
   
@@ -25,14 +27,7 @@ export const getImageUrl = (url) => {
     return url;
   }
   
-  // Get backend URL - extract from API base URL or use default
-  // The API base URL is http://localhost:5000/api, so backend is http://localhost:5000
-  let backendUrl = "http://localhost:5000";
-  
-  // Try to get from environment variable
-  if (process.env.REACT_APP_API_URL) {
-    backendUrl = process.env.REACT_APP_API_URL.replace("/api", "");
-  }
+  const backendUrl = API_ORIGIN;
   
   // If it's a relative path starting with /uploads, prepend backend URL
   if (url.startsWith("/uploads/")) {
