@@ -21,3 +21,4 @@ test-results/
 playwright-report/
 
 .zencoder/
+backend/serviceAccountKey.json 
