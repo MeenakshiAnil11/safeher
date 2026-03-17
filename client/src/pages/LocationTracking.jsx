@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import UserHeader from '../components/UserHeader';
 import LocationSidebar from '../components/LocationSidebar';
 import Footer from '../components/Footer';
@@ -45,6 +45,7 @@ export default function LocationTracking() {
   const [showDialog, setShowDialog] = useState(false);
   const [dialogContent, setDialogContent] = useState({ title: '', message: '', type: 'info' });
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const trackingUnsubscribeRef = useRef(null);
   const permissionUnsubscribeRef = useRef(null);
@@ -70,6 +71,8 @@ export default function LocationTracking() {
         // Only set up the service without requesting location
       } catch (error) {
         console.error('Failed to initialize location service:', error);
+      } finally {
+        setIsInitializing(false);
       }
     };
 
@@ -194,6 +197,11 @@ export default function LocationTracking() {
       locationService.stopTracking();
       setIsTracking(false);
       setLocationError('');
+      await locationService.logActivityEvent(
+        'TRACKING_PAUSED',
+        'Tracking paused',
+        currentLocation
+      );
       if (trackingUnsubscribeRef.current) {
         trackingUnsubscribeRef.current();
         trackingUnsubscribeRef.current = null;
@@ -216,6 +224,11 @@ export default function LocationTracking() {
         // Start tracking
         locationService.startTracking();
         setIsTracking(true);
+        await locationService.logActivityEvent(
+          'TRACKING_STARTED',
+          'Tracking started',
+          currentLocation
+        );
       } catch (error) {
         setLocationError(error.message);
       }
@@ -521,7 +534,13 @@ export default function LocationTracking() {
 
   // Format location for display
   const formatLocation = (location) => {
-    if (!location) return 'Location not available';
+    if (
+      !location ||
+      !Number.isFinite(Number(location.latitude)) ||
+      !Number.isFinite(Number(location.longitude))
+    ) {
+      return 'Location unavailable';
+    }
     return `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
   };
 
@@ -615,10 +634,10 @@ export default function LocationTracking() {
           <div className={activeSection === 'dashboard' || activeSection === 'overview' || activeSection === 'live-map' || activeSection === 'location-history' || activeSection === 'emergency-contacts' || activeSection === 'safe-zones' || activeSection === 'sos-alerts' || activeSection === 'safety-audit' || activeSection === 'explore-nearby' || activeSection === 'find-support' || activeSection === 'follow-me-mode' ? 'location-tracking-full-width' : 'location-tracking-content'}>
             {/* Current Location Info Box */}
             {currentLocation && activeSection !== 'follow-me-mode' && (
-              <div className="location-status-box">
+              <div className={`location-status-box ${isTracking ? 'tracking-active' : 'tracking-paused'}`}>
                 <div className="location-status-header">
                   <h3>📍 Current Location</h3>
-                  <span className={`status-badge ${isTracking ? 'active' : 'paused'}`}>
+                  <span className={`status-badge tracking-state-badge ${isTracking ? 'active' : 'paused'}`}>
                     {isTracking ? 'Tracking Active' : 'Tracking Paused'}
                   </span>
                 </div>
@@ -626,7 +645,7 @@ export default function LocationTracking() {
                   <div className="location-status-item">
                     <span className="status-label">Coordinates:</span>
                     <span className="status-value font-mono">
-                      {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
+                      {formatLocation(currentLocation)}
                     </span>
                   </div>
                   <div className="location-status-item">
@@ -649,6 +668,7 @@ export default function LocationTracking() {
                 isTracking={isTracking}
                 sosActive={sosActive}
                 onToggleTracking={toggleTracking}
+                onOpenFullMap={() => setActiveSection('live-map')}
               />
             ) : activeSection === 'live-map' ? (
               <LiveMap 
@@ -760,7 +780,14 @@ export default function LocationTracking() {
 
               <div className="location-card">
                 <div className="location-info">
-                  {currentLocation ? (
+                  {isInitializing ? (
+                    <div className="location-skeleton-grid" aria-hidden="true">
+                      <div className="skeleton-item" />
+                      <div className="skeleton-item" />
+                      <div className="skeleton-item" />
+                      <div className="skeleton-item skeleton-item-wide" />
+                    </div>
+                  ) : currentLocation ? (
                     <div className="location-details">
                       <div className="location-coords">
                         <span className="label">Coordinates:</span>
@@ -799,13 +826,13 @@ export default function LocationTracking() {
                       )}
                     </div>
                   ) : (
-                    <div className="no-location">
+                    <div className="no-location friendly-empty-state">
                       <div className="no-location-icon">📍</div>
-                      <h3>Location not available</h3>
+                      <h3>Ready when you are</h3>
                       <p className="location-hint">
                         {permissionState === 'denied' 
-                          ? 'Location permission denied. Please enable location permissions in your browser settings.'
-                          : 'Click "Get Location" to enable location tracking'
+                          ? 'Location permission is turned off. Enable it from your browser settings to activate safety tracking.'
+                          : 'Tap "Get Location" to start your live safety dashboard.'
                         }
                       </p>
                     </div>
@@ -916,7 +943,14 @@ export default function LocationTracking() {
               </div>
 
               <div className="sharing-card">
-                {emergencyContacts.length > 0 ? (
+                {isInitializing ? (
+                  <div className="contacts-skeleton-grid" aria-hidden="true">
+                    <div className="contact-skeleton-card" />
+                    <div className="contact-skeleton-card" />
+                    <div className="contact-skeleton-card" />
+                    <div className="contact-skeleton-card" />
+                  </div>
+                ) : emergencyContacts.length > 0 ? (
                   <div className="sharing-form">
                     <div className="contacts-selection">
                       <h3>Select Contacts:</h3>
@@ -958,10 +992,10 @@ export default function LocationTracking() {
                     </button>
                   </div>
                 ) : (
-                  <div className="no-contacts">
+                  <div className="no-contacts friendly-empty-state">
                     <div className="no-contacts-icon">📇</div>
-                    <h3>No emergency contacts found</h3>
-                    <p>Add emergency contacts to share your location with trusted people.</p>
+                    <h3>No emergency contacts yet</h3>
+                    <p>Add your trusted circle to unlock one-tap sharing and faster emergency response.</p>
                     <Link to="/my-contacts" className="btn btn-secondary">
                       Manage Emergency Contacts
                     </Link>

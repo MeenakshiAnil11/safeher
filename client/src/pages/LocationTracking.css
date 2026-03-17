@@ -1692,3 +1692,422 @@
     gap: 16px;
   }
 }
+
+/* SafeHer SaaS design system overrides */
+.location-tracking-container {
+  --safeher-primary: #6C63FF;
+  --safeher-success: #22C55E;
+  --safeher-warning: #F59E0B;
+  --safeher-danger: #EF4444;
+  --safeher-neutral: #F8FAFC;
+  --safeher-text: #0f172a;
+  --safeher-muted: #64748b;
+  background: var(--safeher-neutral);
+  color: var(--safeher-text);
+}
+
+.location-tracking-body {
+  background: var(--safeher-neutral);
+}
+
+.location-tracking-main {
+  gap: 20px;
+}
+
+.location-status-box,
+.location-card,
+.sos-card,
+.sharing-card,
+.map-card,
+.feature-card,
+.step-item,
+.action-card,
+.stat-card {
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease, background-color 220ms ease;
+}
+
+.location-card:hover,
+.sos-card:hover,
+.sharing-card:hover,
+.map-card:hover,
+.feature-card:hover,
+.step-item:hover,
+.action-card:hover,
+.stat-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(108, 99, 255, 0.3);
+  box-shadow: 0 14px 30px rgba(108, 99, 255, 0.14);
+}
+
+.hero-section {
+  background: linear-gradient(135deg, #6C63FF 0%, #5850ec 100%);
+  border-radius: 16px;
+}
+
+.hero-title,
+.section-header h2,
+.location-status-header h3,
+.sos-info h3,
+.feature-card h3,
+.step-content h3,
+.action-content h3 {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.section-description,
+.hero-subtitle,
+.feature-card p,
+.step-content p,
+.action-content p,
+.location-hint {
+  color: var(--safeher-muted);
+}
+
+.location-status-grid,
+.location-details,
+.contacts-list,
+.features-grid,
+.quick-actions-grid,
+.hero-stats {
+  display: grid;
+  gap: 14px;
+}
+
+.location-status-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.location-details {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.hero-stats {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.status-badge.active,
+.status-indicator.granted {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.status-badge.paused,
+.status-indicator.unknown {
+  background: rgba(245, 158, 11, 0.16);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.status-indicator.denied,
+.location-error {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.tracking-state-badge {
+  transition: all 260ms ease;
+}
+
+.location-status-box.tracking-active {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.location-status-box.tracking-paused {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.btn {
+  border-radius: 12px;
+  font-weight: 700;
+  transition: transform 180ms ease, box-shadow 220ms ease, background 220ms ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #6C63FF, #5b52ff);
+  box-shadow: 0 10px 24px rgba(108, 99, 255, 0.25);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #EF4444, #dc2626);
+  box-shadow: 0 10px 24px rgba(239, 68, 68, 0.25);
+}
+
+.btn-secondary {
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #d5deea;
+}
+
+.friendly-empty-state {
+  background: linear-gradient(180deg, #ffffff, #f9fbff);
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+}
+
+.location-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.skeleton-item {
+  height: 64px;
+  border-radius: 12px;
+  background: linear-gradient(110deg, #eef2f7 8%, #f8fafc 18%, #eef2f7 33%);
+  background-size: 200% 100%;
+  animation: safeherShimmer 1.2s linear infinite;
+}
+
+.skeleton-item-wide {
+  grid-column: 1 / -1;
+}
+
+.contacts-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.contact-skeleton-card {
+  height: 76px;
+  border-radius: 12px;
+  background: linear-gradient(110deg, #eef2f7 8%, #f8fafc 18%, #eef2f7 33%);
+  background-size: 200% 100%;
+  animation: safeherShimmer 1.2s linear infinite;
+}
+
+@keyframes safeherShimmer {
+  to {
+    background-position-x: -200%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .location-tracking-body {
+    padding: 14px;
+  }
+
+  .location-card,
+  .sos-card,
+  .sharing-card,
+  .map-card,
+  .feature-card,
+  .step-item,
+  .action-card {
+    padding: 1.1rem;
+  }
+}
+
+/* Dashboard UI consistency pass */
+.location-tracking-container,
+.location-tracking-main,
+.location-tracking-main button,
+.location-tracking-main input,
+.location-tracking-main textarea {
+  font-family: Inter, Roboto, "Segoe UI", Arial, sans-serif;
+}
+
+.location-tracking-main .btn,
+.location-tracking-main .dialog-button,
+.location-tracking-main .action-card {
+  min-height: 42px;
+}
+
+.location-tracking-main .btn {
+  min-width: 160px;
+}
+
+.location-tracking-main .status-badge,
+.location-tracking-main .status-indicator,
+.location-tracking-main .tracking-state-badge {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.location-tracking-main .status-badge.active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #166534;
+}
+
+.location-tracking-main .status-badge.paused {
+  background: rgba(245, 158, 11, 0.16);
+  color: #92400e;
+}
+
+.location-tracking-main .status-indicator.denied {
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
+}
+
+.location-tracking-main .location-status-grid {
+  align-items: stretch;
+}
+
+/* Professional dashboard layout + palette refactor */
+.location-tracking-container {
+  --lt-bg: #f5f7fa;
+  --lt-primary: #007bff;
+  --lt-secondary: #17a2b8;
+  --lt-text: #1f2d3d;
+  --lt-muted: #6c7a89;
+  font-family: Inter, Roboto, "Segoe UI", Arial, sans-serif;
+  background: var(--lt-bg);
+}
+
+.location-tracking-body,
+.location-tracking-main {
+  background: var(--lt-bg);
+}
+
+.location-tracking-main {
+  gap: 16px;
+}
+
+.location-status-box,
+.location-card,
+.sharing-card,
+.sos-card,
+.map-card,
+.feature-card,
+.step-item,
+.action-card,
+.stat-card {
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #e3e9f1;
+  box-shadow: 0 10px 22px rgba(31, 45, 61, 0.08);
+}
+
+.section-header h2,
+.location-status-header h3,
+.hero-title {
+  color: var(--lt-text);
+  font-weight: 800;
+}
+
+.section-description,
+.hero-subtitle,
+.status-label,
+.location-hint {
+  color: var(--lt-muted);
+}
+
+.btn,
+.dialog-button {
+  min-height: 44px;
+  min-width: 160px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.btn-primary,
+.dialog-button {
+  background: linear-gradient(135deg, var(--lt-primary), var(--lt-secondary));
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(0, 123, 255, 0.3);
+}
+
+.btn-primary:hover,
+.dialog-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 123, 255, 0.36);
+}
+
+.btn-secondary {
+  background: #ffffff;
+  border: 1px solid #c9d6e5;
+  color: #2f3d4d;
+}
+
+.btn-secondary:hover {
+  border-color: var(--lt-secondary);
+  color: #0f5e6b;
+}
+
+.status-badge.active {
+  background: rgba(34, 197, 94, 0.18);
+  color: #166534;
+}
+
+.status-badge.paused {
+  background: rgba(245, 158, 11, 0.2);
+  color: #92400e;
+}
+
+.status-indicator.denied {
+  background: rgba(220, 53, 69, 0.15);
+  color: #b02a37;
+}
+
+.status-indicator.granted {
+  background: rgba(34, 197, 94, 0.16);
+  color: #166534;
+}
+
+@media (max-width: 1024px) {
+  .location-tracking-body {
+    margin-left: 0;
+    width: 100%;
+    padding: 14px;
+  }
+}
+
+/* Final anti-overlap layout fix (fixed sidebar + content offset) */
+.location-tracking-container {
+  --lt-sidebar-width: 260px;
+}
+
+.location-tracking-body {
+  margin-left: var(--lt-sidebar-width) !important;
+  width: calc(100% - var(--lt-sidebar-width)) !important;
+}
+
+.location-tracking-main,
+.location-tracking-content,
+.location-tracking-full-width,
+.main-content {
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .location-tracking-body {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* Extra gutter to prevent page content tucking under fixed sidebar */
+.location-tracking-body {
+  padding-left: 12px !important;
+}
+
+.safety-audit-page,
+.explore-nearby-page,
+.find-support-page,
+.follow-me-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-left: 8px;
+}
+
+@media (max-width: 1024px) {
+  .location-tracking-body {
+    padding-left: 14px !important;
+  }
+
+  .safety-audit-page,
+  .explore-nearby-page,
+  .find-support-page,
+  .follow-me-page {
+    padding-left: 0;
+  }
+}

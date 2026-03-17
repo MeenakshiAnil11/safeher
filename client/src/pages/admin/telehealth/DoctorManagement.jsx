@@ -127,12 +127,12 @@ export default function DoctorManagement() {
   return (
     <div className="doctor-management">
       <div className="page-header">
-        <h2>Doctor Management</h2>
-        <p>Manage doctor profiles, approvals, and status</p>
+        <h1 className="page-title">👩‍⚕️ Doctor Management</h1>
+        <p className="page-subtitle">Manage doctors, approvals, and profiles</p>
       </div>
 
       {/* Filters */}
-      <div className="filters-section">
+      <div className="filters-section filter-card">
         <div className="filter-group">
           <FaSearch className="filter-icon" />
           <input
@@ -172,7 +172,7 @@ export default function DoctorManagement() {
         {loading ? (
           <div className="loading-state">Loading doctors...</div>
         ) : doctors.length === 0 ? (
-          <div className="empty-state">No doctors found</div>
+          <div className="empty-state">📭 No data available</div>
         ) : (
           <table className="doctors-table">
             <thead>
@@ -189,7 +189,7 @@ export default function DoctorManagement() {
               {doctors.map((doctor) => {
                 const badge = getStatusBadge(doctor.status);
                 return (
-                  <tr key={doctor._id}>
+                  <tr key={doctor._id} className="table-row">
                     <td>
                       <div className="doctor-name">
                         {doctor.user?.name || "N/A"}
@@ -204,7 +204,7 @@ export default function DoctorManagement() {
                     </td>
                     <td>₹{doctor.consultationFee}</td>
                     <td>
-                      <span className={`status-badge ${badge.class}`}>
+                      <span className={`status ${badge.class}`}>
                         {badge.label}
                       </span>
                     </td>

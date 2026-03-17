@@ -283,7 +283,9 @@ function AppRoutes() {
           </AdminRoute>
         }
       >
-        <Route path="dashboard" element={<EcommerceDashboard />} />
+        <Route index element={<Navigate to="overview" replace />} />
+        <Route path="overview" element={<EcommerceDashboard />} />
+        <Route path="dashboard" element={<Navigate to="/admin/ecommerce/overview" replace />} />
         <Route path="products" element={<EcommerceProducts />} />
         <Route path="categories" element={<EcommerceCategories />} />
         <Route path="inventory" element={<EcommerceInventory />} />
@@ -302,6 +304,7 @@ function AppRoutes() {
           </AdminRoute>
         }
       >
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<TelehealthDashboard />} />
         <Route path="doctors" element={<DoctorManagement />} />
         <Route path="users" element={<UserManagement />} />

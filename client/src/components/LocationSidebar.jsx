@@ -1,4 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import {
+  FiAlertOctagon,
+  FiCompass,
+  FiCopy,
+  FiFlag,
+  FiMapPin,
+  FiNavigation,
+  FiShield,
+  FiUserCheck,
+  FiUsers
+} from 'react-icons/fi';
 import locationService from '../services/locationService';
 import './LocationSidebar.css';
 
@@ -20,6 +31,7 @@ const LocationSidebar = ({
     averageAccuracy: 0,
     lastSOSDate: null
   });
+  const [isSidebarLoading, setIsSidebarLoading] = useState(true);
 
   useEffect(() => {
     const initializeSidebar = async () => {
@@ -40,6 +52,8 @@ const LocationSidebar = ({
         calculateLocationStats(history);
       } catch (error) {
         console.error('Failed to initialize location sidebar:', error);
+      } finally {
+        setIsSidebarLoading(false);
       }
     };
 
@@ -104,14 +118,14 @@ const LocationSidebar = ({
     {
       key: 'dashboard',
       label: 'Dashboard Overview',
-      icon: '🧭',
+      icon: FiCompass,
       path: '/location-tracking',
       description: ''
     },
     {
       key: 'live-map',
       label: 'Live Map & Safe Routes',
-      icon: '🗺️',
+      icon: FiMapPin,
       path: '/location-tracking/live',
       description: '',
       badge: isTracking ? 'ACTIVE' : null,
@@ -120,7 +134,7 @@ const LocationSidebar = ({
     {
       key: 'location-history',
       label: 'Location History',
-      icon: '🕓',
+      icon: FiNavigation,
       path: '/location-tracking/history',
       description: '',
       badge: locationHistory.length > 0 ? `${locationHistory.length}` : null,
@@ -129,14 +143,14 @@ const LocationSidebar = ({
     {
       key: 'safe-zones',
       label: 'Safe Zones',
-      icon: '🏠',
+      icon: FiShield,
       path: '/location-tracking/safe-zones',
       description: ''
     },
     {
       key: 'emergency-contacts',
       label: 'Emergency Contacts',
-      icon: '👥',
+      icon: FiUsers,
       path: '/my-contacts',
       description: '',
       badge: emergencyContacts.length > 0 ? `${emergencyContacts.length}` : null,
@@ -145,7 +159,7 @@ const LocationSidebar = ({
     {
       key: 'sos-alerts',
       label: 'SOS Alerts',
-      icon: '🚨',
+      icon: FiAlertOctagon,
       path: '/location-tracking/sos',
       description: '',
       badge: sosActive ? 'ACTIVE' : null,
@@ -154,28 +168,28 @@ const LocationSidebar = ({
     {
       key: 'safety-audit',
       label: 'Safety Audit',
-      icon: '🛡️',
+      icon: FiFlag,
       path: '/location-tracking/safety-audit',
       description: ''
     },
     {
       key: 'explore-nearby',
       label: 'Explore Nearby',
-      icon: '🧭',
+      icon: FiCompass,
       path: '/location-tracking/explore-nearby',
       description: ''
     },
     {
       key: 'find-support',
       label: 'Find Support',
-      icon: '🛟',
+      icon: FiUserCheck,
       path: '/location-tracking/find-support',
       description: ''
     },
     {
       key: 'follow-me-mode',
       label: 'Follow Me Mode',
-      icon: '👤',
+      icon: FiCopy,
       path: '/location-tracking/follow-me-mode',
       description: ''
     }
@@ -184,6 +198,21 @@ const LocationSidebar = ({
   const isActive = (key) => {
     return activeSection === key || (activeSection === 'overview' && key === 'dashboard');
   };
+
+  const groupedItems = [
+    {
+      title: 'Emergency Actions',
+      keys: ['dashboard', 'sos-alerts', 'emergency-contacts']
+    },
+    {
+      title: 'Tracking Tools',
+      keys: ['live-map', 'safe-zones', 'explore-nearby', 'find-support', 'follow-me-mode', 'safety-audit']
+    },
+    {
+      title: 'History',
+      keys: ['location-history']
+    }
+  ];
 
   return (
     <div className={`location-sidebar ${className}`}>
@@ -195,7 +224,7 @@ const LocationSidebar = ({
             className={`emergency-btn ${sosActive ? 'active' : ''}`}
             onClick={() => onNavigate?.('emergency-sos')}
           >
-            <span className="btn-icon">🚨</span>
+            <span className="btn-icon"><FiAlertOctagon /></span>
             <span className="btn-text">
               {sosActive ? 'SOS Active' : 'Activate SOS'}
             </span>
@@ -205,7 +234,7 @@ const LocationSidebar = ({
             className="emergency-btn secondary"
             onClick={() => onNavigate?.('share-location')}
           >
-            <span className="btn-icon">📤</span>
+            <span className="btn-icon"><FiNavigation /></span>
             <span className="btn-text">Share Location</span>
           </button>
         </div>
@@ -213,29 +242,48 @@ const LocationSidebar = ({
 
       {/* Navigation Menu */}
       <nav className="sidebar-nav">
-        <ul className="nav-list">
-          {sidebarItems.map((item) => (
-            <li key={item.key} className="nav-item">
-              <button
-                className={`nav-link ${isActive(item.key) ? 'active' : ''}`}
-                onClick={() => onNavigate?.(item.key)}
-              >
-                <div className="nav-content">
-                  <span className="nav-icon">{item.icon}</span>
-                  <div className="nav-text">
-                    <span className="nav-label">{item.label}</span>
-                    {item.description && <span className="nav-description">{item.description}</span>}
-                  </div>
-                  {item.badge && (
-                    <span className={`nav-badge nav-badge-${item.badgeColor}`}>
-                      {item.badge}
-                    </span>
-                  )}
-                </div>
-              </button>
-            </li>
-          ))}
-        </ul>
+        {isSidebarLoading ? (
+          <div className="sidebar-nav-skeleton" aria-hidden="true">
+            <div className="nav-skeleton-item" />
+            <div className="nav-skeleton-item" />
+            <div className="nav-skeleton-item" />
+            <div className="nav-skeleton-item" />
+            <div className="nav-skeleton-item" />
+          </div>
+        ) : (
+          <div className="sidebar-groups">
+            {groupedItems.map((group) => (
+              <div className="sidebar-group" key={group.title}>
+                <h4 className="sidebar-group-title">{group.title}</h4>
+                <ul className="nav-list">
+                  {sidebarItems
+                    .filter((item) => group.keys.includes(item.key))
+                    .map((item) => (
+                      <li key={item.key} className="nav-item">
+                        <button
+                          className={`nav-link ${isActive(item.key) ? 'active' : ''}`}
+                          onClick={() => onNavigate?.(item.key)}
+                        >
+                          <div className="nav-content">
+                            <span className="nav-icon"><item.icon /></span>
+                            <div className="nav-text">
+                              <span className="nav-label">{item.label}</span>
+                              {item.description && <span className="nav-description">{item.description}</span>}
+                            </div>
+                            {item.badge && (
+                              <span className={`nav-badge nav-badge-${item.badgeColor}`}>
+                                {item.badge}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* Footer */}

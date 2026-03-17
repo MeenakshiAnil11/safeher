@@ -5,12 +5,14 @@ import {
   createTrackerItem,
   updateTrackerItem,
   deleteTrackerItem,
+  getTrackerModeOverview,
 } from "../controllers/trackerAdminController.js";
 
 const router = express.Router();
 
 router.use(protect, adminOnly);
 
+router.get("/:moduleKey/overview", getTrackerModeOverview);
 router.get("/:moduleKey/:sectionKey", listTrackerItems);
 router.post("/:moduleKey/:sectionKey", createTrackerItem);
 router.put("/:moduleKey/:sectionKey/:id", updateTrackerItem);

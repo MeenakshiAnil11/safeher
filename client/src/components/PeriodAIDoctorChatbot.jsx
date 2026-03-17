@@ -15,10 +15,58 @@ export default function PeriodAIDoctorChatbot() {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [activeSpeechId, setActiveSpeechId] = useState(null);
+  const [isSpeechPaused, setIsSpeechPaused] = useState(false);
   const [cycleContext, setCycleContext] = useState({ phase: "", cycleDay: null });
   const recognitionRef = useRef(null);
   const recognitionActiveRef = useRef(false);
   const chatBottomRef = useRef(null);
+  const activeSpeechIdRef = useRef(null);
+
+  const createMessage = (role, text) => ({
+    id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    role,
+    text,
+  });
+
+  const syncActiveSpeechId = (id) => {
+    activeSpeechIdRef.current = id;
+    setActiveSpeechId(id);
+  };
+
+  const stopSpeech = () => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    syncActiveSpeechId(null);
+    setIsSpeechPaused(false);
+  };
+
+  const toggleSpeechPause = () => {
+    if (!window.speechSynthesis) return;
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      setIsSpeechPaused(false);
+      return;
+    }
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.pause();
+      setIsSpeechPaused(true);
+    }
+  };
+
+  const closeChatbot = () => {
+    stopSpeech();
+    if (recognitionRef.current && recognitionActiveRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        // Ignore cleanup stop failures.
+      }
+    }
+    recognitionActiveRef.current = false;
+    setIsListening(false);
+    setIsOpen(false);
+  };
 
   const phaseLabel = useMemo(() => {
     const map = {
@@ -39,7 +87,7 @@ export default function PeriodAIDoctorChatbot() {
         ? `Hi, I am your AI Doctor assistant. I can help with cycle health. You are currently in ${phaseLabel} phase (Day ${cycleContext.cycleDay}).`
         : "Hi, I am your AI Doctor assistant. Ask me about menstruation, PMS, ovulation, cramps, and reproductive health.";
 
-    setMessages([{ role: "ai", text: intro }]);
+    setMessages([createMessage("ai", intro)]);
   }, [isOpen, messages.length, cycleContext.phase, cycleContext.cycleDay, phaseLabel]);
 
   useEffect(() => {
@@ -84,12 +132,27 @@ export default function PeriodAIDoctorChatbot() {
     []
   );
 
-  const speakText = (text) => {
+  const speakText = (text, speechId = null) => {
     if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
     window.speechSynthesis.cancel();
+    const nextSpeechId = speechId || `speech-${Date.now()}`;
+    syncActiveSpeechId(nextSpeechId);
+    setIsSpeechPaused(false);
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1;
     utterance.pitch = 1;
+    utterance.onend = () => {
+      if (activeSpeechIdRef.current === nextSpeechId) {
+        syncActiveSpeechId(null);
+        setIsSpeechPaused(false);
+      }
+    };
+    utterance.onerror = () => {
+      if (activeSpeechIdRef.current === nextSpeechId) {
+        syncActiveSpeechId(null);
+        setIsSpeechPaused(false);
+      }
+    };
     window.speechSynthesis.speak(utterance);
   };
 
@@ -98,9 +161,11 @@ export default function PeriodAIDoctorChatbot() {
     if (!question) return;
 
     const aiText = getMenstrualAIResponse(question, cycleContext);
-    setMessages((prev) => [...prev, { role: "user", text: question }, { role: "ai", text: aiText }]);
+    const userMessage = createMessage("user", question);
+    const aiMessage = createMessage("ai", aiText);
+    setMessages((prev) => [...prev, userMessage, aiMessage]);
     setInputText("");
-    speakText(aiText);
+    speakText(aiText, aiMessage.id);
   };
 
   const startVoiceInput = () => {
@@ -161,7 +226,7 @@ export default function PeriodAIDoctorChatbot() {
       </button>
 
       {isOpen && (
-        <div className="period-ai-overlay" onClick={() => setIsOpen(false)}>
+        <div className="period-ai-overlay" onClick={closeChatbot}>
           <div className="period-ai-modal" onClick={(e) => e.stopPropagation()}>
             <header className="period-ai-head">
               <div>
@@ -172,7 +237,7 @@ export default function PeriodAIDoctorChatbot() {
                     : "Cycle context will be used when available"}
                 </p>
               </div>
-              <button type="button" onClick={() => setIsOpen(false)} aria-label="Close chatbot">
+              <button type="button" onClick={closeChatbot} aria-label="Close chatbot">
                 <FaTimes />
               </button>
             </header>
@@ -187,13 +252,31 @@ export default function PeriodAIDoctorChatbot() {
 
             <section className="period-ai-chat">
               {messages.map((msg, index) => (
-                <div key={`${msg.role}-${index}-${msg.text.slice(0, 12)}`} className={`period-ai-row ${msg.role}`}>
+                <div key={msg.id || `${msg.role}-${index}-${msg.text.slice(0, 12)}`} className={`period-ai-row ${msg.role}`}>
                   <div className={`period-ai-bubble ${msg.role}`}>
                     <p>{msg.text}</p>
                     {msg.role === "ai" && (
-                      <button type="button" onClick={() => speakText(msg.text)}>
-                        <FaVolumeUp /> Read Aloud
-                      </button>
+                      <div className="period-ai-read-controls">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const isCurrentMessage = activeSpeechId === msg.id;
+                            if (isCurrentMessage && (window.speechSynthesis?.speaking || window.speechSynthesis?.paused)) {
+                              toggleSpeechPause();
+                              return;
+                            }
+                            speakText(msg.text, msg.id);
+                          }}
+                        >
+                          <FaVolumeUp />{" "}
+                          {activeSpeechId === msg.id ? (isSpeechPaused ? "Resume" : "Pause") : "Read Aloud"}
+                        </button>
+                        {activeSpeechId === msg.id && (
+                          <button type="button" className="period-ai-read-stop" onClick={stopSpeech}>
+                            Stop
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

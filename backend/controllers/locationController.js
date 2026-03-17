@@ -1,5 +1,6 @@
 import SOSLogs from '../models/SOSLogs.js';
 import Contact from '../models/Contact.js';
+import UserLocationLog from '../models/UserLocationLog.js';
 
 // Get dashboard overview data
 export const getDashboardOverview = async (req, res) => {
@@ -13,6 +14,9 @@ export const getDashboardOverview = async (req, res) => {
 
     // Get emergency contacts
     const emergencyContacts = await Contact.find({ userId });
+    const latestLocationLog = await UserLocationLog.findOne({ user: userId })
+      .sort({ recordedAt: -1 })
+      .lean();
 
     // Get recent location activity (mock data for now)
     const recentActivity = recentSOSLogs.map(log => ({
@@ -76,6 +80,21 @@ export const getDashboardOverview = async (req, res) => {
       } : null,
       safetyScore,
       safetyLevel,
+      riskPrediction: latestLocationLog
+        ? {
+            riskScore: latestLocationLog.riskScore ?? 0,
+            riskLevel: latestLocationLog.riskLevel || 'Safe',
+            recommendation:
+              latestLocationLog.riskRecommendation ||
+              'Safe: Conditions look stable. Keep tracking active for continuous protection.',
+            timestamp: latestLocationLog.recordedAt,
+          }
+        : {
+            riskScore: 0,
+            riskLevel: 'Safe',
+            recommendation: 'Safe: Conditions look stable. Keep tracking active for continuous protection.',
+            timestamp: null,
+          },
       recentMovement,
       recentActivity,
       recentSOSAlerts

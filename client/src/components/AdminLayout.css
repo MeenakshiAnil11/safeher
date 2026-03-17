@@ -74,8 +74,8 @@
 
 /* Page content */
 .admin-content {
-  padding: 20px 20px 20px 0;
-  background: #f5f6fa;
+  padding: 0;
+  background: #f8fafc;
   flex: 1;
   overflow-y: auto;
 }

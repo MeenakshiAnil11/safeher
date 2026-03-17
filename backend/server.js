@@ -78,6 +78,8 @@ import partnerDashboardRoutes from "./routes/partnerDashboardRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import locationRoutes from "./routes/locationRoutes.js";
 import doctorProfileRoutes from "./routes/doctorProfileRoutes.js";
+import alertRoutes from "./routes/alertRoutes.js";
+import activityRoutes from "./routes/activityRoutes.js";
 
 // E-commerce Routes
 import productRoutes from "./routes/productRoutes.js";
@@ -124,6 +126,8 @@ app.use("/api/pregnancy/partner-dashboard", partnerDashboardRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/location", locationRoutes);
 app.use("/api/doctor-profile", doctorProfileRoutes);
+app.use("/api/alerts", alertRoutes);
+app.use("/api/activity", activityRoutes);
 
 // E-commerce Routes
 app.use("/api/products", productRoutes);

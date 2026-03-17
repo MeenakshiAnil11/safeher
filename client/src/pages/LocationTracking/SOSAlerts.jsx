@@ -1,29 +1,127 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
 import './SOSAlerts.css';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const STATUS_META = {
+  open: { class: 'badge-open', text: 'Open', icon: '🚨', cardClass: 'card-open' },
+  acknowledged: { class: 'badge-acknowledged', text: 'Acknowledged', icon: '✅', cardClass: 'card-acknowledged' },
+  escalated: { class: 'badge-escalated', text: 'Escalated', icon: '📢', cardClass: 'card-escalated' },
+  resolved: { class: 'badge-resolved', text: 'Resolved', icon: '🛡️', cardClass: 'card-resolved' }
+};
+
+const formatDate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Invalid date';
+  return date.toLocaleString();
+};
+
+const normalizeAlertStatus = (status) => {
+  if (!status) return 'open';
+  if (status === 'closed') return 'resolved';
+  return status;
+};
+
+const hasValidCoordinates = (alert) =>
+  Number.isFinite(Number(alert?.latitude)) && Number.isFinite(Number(alert?.longitude));
+
+const getDateBounds = (dateRange, customRange) => {
+  const now = new Date();
+  if (dateRange === 'today') {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    return { from: start, to: now };
+  }
+  if (dateRange === 'last7') {
+    return { from: new Date(now.getTime() - 7 * DAY_MS), to: now };
+  }
+  if (dateRange === 'custom') {
+    return {
+      from: customRange.start ? new Date(customRange.start) : new Date(0),
+      to: customRange.end ? new Date(`${customRange.end}T23:59:59`) : now
+    };
+  }
+  return { from: new Date(0), to: now };
+};
+
+const buildAlertTimeline = (alert) => {
+  const timeline = [
+    {
+      id: 'triggered',
+      icon: '🚨',
+      title: 'SOS Triggered',
+      at: alert.timestamp || alert.createdAt,
+      description: 'Emergency alert was initiated by the user.'
+    }
+  ];
+
+  if (alert.notifiedAt || alert.notificationsCount || alert.notifiedContacts) {
+    timeline.push({
+      id: 'contacts_notified',
+      icon: '📬',
+      title: 'Contacts Notified',
+      at: alert.notifiedAt || alert.timestamp || alert.createdAt,
+      description: `${alert.notificationsCount || alert.notifiedContacts || 0} notification(s) sent`
+    });
+  }
+
+  if (alert.status === 'escalated' || alert.policeNotifiedAt || alert.escalatedAt) {
+    timeline.push({
+      id: 'police_notified',
+      icon: '👮',
+      title: 'Police Notified',
+      at: alert.policeNotifiedAt || alert.escalatedAt || alert.updatedAt || alert.createdAt,
+      description: 'Escalation sent to law enforcement.'
+    });
+  }
+
+  if (alert.status === 'acknowledged' || alert.acknowledgedAt) {
+    timeline.push({
+      id: 'acknowledged',
+      icon: '✅',
+      title: 'Alert Acknowledged',
+      at: alert.acknowledgedAt || alert.updatedAt,
+      description: 'Emergency workflow acknowledged.'
+    });
+  }
+
+  if (alert.status === 'resolved' || alert.resolvedAt) {
+    timeline.push({
+      id: 'resolved',
+      icon: '🛡️',
+      title: 'Alert Resolved',
+      at: alert.resolvedAt || alert.updatedAt,
+      description: 'Alert closed after resolution.'
+    });
+  }
+
+  return timeline.filter((event) => event.at).sort((a, b) => new Date(a.at) - new Date(b.at));
+};
 
 export default function SOSAlerts() {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState(null);
-  const [filterStatus, setFilterStatus] = useState('all'); // all, open, handled, closed
-  const [dateRange, setDateRange] = useState('all'); // all, today, week, month
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [dateRange, setDateRange] = useState('last7');
+  const [customRange, setCustomRange] = useState({ start: '', end: '' });
   const [showEscalateModal, setShowEscalateModal] = useState(false);
   const [escalationMessage, setEscalationMessage] = useState('');
 
   useEffect(() => {
     fetchSOSAlerts();
-  }, [filterStatus, dateRange]);
+  }, []);
 
   const fetchSOSAlerts = async () => {
     try {
       setLoading(true);
-      const params = {};
-      if (filterStatus !== 'all') params.status = filterStatus;
-      if (dateRange !== 'all') params.dateRange = dateRange;
-      
-      const response = await api.get('/location/sos-alerts', { params });
-      setAlerts(response.data || []);
+      const response = await api.get('/location/sos-alerts');
+      const normalized = (response.data || []).map((alert) => ({
+        ...alert,
+        status: normalizeAlertStatus(alert.status)
+      }));
+      setAlerts(normalized);
     } catch (error) {
       console.error('Error fetching SOS alerts:', error);
       setAlerts([]);
@@ -69,15 +167,29 @@ export default function SOSAlerts() {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      open: { class: 'badge-open', text: 'Open', icon: '🚨' },
-      acknowledged: { class: 'badge-acknowledged', text: 'Acknowledged', icon: '✅' },
-      escalated: { class: 'badge-escalated', text: 'Escalated', icon: '📢' },
-      closed: { class: 'badge-closed', text: 'Closed', icon: '🛡️' }
-    };
-    return badges[status] || badges.open;
-  };
+  const filteredAlerts = useMemo(() => {
+    const { from, to } = getDateBounds(dateRange, customRange);
+    return alerts.filter((alert) => {
+      const ts = new Date(alert.timestamp || alert.createdAt);
+      if (Number.isNaN(ts.getTime())) return false;
+      const statusOk = filterStatus === 'all' || alert.status === filterStatus;
+      const dateOk = ts >= from && ts <= to;
+      return statusOk && dateOk;
+    });
+  }, [alerts, customRange, dateRange, filterStatus]);
+
+  const alertSummary = useMemo(
+    () =>
+      filteredAlerts.reduce(
+        (acc, alert) => {
+          const key = normalizeAlertStatus(alert.status);
+          if (acc[key] !== undefined) acc[key] += 1;
+          return acc;
+        },
+        { open: 0, acknowledged: 0, escalated: 0, resolved: 0 }
+      ),
+    [filteredAlerts]
+  );
 
   if (loading) {
     return (
@@ -109,7 +221,7 @@ export default function SOSAlerts() {
             <option value="open">Open</option>
             <option value="acknowledged">Acknowledged</option>
             <option value="escalated">Escalated</option>
-            <option value="closed">Closed</option>
+            <option value="resolved">Resolved</option>
           </select>
         </div>
 
@@ -118,29 +230,80 @@ export default function SOSAlerts() {
           <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
             <option value="all">All Time</option>
             <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
+            <option value="last7">Last 7 Days</option>
+            <option value="custom">Custom Range</option>
           </select>
         </div>
 
+        {dateRange === 'custom' && (
+          <div className="custom-date-range">
+            <input
+              type="date"
+              value={customRange.start}
+              onChange={(e) => setCustomRange((prev) => ({ ...prev, start: e.target.value }))}
+            />
+            <input
+              type="date"
+              value={customRange.end}
+              onChange={(e) => setCustomRange((prev) => ({ ...prev, end: e.target.value }))}
+            />
+          </div>
+        )}
+
         <div className="filter-results">
-          Showing {alerts.length} alerts
+          Showing {filteredAlerts.length} alerts
         </div>
+      </section>
+
+      <section className="summary-cards-section">
+        <button
+          type="button"
+          className={`summary-card open ${filterStatus === 'open' ? 'active' : ''}`}
+          onClick={() => setFilterStatus(filterStatus === 'open' ? 'all' : 'open')}
+        >
+          <span className="summary-title">Open</span>
+          <strong>{alertSummary.open}</strong>
+        </button>
+        <button
+          type="button"
+          className={`summary-card acknowledged ${filterStatus === 'acknowledged' ? 'active' : ''}`}
+          onClick={() => setFilterStatus(filterStatus === 'acknowledged' ? 'all' : 'acknowledged')}
+        >
+          <span className="summary-title">Acknowledged</span>
+          <strong>{alertSummary.acknowledged}</strong>
+        </button>
+        <button
+          type="button"
+          className={`summary-card escalated ${filterStatus === 'escalated' ? 'active' : ''}`}
+          onClick={() => setFilterStatus(filterStatus === 'escalated' ? 'all' : 'escalated')}
+        >
+          <span className="summary-title">Escalated</span>
+          <strong>{alertSummary.escalated}</strong>
+        </button>
+        <button
+          type="button"
+          className={`summary-card resolved ${filterStatus === 'resolved' ? 'active' : ''}`}
+          onClick={() => setFilterStatus(filterStatus === 'resolved' ? 'all' : 'resolved')}
+        >
+          <span className="summary-title">Resolved</span>
+          <strong>{alertSummary.resolved}</strong>
+        </button>
       </section>
 
       {/* Alerts List */}
       <section className="alerts-list-section">
-        {alerts.length === 0 ? (
+        {filteredAlerts.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🚨</div>
             <p>No SOS alerts found</p>
           </div>
         ) : (
           <div className="alerts-grid">
-            {alerts.map((alert) => {
-              const badge = getStatusBadge(alert.status);
+            {filteredAlerts.map((alert) => {
+              const badge = STATUS_META[alert.status] || STATUS_META.open;
+              const timeline = buildAlertTimeline(alert);
               return (
-                <div key={alert._id} className="alert-card">
+                <div key={alert._id} className={`alert-card ${badge.cardClass}`}>
                   <div className="alert-header">
                     <div className="alert-title">
                       <h3>{badge.icon} {alert.message || 'Emergency SOS'}</h3>
@@ -153,34 +316,57 @@ export default function SOSAlerts() {
                   <div className="alert-details">
                     <div className="detail-row">
                       <span className="label">⏰ Time:</span>
-                      <span className="value">{new Date(alert.timestamp || alert.createdAt).toLocaleString()}</span>
+                      <span className="value">{formatDate(alert.timestamp || alert.createdAt)}</span>
                     </div>
                     {alert.latitude && alert.longitude && (
                       <div className="detail-row">
-                        <span className="label">📍 Location:</span>
+                        <span className="label">📍 Exact Location:</span>
                         <span className="value">
                           {alert.latitude.toFixed(6)}, {alert.longitude.toFixed(6)}
                         </span>
                       </div>
                     )}
+                    <div className="detail-row">
+                      <span className="label">🔔 Notification Status:</span>
+                      <span className="value">{alert.notificationsCount || alert.notifiedContacts || 0} sent</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="label">💬 Contact Responses:</span>
+                      <span className="value">{alert.responsesCount || 0} response(s)</span>
+                    </div>
                     {alert.address && (
                       <div className="detail-row">
                         <span className="label">🏠 Address:</span>
                         <span className="value">{alert.address}</span>
                       </div>
                     )}
-                    {alert.notificationsCount && (
-                      <div className="detail-row">
-                        <span className="label">📬 Notifications:</span>
-                        <span className="value">{alert.notificationsCount} sent</span>
-                      </div>
+                  </div>
+
+                  <div className="alert-map-preview">
+                    {hasValidCoordinates(alert) ? (
+                      <iframe
+                        title={`Alert map ${alert._id}`}
+                        loading="lazy"
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${alert.longitude - 0.003},${alert.latitude - 0.003},${alert.longitude + 0.003},${alert.latitude + 0.003}&layer=mapnik&marker=${alert.latitude},${alert.longitude}`}
+                      />
+                    ) : (
+                      <div className="map-fallback">Location unavailable</div>
                     )}
-                    {alert.responsesCount && (
-                      <div className="detail-row">
-                        <span className="label">💬 Responses:</span>
-                        <span className="value">{alert.responsesCount}</span>
-                      </div>
-                    )}
+                  </div>
+
+                  <div className="card-timeline">
+                    <h4>Event Timeline</h4>
+                    <div className="card-timeline-list">
+                      {timeline.map((event) => (
+                        <div className="card-timeline-item" key={`${alert._id}-${event.id}`}>
+                          <span>{event.icon}</span>
+                          <div>
+                            <strong>{event.title}</strong>
+                            <p>{formatDate(event.at)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="alert-actions">
@@ -204,6 +390,25 @@ export default function SOSAlerts() {
                       </>
                     )}
                     {alert.status === 'acknowledged' && (
+                      <>
+                        <button
+                          className="btn-escalate"
+                          onClick={() => {
+                            setSelectedAlert(alert);
+                            setShowEscalateModal(true);
+                          }}
+                        >
+                          📢 Escalate to Police
+                        </button>
+                        <button
+                          className="btn-resolve"
+                          onClick={() => handleResolve(alert._id)}
+                        >
+                          🛡️ Resolve
+                        </button>
+                      </>
+                    )}
+                    {alert.status === 'escalated' && (
                       <button
                         className="btn-resolve"
                         onClick={() => handleResolve(alert._id)}
@@ -240,7 +445,7 @@ export default function SOSAlerts() {
                 <label>Emergency Alert Details</label>
                 <div className="alert-info-box">
                   <p><strong>Location:</strong> {selectedAlert?.latitude}, {selectedAlert?.longitude}</p>
-                  <p><strong>Time:</strong> {selectedAlert && new Date(selectedAlert.timestamp).toLocaleString()}</p>
+                  <p><strong>Time:</strong> {selectedAlert && formatDate(selectedAlert.timestamp)}</p>
                   {selectedAlert?.address && <p><strong>Address:</strong> {selectedAlert.address}</p>}
                 </div>
               </div>
@@ -288,33 +493,15 @@ export default function SOSAlerts() {
               <div className="timeline-section">
                 <h4>Timeline</h4>
                 <div className="timeline">
-                  <div className="timeline-item">
-                    <div className="timeline-icon">🚨</div>
-                    <div className="timeline-content">
-                      <h5>Alert Triggered</h5>
-                      <p>{new Date(selectedAlert.timestamp || selectedAlert.createdAt).toLocaleString()}</p>
-                    </div>
-                  </div>
-                  
-                  {selectedAlert.notifiedContacts && selectedAlert.notifiedContacts > 0 && (
-                    <div className="timeline-item">
-                      <div className="timeline-icon">📬</div>
+                  {buildAlertTimeline(selectedAlert).map((event) => (
+                    <div className="timeline-item" key={`detail-${event.id}`}>
+                      <div className="timeline-icon">{event.icon}</div>
                       <div className="timeline-content">
-                        <h5>Notifications Sent</h5>
-                        <p>{selectedAlert.notifiedContacts} contacts notified</p>
+                        <h5>{event.title}</h5>
+                        <p>{formatDate(event.at)}</p>
                       </div>
                     </div>
-                  )}
-                  
-                  {selectedAlert.status === 'acknowledged' && (
-                    <div className="timeline-item">
-                      <div className="timeline-icon">✅</div>
-                      <div className="timeline-content">
-                        <h5>Acknowledged</h5>
-                        <p>{selectedAlert.acknowledgedAt && new Date(selectedAlert.acknowledgedAt).toLocaleString()}</p>
-                      </div>
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
             </div>

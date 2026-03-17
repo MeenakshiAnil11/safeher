@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   FaTachometerAlt,
@@ -10,11 +10,13 @@ import {
   FaFileAlt,
   FaShieldAlt,
   FaCogs,
+  FaArrowLeft,
 } from "react-icons/fa";
 import "./AdminTelehealth.css";
 
 export default function AdminTelehealth() {
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const telehealthSections = [
     {
@@ -73,69 +75,65 @@ export default function AdminTelehealth() {
     },
   ];
 
-  // Check if we're on a sub-route
-  const isSubRoute = location.pathname !== "/admin/telehealth";
-
   return (
-    <div className="admin-telehealth">
-      <div className="telehealth-header">
-        <h1>Telehealth Management</h1>
-        <p>Manage doctors, appointments, payments, and analytics</p>
-      </div>
+    <div className="admin-layout admin-telehealth">
+      <aside className={`sidebar telehealth-sidebar ${sidebarOpen ? "open" : ""}`}>
+        <nav className="telehealth-nav">
+          {telehealthSections.map((section) => {
+            const Icon = section.icon;
+            const isActive = location.pathname.includes(`/admin/telehealth/${section.path}`);
 
-      <div className="telehealth-layout">
-        {/* Sidebar Navigation */}
-        <aside className="telehealth-sidebar">
-          <nav className="telehealth-nav">
-            {telehealthSections.map((section) => {
-              const Icon = section.icon;
-              const isActive = location.pathname.includes(`/admin/telehealth/${section.path}`);
-
-              return (
-                <NavLink
-                  key={section.path}
-                  to={`/admin/telehealth/${section.path}`}
-                  className={`telehealth-nav-item ${isActive ? "active" : ""}`}
-                >
-                  <Icon className="nav-icon" />
-                  <div className="nav-content">
-                    <span className="nav-label">{section.label}</span>
-                    <span className="nav-description">{section.description}</span>
-                  </div>
-                </NavLink>
-              );
-            })}
-          </nav>
-        </aside>
-
-        {/* Main Content Area */}
-        <main className="telehealth-content">
-          {isSubRoute ? (
-            <Outlet />
-          ) : (
-            <div className="telehealth-overview">
-              <div className="overview-grid">
-                {telehealthSections.map((section) => {
-                  const Icon = section.icon;
-                  return (
-                    <NavLink
-                      key={section.path}
-                      to={`/admin/telehealth/${section.path}`}
-                      className="overview-card"
-                    >
-                      <div className="card-icon">
-                        <Icon />
-                      </div>
-                      <h3>{section.label}</h3>
-                      <p>{section.description}</p>
-                    </NavLink>
-                  );
-                })}
-              </div>
+            return (
+              <NavLink
+                key={section.path}
+                to={`/admin/telehealth/${section.path}`}
+                className={`sidebar-item telehealth-nav-item ${isActive ? "active" : ""}`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Icon className="nav-icon" />
+                <div className="nav-content">
+                  <span className="nav-label">{section.label}</span>
+                  <span className="nav-description">{section.description}</span>
+                </div>
+              </NavLink>
+            );
+          })}
+          <NavLink
+            to="/admin/dashboard"
+            className="sidebar-item telehealth-nav-item"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <FaArrowLeft className="nav-icon" />
+            <div className="nav-content">
+              <span className="nav-label">Back to Dashboard</span>
+              <span className="nav-description">Return to main admin dashboard</span>
             </div>
-          )}
-        </main>
+          </NavLink>
+        </nav>
+      </aside>
+
+      <div className="main-section telehealth-main-section">
+        <header className="header telehealth-header">
+          <button
+            type="button"
+            className="telehealth-sidebar-toggle"
+            onClick={() => setSidebarOpen((v) => !v)}
+            aria-label="Toggle sidebar"
+          >
+            ☰
+          </button>
+          <div>
+            <h1 className="page-title">🩺 Telehealth Management</h1>
+            <p className="page-subtitle">Manage doctors, appointments, payments, and analytics</p>
+          </div>
+        </header>
+
+        <div className="content-area telehealth-content">
+          <Outlet />
+        </div>
       </div>
+
+      {sidebarOpen ? <button className="telehealth-sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar" /> : null}
     </div>
   );
 }

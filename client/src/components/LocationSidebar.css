@@ -470,3 +470,374 @@
 .location-sidebar::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.5);
 }
+
+/* SafeHer modern sidebar overrides */
+.location-sidebar {
+  --safeher-primary: #6C63FF;
+  --safeher-success: #22C55E;
+  --safeher-warning: #F59E0B;
+  --safeher-danger: #EF4444;
+  --safeher-bg: #F8FAFC;
+  --safeher-text: #0f172a;
+  --safeher-muted: #64748b;
+  background: linear-gradient(180deg, #ffffff 0%, var(--safeher-bg) 100%);
+  border-right: 1px solid #e2e8f0;
+  box-shadow: 8px 0 24px rgba(15, 23, 42, 0.06);
+}
+
+.location-sidebar .sidebar-nav::before {
+  color: var(--safeher-text);
+  letter-spacing: 0.01em;
+}
+
+.location-sidebar .nav-list {
+  gap: 10px;
+}
+
+.location-sidebar .nav-link {
+  border: 1px solid transparent;
+  border-radius: 14px;
+  transition: transform 180ms ease, box-shadow 200ms ease, background-color 200ms ease, border-color 200ms ease;
+}
+
+.location-sidebar .nav-link:hover {
+  background: rgba(108, 99, 255, 0.08);
+  color: var(--safeher-primary);
+  border-color: rgba(108, 99, 255, 0.25);
+  box-shadow: 0 10px 20px rgba(108, 99, 255, 0.15);
+  transform: translateX(2px);
+}
+
+.location-sidebar .nav-link.active {
+  background: linear-gradient(135deg, #6C63FF, #5b52ff);
+  border-color: rgba(108, 99, 255, 0.6);
+  box-shadow: 0 12px 24px rgba(108, 99, 255, 0.25);
+}
+
+.location-sidebar .nav-content {
+  width: 100%;
+}
+
+.location-sidebar .nav-icon {
+  font-size: 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.location-sidebar .nav-label {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.location-sidebar .nav-badge-success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.location-sidebar .nav-badge-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+}
+
+.location-sidebar .nav-badge-info,
+.location-sidebar .nav-badge-primary {
+  background: rgba(108, 99, 255, 0.14);
+  color: #4f46e5;
+}
+
+.sidebar-emergency {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.sidebar-emergency h3 {
+  color: #b91c1c;
+}
+
+.emergency-btn {
+  border-radius: 12px;
+}
+
+.emergency-btn.secondary {
+  background: linear-gradient(135deg, #6C63FF, #5b52ff);
+  box-shadow: 0 8px 18px rgba(108, 99, 255, 0.32);
+}
+
+.sidebar-nav-skeleton {
+  padding: 0 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.nav-skeleton-item {
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(110deg, #eef2f7 8%, #f8fafc 18%, #eef2f7 33%);
+  background-size: 200% 100%;
+  animation: safeherShimmer 1.2s linear infinite;
+}
+
+@keyframes safeherShimmer {
+  to {
+    background-position-x: -200%;
+  }
+}
+
+/* Sidebar dashboard card hierarchy pass */
+.location-sidebar {
+  font-family: Inter, Roboto, "Segoe UI", Arial, sans-serif;
+  padding: 12px;
+  gap: 12px;
+}
+
+.location-sidebar .sidebar-emergency,
+.location-sidebar .sidebar-nav,
+.location-sidebar .sidebar-footer {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.location-sidebar .sidebar-emergency {
+  margin-bottom: 0;
+}
+
+.location-sidebar .sidebar-nav {
+  padding-top: 12px;
+}
+
+.location-sidebar .sidebar-nav::before {
+  padding-top: 0;
+}
+
+.location-sidebar .emergency-btn {
+  min-height: 40px;
+  border-radius: 12px;
+}
+
+.location-sidebar .sidebar-footer {
+  margin-top: auto;
+}
+
+/* Professional dark sidebar refactor */
+.location-sidebar {
+  background: #1e2a38;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 8px 0 24px rgba(2, 6, 23, 0.3);
+  color: #dbe7f3;
+}
+
+.location-sidebar .sidebar-nav,
+.location-sidebar .sidebar-emergency,
+.location-sidebar .sidebar-footer {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+.location-sidebar .sidebar-nav::before {
+  content: 'Location Tracking';
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 8px 8px;
+}
+
+.sidebar-group-title {
+  margin: 4px 10px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9fb3c9;
+}
+
+.location-sidebar .nav-list {
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.location-sidebar .nav-link {
+  color: #dbe7f3;
+  border: 1px solid transparent;
+}
+
+.location-sidebar .nav-link:hover {
+  background: rgba(0, 123, 255, 0.18);
+  color: #ffffff;
+  border-color: rgba(0, 123, 255, 0.45);
+  transform: translateX(0);
+  box-shadow: 0 8px 18px rgba(0, 123, 255, 0.2);
+}
+
+.location-sidebar .nav-link.active {
+  background: linear-gradient(135deg, #007bff, #17a2b8);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 10px 20px rgba(0, 123, 255, 0.32);
+}
+
+.location-sidebar .nav-badge {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.location-sidebar .sidebar-emergency h3 {
+  color: #ffffff;
+}
+
+.location-sidebar .emergency-btn {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+}
+
+.location-sidebar .emergency-btn.secondary {
+  background: linear-gradient(135deg, #007bff, #17a2b8);
+}
+
+.location-sidebar .footer-info p {
+  color: #a8bfd6;
+}
+
+/* Fixed sidebar width contract */
+.location-sidebar {
+  width: 260px;
+}
+
+@media (max-width: 1024px) {
+  .location-sidebar {
+    width: 260px;
+  }
+}
+
+/* Final flat sidebar refactor */
+.location-sidebar {
+  font-family: Inter, Roboto, "Segoe UI", Arial, sans-serif !important;
+  background: #1e2a38 !important;
+  color: #c8d5e5 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+.location-sidebar .sidebar-emergency,
+.location-sidebar .sidebar-nav,
+.location-sidebar .sidebar-footer {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.location-sidebar .sidebar-nav::before {
+  color: #d9e5f3 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.location-sidebar .sidebar-group-title {
+  color: #9fb3c9 !important;
+  margin: 2px 10px 6px !important;
+}
+
+.location-sidebar .nav-list {
+  gap: 0 !important;
+  padding: 0 8px !important;
+}
+
+.location-sidebar .nav-item {
+  margin: 0 0 4px 0 !important;
+}
+
+.location-sidebar .nav-link {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+  color: #bfd0e2 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+}
+
+.location-sidebar .nav-content {
+  padding: 6px 10px !important;
+  min-height: 0 !important;
+  gap: 10px !important;
+}
+
+.location-sidebar .nav-link:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  transform: none !important;
+}
+
+.location-sidebar .nav-link.active {
+  background: #007bff !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+.location-sidebar .nav-link.active .nav-icon,
+.location-sidebar .nav-link.active .nav-label {
+  color: #ffffff !important;
+}
+
+/* Mobile: collapse to icon-only navigation */
+@media (max-width: 768px) {
+  .location-sidebar {
+    width: 100% !important;
+    position: relative !important;
+    height: auto !important;
+  }
+
+  .location-sidebar .sidebar-nav::before,
+  .location-sidebar .sidebar-group-title,
+  .location-sidebar .nav-text,
+  .location-sidebar .nav-badge,
+  .location-sidebar .footer-info,
+  .location-sidebar .emergency-btn .btn-text {
+    display: none !important;
+  }
+
+  .location-sidebar .sidebar-groups {
+    padding: 0 8px 8px !important;
+    gap: 8px !important;
+  }
+
+  .location-sidebar .nav-list {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 0 !important;
+  }
+
+  .location-sidebar .nav-item {
+    margin: 0 !important;
+  }
+
+  .location-sidebar .nav-link {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .location-sidebar .nav-content {
+    padding: 0 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .location-sidebar .nav-icon {
+    width: auto !important;
+    font-size: 1.1rem !important;
+  }
+}

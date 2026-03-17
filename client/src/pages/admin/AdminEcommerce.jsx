@@ -17,10 +17,11 @@ import "./AdminEcommerce.css";
 
 export default function AdminEcommerce() {
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const ecommerceSections = [
     {
-      path: "dashboard",
+      path: "overview",
       label: "Dashboard Overview",
       icon: FaTachometerAlt,
       description: "View sales metrics and key statistics"
@@ -75,75 +76,55 @@ export default function AdminEcommerce() {
     }
   ];
 
-  // Check if we're on a sub-route
-  const isSubRoute = location.pathname !== "/admin/ecommerce";
-
   return (
     <div className="admin-ecommerce">
-      <AdminHeader pageTitle="E-commerce Management" />
+      <aside className={`ecommerce-sidebar ${sidebarOpen ? "open" : ""}`}>
+        <nav className="ecommerce-nav">
+          {ecommerceSections.map((section) => {
+            const Icon = section.icon;
+            const isActive = location.pathname.includes(`/admin/ecommerce/${section.path}`);
 
-      <div className="ecommerce-layout">
-        {/* Sidebar Navigation */}
-        <aside className="ecommerce-sidebar">
-          <nav className="ecommerce-nav">
-            {ecommerceSections.map((section) => {
-              const Icon = section.icon;
-              const isActive = location.pathname.includes(`/admin/ecommerce/${section.path}`);
-              
-              return (
-                <NavLink
-                  key={section.path}
-                  to={`/admin/ecommerce/${section.path}`}
-                  className={`ecommerce-nav-item ${isActive ? "active" : ""}`}
-                >
-                  <Icon className="nav-icon" />
-                  <div className="nav-content">
-                    <span className="nav-label">{section.label}</span>
-                    <span className="nav-description">{section.description}</span>
-                  </div>
-                </NavLink>
-              );
-            })}
-            <NavLink to="/admin/dashboard" className="ecommerce-nav-item">
-              <FaArrowLeft className="nav-icon" />
-              <div className="nav-content">
-                <span className="nav-label">Back to Dashboard</span>
-                <span className="nav-description">Return to main admin dashboard</span>
-              </div>
-            </NavLink>
-          </nav>
-        </aside>
+            return (
+              <NavLink
+                key={section.path}
+                to={`/admin/ecommerce/${section.path}`}
+                className={`ecommerce-nav-item ${isActive ? "active" : ""}`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Icon className="nav-icon" />
+                <div className="nav-content">
+                  <span className="nav-label">{section.label}</span>
+                  <span className="nav-description">{section.description}</span>
+                </div>
+              </NavLink>
+            );
+          })}
+          <NavLink to="/admin/dashboard" className="ecommerce-nav-item" onClick={() => setSidebarOpen(false)}>
+            <FaArrowLeft className="nav-icon" />
+            <div className="nav-content">
+              <span className="nav-label">Back to Dashboard</span>
+              <span className="nav-description">Return to main admin dashboard</span>
+            </div>
+          </NavLink>
+        </nav>
+      </aside>
 
-        {/* Main Content Area */}
+      <div className="ecommerce-main-content">
+        <div className="ecommerce-header-wrap">
+          <button className="ecommerce-sidebar-toggle" type="button" onClick={() => setSidebarOpen((v) => !v)}>
+            ☰
+          </button>
+          <AdminHeader pageTitle="E-commerce Management" />
+        </div>
+
         <main className="ecommerce-content">
           <div className="ecommerce-content-inner">
-            {isSubRoute ? (
-              <Outlet />
-            ) : (
-              <div className="ecommerce-overview">
-                <div className="overview-grid">
-                  {ecommerceSections.map((section) => {
-                    const Icon = section.icon;
-                    return (
-                      <NavLink
-                        key={section.path}
-                        to={`/admin/ecommerce/${section.path}`}
-                        className="overview-card"
-                      >
-                        <div className="card-icon">
-                          <Icon />
-                        </div>
-                        <h3>{section.label}</h3>
-                        <p>{section.description}</p>
-                      </NavLink>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            <Outlet />
           </div>
         </main>
       </div>
+
+      {sidebarOpen ? <button className="sidebar-backdrop" aria-label="Close sidebar" onClick={() => setSidebarOpen(false)} /> : null}
     </div>
   );
 }

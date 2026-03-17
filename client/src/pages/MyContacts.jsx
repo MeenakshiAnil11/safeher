@@ -8,6 +8,23 @@ import { messaging } from "../firebase";
 import { getToken, onMessage } from "firebase/messaging";
 import "./MyContacts.css";
 
+const defaultChannels = { sms: true, email: true, push: true };
+
+const getInitials = (name = "") =>
+  name
+    .split(" ")
+    .map((part) => part.trim()[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "EC";
+
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  const dt = new Date(value);
+  return Number.isNaN(dt.getTime()) ? "—" : dt.toLocaleString();
+};
+
 export default function MyContacts({ embedded = false }) {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,8 +33,18 @@ export default function MyContacts({ embedded = false }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
+  const [otpCodes, setOtpCodes] = useState({});
 
-  const emptyForm = { id: null, name: "", relationship: "", number: "", email: "" };
+  const emptyForm = {
+    id: null,
+    name: "",
+    relationship: "",
+    number: "",
+    email: "",
+    priority: "secondary",
+    otpEnabled: false,
+    notificationChannels: { ...defaultChannels },
+  };
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
 
@@ -81,12 +108,30 @@ export default function MyContacts({ embedded = false }) {
     setError("");
     try {
       if (isEdit) {
-        const { id, name, relationship, number, email } = form;
-        const res = await api.put(`/contacts/${id}`, { name, relationship, number, email, fcmToken });
+        const { id, name, relationship, number, email, priority, otpEnabled, notificationChannels } = form;
+        const res = await api.put(`/contacts/${id}`, {
+          name,
+          relationship,
+          number,
+          email,
+          priority,
+          otpEnabled,
+          notificationChannels,
+          fcmToken,
+        });
         setContacts((prev) => prev.map((c) => (c._id === id ? res.data.contact : c)));
       } else {
-        const { name, relationship, number, email } = form;
-        const res = await api.post(`/contacts`, { name, relationship, number, email, fcmToken });
+        const { name, relationship, number, email, priority, otpEnabled, notificationChannels } = form;
+        const res = await api.post(`/contacts`, {
+          name,
+          relationship,
+          number,
+          email,
+          priority,
+          otpEnabled,
+          notificationChannels,
+          fcmToken,
+        });
         setContacts((prev) => [res.data.contact, ...prev]);
       }
       setForm(emptyForm);
@@ -103,6 +148,13 @@ export default function MyContacts({ embedded = false }) {
       relationship: contact.relationship || "",
       number: contact.number || "",
       email: contact.email || "",
+      priority: contact.priority || "secondary",
+      otpEnabled: Boolean(contact.otpVerification?.enabled),
+      notificationChannels: {
+        sms: contact.notificationChannels?.sms ?? true,
+        email: contact.notificationChannels?.email ?? true,
+        push: contact.notificationChannels?.push ?? true,
+      },
     });
     setShowForm(true);
   };
@@ -136,6 +188,42 @@ export default function MyContacts({ embedded = false }) {
   const cancelDelete = () => {
     setShowDeleteDialog(false);
     setContactToDelete(null);
+  };
+
+  const sendOTP = async (contactId) => {
+    try {
+      const res = await api.post(`/contacts/${contactId}/send-otp`);
+      setSuccessMessage(
+        `OTP sent successfully. Expires in ${res.data?.expiresInMinutes || 10} minutes. Preview code: ${res.data?.otpPreview || "sent"}`
+      );
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to send OTP");
+    }
+  };
+
+  const verifyOTP = async (contactId) => {
+    const otpCode = otpCodes[contactId];
+    if (!otpCode) {
+      setError("Enter OTP code before verifying");
+      return;
+    }
+    try {
+      const res = await api.post(`/contacts/${contactId}/verify-otp`, { otpCode });
+      setContacts((prev) => prev.map((c) => (c._id === contactId ? res.data.contact : c)));
+      setOtpCodes((prev) => ({ ...prev, [contactId]: "" }));
+      setSuccessMessage("Contact verified successfully.");
+    } catch (err) {
+      setError(err.response?.data?.message || "OTP verification failed");
+    }
+  };
+
+  const updateAcknowledgement = async (contactId, status) => {
+    try {
+      const res = await api.post(`/contacts/${contactId}/acknowledge-sos`, { status });
+      setContacts((prev) => prev.map((c) => (c._id === contactId ? res.data.contact : c)));
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update acknowledgement status");
+    }
   };
 
   const contactsContent = (
@@ -180,6 +268,71 @@ export default function MyContacts({ embedded = false }) {
               <label>Email (optional)</label>
               <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
+            <div>
+              <label>Priority</label>
+              <select
+                value={form.priority}
+                onChange={(e) => setForm({ ...form, priority: e.target.value })}
+              >
+                <option value="primary">Primary</option>
+                <option value="secondary">Secondary</option>
+                <option value="emergency">Emergency</option>
+              </select>
+            </div>
+            <div className="checkbox-row">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={form.otpEnabled}
+                  onChange={(e) => setForm({ ...form, otpEnabled: e.target.checked })}
+                />
+                Enable OTP verification (optional)
+              </label>
+            </div>
+          </div>
+          <div className="notification-section">
+            <span className="section-label">Notification Settings</span>
+            <div className="channel-grid">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={form.notificationChannels.sms}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      notificationChannels: { ...prev.notificationChannels, sms: e.target.checked },
+                    }))
+                  }
+                />
+                SMS
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={form.notificationChannels.email}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      notificationChannels: { ...prev.notificationChannels, email: e.target.checked },
+                    }))
+                  }
+                />
+                Email
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={form.notificationChannels.push}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      notificationChannels: { ...prev.notificationChannels, push: e.target.checked },
+                    }))
+                  }
+                />
+                Push Notification
+              </label>
+            </div>
           </div>
           <div className="contacts-form-actions">
             <button className="btn primary" type="submit">{isEdit ? "Save Changes" : "Add Contact"}</button>
@@ -197,8 +350,12 @@ export default function MyContacts({ embedded = false }) {
           <table className="contacts-table">
             <thead>
               <tr>
-                <th>Name</th>
+                <th>Contact</th>
                 <th>Relation</th>
+                <th>Priority</th>
+                <th>Notifications</th>
+                <th>Verification</th>
+                <th>SOS Status</th>
                 <th>Phone</th>
                 <th>Email</th>
                 <th>Actions</th>
@@ -207,13 +364,77 @@ export default function MyContacts({ embedded = false }) {
             <tbody>
               {contacts.map((c) => (
                 <tr key={c._id}>
-                  <td data-label="Name">{c.name}</td>
+                  <td data-label="Contact">
+                    <div className="contact-cell">
+                      <div className="contact-avatar">{getInitials(c.name)}</div>
+                      <span>{c.name}</span>
+                    </div>
+                  </td>
                   <td data-label="Relation">{c.relationship || "-"}</td>
+                  <td data-label="Priority">
+                    <span className={`priority-badge ${c.priority || "secondary"}`}>
+                      {(c.priority || "secondary").toUpperCase()}
+                    </span>
+                  </td>
+                  <td data-label="Notifications">
+                    <div className="channels-list">
+                      {c.notificationChannels?.sms && <span>SMS</span>}
+                      {c.notificationChannels?.email && <span>Email</span>}
+                      {c.notificationChannels?.push && <span>Push</span>}
+                      {!c.notificationChannels?.sms &&
+                        !c.notificationChannels?.email &&
+                        !c.notificationChannels?.push && <span>—</span>}
+                    </div>
+                  </td>
+                  <td data-label="Verification">
+                    <div className="verify-stack">
+                      {c.otpVerification?.enabled ? (
+                        c.otpVerification?.isVerified ? (
+                          <span className="status-pill success">Verified</span>
+                        ) : (
+                          <span className="status-pill warning">Pending OTP</span>
+                        )
+                      ) : (
+                        <span className="status-pill muted">Not enabled</span>
+                      )}
+                      {c.otpVerification?.enabled && !c.otpVerification?.isVerified && (
+                        <div className="verify-actions">
+                          <button className="btn small" onClick={() => sendOTP(c._id)}>Send OTP</button>
+                          <input
+                            value={otpCodes[c._id] || ""}
+                            onChange={(e) => setOtpCodes((prev) => ({ ...prev, [c._id]: e.target.value }))}
+                            placeholder="OTP"
+                            className="otp-input"
+                          />
+                          <button className="btn small action-edit" onClick={() => verifyOTP(c._id)}>Verify</button>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td data-label="SOS Status">
+                    <div className="ack-stack">
+                      <span className={`status-pill ${c.sosAcknowledgement?.status === "acknowledged" ? "success" : "warning"}`}>
+                        {c.sosAcknowledgement?.status === "acknowledged" ? "Acknowledged" : "Pending"}
+                      </span>
+                      <small>{formatDateTime(c.sosAcknowledgement?.acknowledgedAt)}</small>
+                    </div>
+                  </td>
                   <td data-label="Phone">{c.number}</td>
                   <td data-label="Email">{c.email || "-"}</td>
                   <td data-label="Actions">
                     <div className="contacts-actions">
                       <button className="btn small action-edit" onClick={() => onEdit(c)}>✏️ Edit</button>
+                      <button
+                        className="btn small"
+                        onClick={() =>
+                          updateAcknowledgement(
+                            c._id,
+                            c.sosAcknowledgement?.status === "acknowledged" ? "pending" : "acknowledged"
+                          )
+                        }
+                      >
+                        {c.sosAcknowledgement?.status === "acknowledged" ? "↩ Reset" : "✅ Ack"}
+                      </button>
                       <button className="btn ghost small action-delete" onClick={() => onDeleteClick(c)}>🗑️ Delete</button>
                     </div>
                   </td>

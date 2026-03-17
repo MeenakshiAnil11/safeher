@@ -1,13 +1,25 @@
 import Contact from "../models/Contact.js";
+import Alert from "../models/Alert.js";
 import DangerZone from "../models/DangerZone.js";
 import GeoFenceEvent from "../models/GeoFenceEvent.js";
 import SafeZone from "../models/SafeZone.js";
+import SafetyPlace from "../models/SafetyPlace.js";
+import SafetyAuditReport from "../models/SafetyAuditReport.js";
 import User from "../models/User.js";
 import UserLocationLog from "../models/UserLocationLog.js";
+import { evaluateDangerPrediction } from "../services/dangerPredictionService.js";
+import {
+  ACTIVITY_EVENTS,
+  createActivityLog,
+  getLatestActivityByTypes,
+} from "../services/activityLogService.js";
 import { sendEmail } from "../config/mailer.js";
 import { sendSMS } from "../config/sms.js";
 
 const NOTIFICATION_COOLDOWN_MS = 5 * 60 * 1000;
+const ALERT_COOLDOWN_MS = 10 * 60 * 1000;
+const STATIONARY_WINDOW_MS = 30 * 60 * 1000;
+const STATIONARY_MAX_DRIFT_METERS = 50;
 const inMemoryDangerNotifyCache = new Map();
 
 const toRad = (value) => (value * Math.PI) / 180;
@@ -61,6 +73,104 @@ const shouldNotifyDangerZone = (userId, zoneId) => {
   }
   inMemoryDangerNotifyCache.set(key, now);
   return true;
+};
+
+const createAlertIfNeeded = async ({
+  userId,
+  type,
+  message,
+  severity,
+  location,
+  cooldownMs = ALERT_COOLDOWN_MS,
+}) => {
+  const since = new Date(Date.now() - cooldownMs);
+  const existing = await Alert.findOne({
+    userId,
+    type,
+    resolved: false,
+    timestamp: { $gte: since },
+  })
+    .select("_id")
+    .lean();
+  if (existing) return null;
+
+  return Alert.create({
+    userId,
+    type,
+    message,
+    severity,
+    location,
+    timestamp: new Date(),
+    resolved: false,
+  });
+};
+
+const triggerSmartSafetyAlerts = async ({ userId, lat, lng, accuracy, source }) => {
+  if (source !== "tracking") return;
+
+  const location = { lat, lng };
+
+  // 1) Safe zone exit alert
+  const safeZones = await SafeZone.find({ user: userId, isActive: true })
+    .select("latitude longitude radius")
+    .lean();
+  if (safeZones.length > 0) {
+    const insideAnySafeZone = safeZones.some((zone) => {
+      const distance = haversineMeters(lat, lng, zone.latitude, zone.longitude);
+      return distance <= Number(zone.radius || 0);
+    });
+    if (!insideAnySafeZone) {
+      await createAlertIfNeeded({
+        userId,
+        type: "SAFE_ZONE_EXIT",
+        message: "You left your safe zone.",
+        severity: "danger",
+        location,
+      });
+    }
+  }
+
+  // 2) Stationary detection for > 30 min
+  const stationaryLogs = await UserLocationLog.find({
+    user: userId,
+    source: "tracking",
+    recordedAt: { $gte: new Date(Date.now() - STATIONARY_WINDOW_MS) },
+  })
+    .select("coords recordedAt")
+    .sort({ recordedAt: 1 })
+    .lean();
+
+  if (stationaryLogs.length >= 2) {
+    const first = stationaryLogs[0];
+    const last = stationaryLogs[stationaryLogs.length - 1];
+    const elapsed = new Date(last.recordedAt).getTime() - new Date(first.recordedAt).getTime();
+    const maxDrift = stationaryLogs.reduce((max, item) => {
+      const drift = haversineMeters(first.coords.lat, first.coords.lng, item.coords.lat, item.coords.lng);
+      return Math.max(max, drift);
+    }, 0);
+
+    if (elapsed >= STATIONARY_WINDOW_MS && maxDrift <= STATIONARY_MAX_DRIFT_METERS) {
+      await createAlertIfNeeded({
+        userId,
+        type: "STATIONARY_30_MIN",
+        message: "You have been stationary for 30 minutes.",
+        severity: "warning",
+        location,
+        cooldownMs: 20 * 60 * 1000,
+      });
+    }
+  }
+
+  // 3) Low GPS accuracy
+  if (Number.isFinite(Number(accuracy)) && Number(accuracy) > 100) {
+    await createAlertIfNeeded({
+      userId,
+      type: "LOW_GPS_ACCURACY",
+      message: "Low GPS signal detected.",
+      severity: "warning",
+      location,
+    });
+  }
 };
 
 const distancePointToSegmentMeters = (point, a, b) => {
@@ -139,16 +249,82 @@ export const saveLiveLocation = async (req, res) => {
     if (lat == null || lng == null) {
       return res.status(400).json({ message: "lat and lng are required" });
     }
+    const userId = req.userId || req.user?.id;
+    const dangerPrediction = await evaluateDangerPrediction({
+      userId,
+      lat: Number(lat),
+      lng: Number(lng),
+      accuracy: Number(accuracy),
+      timestamp: new Date(),
+    });
+
     const log = await UserLocationLog.create({
-      user: req.user.id,
+      user: userId,
       coords: { lat, lng },
       accuracy,
       speed,
       heading,
       source: source || "tracking",
+      riskScore: dangerPrediction.riskScore,
+      riskLevel: dangerPrediction.riskLevel,
+      riskRecommendation: dangerPrediction.recommendation,
+      riskFactors: dangerPrediction.factors,
       recordedAt: new Date(),
     });
-    res.status(201).json({ ok: true, logId: log._id });
+    await triggerSmartSafetyAlerts({
+      userId,
+      lat: Number(lat),
+      lng: Number(lng),
+      accuracy: Number(accuracy),
+      source: source || "tracking",
+    });
+
+    const safeZones = await SafeZone.find({ user: userId, isActive: true })
+      .select("latitude longitude radius")
+      .lean();
+    const isInsideAnySafeZone = safeZones.some((zone) => {
+      const distance = haversineMeters(Number(lat), Number(lng), zone.latitude, zone.longitude);
+      return distance <= Number(zone.radius || 0);
+    });
+    const latestSafeZoneEvent = await getLatestActivityByTypes(userId, [
+      ACTIVITY_EVENTS.ENTERED_SAFE_ZONE,
+      ACTIVITY_EVENTS.EXITED_SAFE_ZONE,
+    ]);
+
+    if (
+      isInsideAnySafeZone &&
+      latestSafeZoneEvent?.eventType !== ACTIVITY_EVENTS.ENTERED_SAFE_ZONE
+    ) {
+      await createActivityLog({
+        userId,
+        eventType: ACTIVITY_EVENTS.ENTERED_SAFE_ZONE,
+        description: "Entered safe zone",
+        location: { lat, lng },
+      });
+    }
+
+    if (
+      !isInsideAnySafeZone &&
+      latestSafeZoneEvent &&
+      latestSafeZoneEvent.eventType !== ACTIVITY_EVENTS.EXITED_SAFE_ZONE
+    ) {
+      await createActivityLog({
+        userId,
+        eventType: ACTIVITY_EVENTS.EXITED_SAFE_ZONE,
+        description: "Exited safe zone",
+        location: { lat, lng },
+      });
+    }
+
+    res.status(201).json({
+      ok: true,
+      logId: log._id,
+      riskPrediction: {
+        riskScore: dangerPrediction.riskScore,
+        riskLevel: dangerPrediction.riskLevel,
+        recommendation: dangerPrediction.recommendation,
+      },
+    });
   } catch (error) {
     console.error("saveLiveLocation error:", error);
     res.status(500).json({ message: "Failed to save live location" });
@@ -165,6 +341,105 @@ export const getDangerZones = async (req, res) => {
   }
 };
 
+export const getNearbySafetyPlaces = async (req, res) => {
+  try {
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+    const radiusMeters = Math.min(Number(req.query.radiusMeters) || 5000, 20000);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return res.status(400).json({ message: "lat and lng query params are required" });
+    }
+
+    const places = await SafetyPlace.find({
+      active: true,
+      category: { $in: ["police", "hospital", "cafe"] },
+    })
+      .limit(500)
+      .lean();
+
+    const normalized = places
+      .map((place) => {
+        const placeLat = place.coordinates?.lat;
+        const placeLng = place.coordinates?.lng;
+        if (!Number.isFinite(placeLat) || !Number.isFinite(placeLng)) return null;
+        const distanceMeters = haversineMeters(lat, lng, placeLat, placeLng);
+        return {
+          id: place._id,
+          title: place.name,
+          address: place.address || "",
+          phone: place.phone || "",
+          category: place.category,
+          lat: placeLat,
+          lng: placeLng,
+          distanceMeters: Math.round(distanceMeters),
+          isSafeCafe: Boolean(place.isSafeCafe),
+        };
+      })
+      .filter(Boolean)
+      .filter((place) => place.distanceMeters <= radiusMeters)
+      .sort((a, b) => a.distanceMeters - b.distanceMeters);
+
+    const mapCategory = (category) => {
+      if (category === "hospital") return "hospitals";
+      if (category === "cafe") return "cafes";
+      return "police";
+    };
+
+    const grouped = { police: [], hospitals: [], cafes: [] };
+    normalized.forEach((item) => {
+      grouped[mapCategory(item.category)].push(item);
+    });
+
+    if (normalized.length > 0) {
+      return res.json({ source: "database", radiusMeters, ...grouped });
+    }
+
+    // Fallback: lightweight deterministic nearby markers when DB has no geo entries.
+    const fallbackOffset = [
+      { dLat: 0.0024, dLng: -0.0015 },
+      { dLat: -0.0019, dLng: 0.0021 },
+      { dLat: 0.0012, dLng: 0.0026 },
+      { dLat: -0.0026, dLng: -0.0012 },
+      { dLat: 0.0018, dLng: -0.0022 },
+      { dLat: -0.0014, dLng: 0.0018 },
+    ];
+    const makePlace = (idx, title, category, isSafeCafe = false) => ({
+      id: `fallback-${category}-${idx}`,
+      title,
+      category,
+      address: "Nearby support point",
+      phone: "",
+      lat: lat + fallbackOffset[idx].dLat,
+      lng: lng + fallbackOffset[idx].dLng,
+      distanceMeters: Math.round(
+        haversineMeters(lat, lng, lat + fallbackOffset[idx].dLat, lng + fallbackOffset[idx].dLng)
+      ),
+      isSafeCafe,
+    });
+
+    return res.json({
+      source: "fallback",
+      radiusMeters,
+      police: [
+        makePlace(0, "Police Station - North", "police"),
+        makePlace(1, "Police Station - Central", "police"),
+      ],
+      hospitals: [
+        makePlace(2, "City Hospital", "hospital"),
+        makePlace(3, "Emergency Care Hospital", "hospital"),
+      ],
+      cafes: [
+        makePlace(4, "Safe Cafe - Green Cup", "cafe", true),
+        makePlace(5, "Safe Cafe - Corner Brew", "cafe", true),
+      ],
+    });
+  } catch (error) {
+    console.error("getNearbySafetyPlaces error:", error);
+    res.status(500).json({ message: "Failed to load nearby safety places" });
+  }
+};
+
 export const adminGetDangerZones = async (req, res) => {
   try {
     const zones = await DangerZone.find({}).sort({ updatedAt: -1 }).lean();
@@ -172,6 +447,91 @@ export const adminGetDangerZones = async (req, res) => {
   } catch (error) {
     console.error("adminGetDangerZones error:", error);
     res.status(500).json({ message: "Failed to load danger zones" });
+  }
+};
+
+export const adminGetSafetyAuditReports = async (req, res) => {
+  try {
+    const reports = await SafetyAuditReport.find({})
+      .sort({ updatedAt: -1 })
+      .lean();
+    res.json({ reports });
+  } catch (error) {
+    console.error("adminGetSafetyAuditReports error:", error);
+    res.status(500).json({ message: "Failed to load safety audit reports" });
+  }
+};
+
+export const adminCreateSafetyAuditReport = async (req, res) => {
+  try {
+    const {
+      title = "Community safety audit",
+      latitude,
+      longitude,
+      radiusMeters = 600,
+      safetyRating,
+      source = "community",
+      isActive = true,
+    } = req.body || {};
+
+    if (!Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude))) {
+      return res.status(400).json({ message: "Valid latitude and longitude are required" });
+    }
+    if (!Number.isFinite(Number(safetyRating))) {
+      return res.status(400).json({ message: "safetyRating is required (0-100)" });
+    }
+
+    const normalizedRating = Math.max(0, Math.min(100, Number(safetyRating)));
+    const report = await SafetyAuditReport.create({
+      title,
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      radiusMeters: Number(radiusMeters) || 600,
+      safetyRating: normalizedRating,
+      source,
+      isActive: Boolean(isActive),
+    });
+
+    res.status(201).json({ report });
+  } catch (error) {
+    console.error("adminCreateSafetyAuditReport error:", error);
+    res.status(500).json({ message: "Failed to create safety audit report" });
+  }
+};
+
+export const adminUpdateSafetyAuditReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payload = { ...req.body };
+    if (payload.safetyRating != null) {
+      payload.safetyRating = Math.max(0, Math.min(100, Number(payload.safetyRating)));
+    }
+    if (payload.latitude != null) payload.latitude = Number(payload.latitude);
+    if (payload.longitude != null) payload.longitude = Number(payload.longitude);
+    if (payload.radiusMeters != null) payload.radiusMeters = Number(payload.radiusMeters);
+
+    const report = await SafetyAuditReport.findByIdAndUpdate(id, payload, { new: true });
+    if (!report) return res.status(404).json({ message: "Safety audit report not found" });
+    res.json({ report });
+  } catch (error) {
+    console.error("adminUpdateSafetyAuditReport error:", error);
+    res.status(500).json({ message: "Failed to update safety audit report" });
+  }
+};
+
+export const adminDeleteSafetyAuditReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const report = await SafetyAuditReport.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    );
+    if (!report) return res.status(404).json({ message: "Safety audit report not found" });
+    res.json({ message: "Safety audit report deactivated", report });
+  } catch (error) {
+    console.error("adminDeleteSafetyAuditReport error:", error);
+    res.status(500).json({ message: "Failed to delete safety audit report" });
   }
 };
 

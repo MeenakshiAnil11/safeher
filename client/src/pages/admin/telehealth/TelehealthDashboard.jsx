@@ -65,13 +65,13 @@ export default function TelehealthDashboard() {
 
   return (
     <div className="telehealth-dashboard">
-      <div className="dashboard-header">
-        <h2>Dashboard Overview</h2>
-        <p>Monitor system health and key metrics</p>
+      <div className="dashboard-header page-header">
+        <h1 className="page-title">📊 Dashboard Overview</h1>
+        <p className="page-subtitle">Monitor system health and key metrics</p>
       </div>
 
       {/* Key Metrics Cards */}
-      <div className="metrics-grid">
+      <div className="metrics-grid grid">
         <div className="metric-card">
           <div className="metric-icon doctor">
             <FaUserMd />
@@ -90,7 +90,7 @@ export default function TelehealthDashboard() {
             <FaUsers />
           </div>
           <div className="metric-content">
-            <h3>Total Users</h3>
+            <h3>Active Users</h3>
             <p className="metric-value">{metrics.totalUsers}</p>
             <span className="metric-subtitle">{metrics.activeUsers} Active Users</span>
           </div>
@@ -101,7 +101,7 @@ export default function TelehealthDashboard() {
             <FaCalendarCheck />
           </div>
           <div className="metric-content">
-            <h3>Upcoming Appointments</h3>
+            <h3>Appointments Today</h3>
             <p className="metric-value">{metrics.upcomingAppointments}</p>
             <span className="metric-subtitle">{metrics.pendingAppointments} Pending</span>
           </div>
@@ -134,27 +134,33 @@ export default function TelehealthDashboard() {
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="charts-section">
-        <div className="chart-card">
+      <div className="telehealth-dashboard-layout">
+        <div className="telehealth-dashboard-main">
+          {/* Charts Section */}
+          <div className="charts-section">
+            <div className="chart-card">
           <h3>Consultation Trends (Last 30 Days)</h3>
           <div className="chart-container">
             <ConsultationChart data={trends.consultations} />
           </div>
-        </div>
+            </div>
 
-        <div className="chart-card">
+            <div className="chart-card">
           <h3>Revenue Trends (Last 30 Days)</h3>
           <div className="chart-container">
             <RevenueChart data={trends.revenue} />
           </div>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <div className="live-monitoring-section">
+          <div className="live-monitoring-section">
         <div className="panel-header">
           <FaHeartbeat className="panel-icon" />
           <h3>Live Consultation Monitoring</h3>
+        </div>
+        <div className="live-status-widget">
+          <strong>Live Status Widget</strong>
+          <p>Track active consultations, waiting queue, and connected sessions in real-time.</p>
         </div>
         <div className="live-metrics-grid">
           <div className="live-metric-card">
@@ -201,44 +207,56 @@ export default function TelehealthDashboard() {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Notifications Panel */}
-      <div className="notifications-panel">
-        <div className="panel-header">
-          <FaBell className="panel-icon" />
-          <h3>Notifications & Alerts</h3>
+          </div>
         </div>
-        <div className="notifications-list">
-          {notifications.pendingApprovals > 0 && (
-            <div className="notification-item warning">
-              <FaExclamationTriangle />
-              <div className="notification-content">
-                <h4>Pending Doctor Approvals</h4>
-                <p>{notifications.pendingApprovals} doctors waiting for approval</p>
-              </div>
-              <span className="notification-badge">{notifications.pendingApprovals}</span>
+
+        {/* Notifications Panel */}
+        <div className="telehealth-dashboard-side">
+          <div className="notifications-panel">
+            <div className="panel-header">
+              <FaBell className="panel-icon" />
+              <h3>Notifications & Alerts</h3>
             </div>
-          )}
-          {notifications.disputes > 0 && (
-            <div className="notification-item danger">
-              <FaExclamationTriangle />
-              <div className="notification-content">
-                <h4>Pending Disputes</h4>
-                <p>{notifications.disputes} appointment disputes need resolution</p>
-              </div>
-              <span className="notification-badge">{notifications.disputes}</span>
+            <div className="notifications-list">
+              {notifications.pendingApprovals > 0 && (
+                <div className="notification-item warning">
+                  <FaExclamationTriangle />
+                  <div className="notification-content">
+                    <h4>Pending Doctor Approvals</h4>
+                    <p>{notifications.pendingApprovals} doctors waiting for approval</p>
+                  </div>
+                  <span className="notification-badge">{notifications.pendingApprovals}</span>
+                </div>
+              )}
+              {notifications.disputes > 0 && (
+                <div className="notification-item danger">
+                  <FaExclamationTriangle />
+                  <div className="notification-content">
+                    <h4>Pending Disputes</h4>
+                    <p>{notifications.disputes} appointment disputes need resolution</p>
+                  </div>
+                  <span className="notification-badge">{notifications.disputes}</span>
+                </div>
+              )}
+              {notifications.pendingApprovals === 0 && notifications.disputes === 0 && (
+                <div className="notification-item success">
+                  <FaCheckCircle />
+                  <div className="notification-content">
+                    <h4>All Clear</h4>
+                    <p>No pending approvals or disputes</p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-          {notifications.pendingApprovals === 0 && notifications.disputes === 0 && (
-            <div className="notification-item success">
-              <FaCheckCircle />
-              <div className="notification-content">
-                <h4>All Clear</h4>
-                <p>No pending approvals or disputes</p>
-              </div>
-            </div>
-          )}
+          </div>
+
+          <div className="activity-panel">
+            <h3>Recent Activity</h3>
+            <div className="activity-item">✅ Doctor approved</div>
+            <div className="activity-item">📅 Appointment booked</div>
+            <div className="activity-item">💳 Payment completed</div>
+            <div className="activity-item">📄 Report generated</div>
+          </div>
         </div>
       </div>
     </div>

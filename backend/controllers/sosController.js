@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import admin from "../utils/firebaseAdmin.js"; // Firebase Admin for FCM push notifications
 import { sendEmail } from "../config/mailer.js";
 import { sendSMS } from "../config/sms.js";
+import { ACTIVITY_EVENTS, createActivityLog } from "../services/activityLogService.js";
 
 function mapsLink(lat, lng) {
   if (lat == null || lng == null) return "";
@@ -36,6 +37,12 @@ export const createSOS = async (req, res) => {
       status: "open",
       accuracy: accuracy,
       timestamp: timestamp || new Date(),
+    });
+    await createActivityLog({
+      userId: req.userId,
+      eventType: ACTIVITY_EVENTS.SOS_TRIGGERED,
+      description: "SOS triggered",
+      location: { lat, lng },
     });
 
     // Load user and contacts
@@ -195,6 +202,12 @@ export const shareLocation = async (req, res) => {
 
     // Load user info
     const user = await User.findById(req.userId).select("name email phone").lean();
+    await createActivityLog({
+      userId: req.userId,
+      eventType: ACTIVITY_EVENTS.LOCATION_SHARING_ENABLED,
+      description: "Location sharing enabled",
+      location: { lat: location.latitude, lng: location.longitude },
+    });
 
     const link = mapsLink(location.latitude, location.longitude);
     const appleMapsLink = `https://maps.apple.com/?q=${location.latitude},${location.longitude}`;
@@ -338,6 +351,12 @@ export const sendSOS = async (req, res) => {
       message: message || "Emergency SOS triggered",
       status: "open",
       timestamp: new Date(),
+    });
+    await createActivityLog({
+      userId: req.userId,
+      eventType: ACTIVITY_EVENTS.SOS_TRIGGERED,
+      description: "SOS triggered",
+      location: { lat: latitude, lng: longitude },
     });
 
     // Prepare SMS message

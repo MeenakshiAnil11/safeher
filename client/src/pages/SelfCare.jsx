@@ -74,10 +74,10 @@ export default function SelfCare() {
   const header = pageMeta[activeTab] || pageMeta.dashboard;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 page-with-header">
+    <div className="min-h-screen overflow-x-hidden bg-slate-50 font-sans text-slate-900 page-with-header">
       <UserHeader />
-      <div className="h-[calc(100vh-64px)] overflow-hidden bg-[#f5f6f8]">
-        <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-64px)] w-[220px] overflow-y-auto border-r border-slate-200 bg-white p-5 lg:block">
+      <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[#f5f6f8]">
+        <aside className="hidden h-[calc(100vh-64px)] w-[220px] flex-shrink-0 overflow-y-auto border-r border-slate-200 bg-white p-5 lg:block">
           <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Self Care</p>
           <nav className="space-y-4">
             {tabs.map((tab) => (
@@ -98,8 +98,8 @@ export default function SelfCare() {
           </nav>
         </aside>
 
-        <main className="h-full w-full overflow-y-auto p-5 lg:ml-[220px]">
-          <div className="w-full">
+        <main className="h-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-5">
+          <div className="w-full overflow-x-hidden">
             <header className="mb-6">
               <h1 className="!text-[24px] !font-bold leading-[1.5] text-slate-800">{header.title}</h1>
               <p className="text-base font-normal leading-[1.5] text-slate-600">{header.subtitle}</p>

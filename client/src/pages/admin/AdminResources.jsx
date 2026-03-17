@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import api from "../../services/api";
 import "./AdminResources.css";
@@ -16,6 +16,8 @@ const EVENT_TYPES = ["Event", "Webinar"];
 const QUIZ_CATEGORIES = ["Safety", "Legal", "Health", "Helplines"];
 const QUIZ_TYPES = ["Quiz", "Self-Assessment"];
 const DIFFICULTY_LEVELS = ["Beginner", "Intermediate", "Advanced"];
+const RESOURCE_TYPE_ICON = { Video: "🎥", Article: "📝", PDF: "📄", Guide: "📘", Checklist: "✅", "External Link": "🔗" };
+const SUGGESTED_TAGS = ["Safety", "Mental Health", "Self Defense", "Health"];
 
 export default function AdminResources() {
   const [activeTab, setActiveTab] = useState("submit");
@@ -53,6 +55,14 @@ export default function AdminResources() {
   });
   const [submitQuizError, setSubmitQuizError] = useState("");
   const [submitQuizSuccess, setSubmitQuizSuccess] = useState("");
+  const [resourceSort, setResourceSort] = useState("newest");
+  const [selectedResource, setSelectedResource] = useState(null);
+  const [eventTimelineTab, setEventTimelineTab] = useState("upcoming");
+  const [quizStep, setQuizStep] = useState(1);
+  const [resourceMeta, setResourceMeta] = useState({ difficulty: "Beginner", readingTime: "", thumbnail: "" });
+  const [viewMode, setViewMode] = useState("list");
+  const [publishedMap, setPublishedMap] = useState({});
+  const [activityFeed, setActivityFeed] = useState([]);
 
   // Load data functions
   const loadResources = async () => {
@@ -99,6 +109,8 @@ export default function AdminResources() {
   const handleApproveResource = async (resourceId) => {
     try {
       await api.patch(`/admin/resources/${resourceId}/approve`);
+      const resource = resources.find((r) => r._id === resourceId);
+      if (resource) pushActivity("✅", `Resource approved: ${resource.title}`);
       loadResources(); // Refresh the list
     } catch (err) {
       console.error("Failed to approve resource:", err);
@@ -109,6 +121,8 @@ export default function AdminResources() {
   const handleRejectResource = async (resourceId) => {
     try {
       await api.patch(`/admin/resources/${resourceId}`, { approved: false });
+      const resource = resources.find((r) => r._id === resourceId);
+      if (resource) pushActivity("⚠", `Resource rejected: ${resource.title}`);
       loadResources(); // Refresh the list
     } catch (err) {
       console.error("Failed to reject resource:", err);
@@ -119,7 +133,9 @@ export default function AdminResources() {
   const handleDeleteResource = async (resourceId) => {
     if (!window.confirm("Are you sure you want to delete this resource?")) return;
     try {
+      const resource = resources.find((r) => r._id === resourceId);
       await api.delete(`/admin/resources/${resourceId}`);
+      if (resource) pushActivity("🗑", `Resource deleted: ${resource.title}`);
       loadResources(); // Refresh the list
     } catch (err) {
       console.error("Failed to delete resource:", err);
@@ -130,6 +146,8 @@ export default function AdminResources() {
   const handleTogglePublish = async (eventId) => {
     try {
       await api.patch(`/admin/events/${eventId}/toggle-publish`);
+      const event = events.find((e) => e._id === eventId);
+      if (event) pushActivity("✅", `Event updated: ${event.title}`);
       loadEvents(); // Refresh the list
     } catch (err) {
       console.error("Failed to toggle publish status:", err);
@@ -140,7 +158,9 @@ export default function AdminResources() {
   const handleDeleteEvent = async (eventId) => {
     if (!window.confirm("Are you sure you want to delete this event?")) return;
     try {
+      const event = events.find((e) => e._id === eventId);
       await api.delete(`/admin/events/${eventId}`);
+      if (event) pushActivity("🗑", `Event deleted: ${event.title}`);
       loadEvents(); // Refresh the list
     } catch (err) {
       console.error("Failed to delete event:", err);
@@ -198,9 +218,103 @@ export default function AdminResources() {
       setSubmitSuccess("Resource submitted successfully!");
       setSubmitForm({ title: "", description: "", url: "", category: "", type: "Article", sourceName: "", sourceUrl: "", tags: "", lang: "" });
       setSubmitFile(null);
+      setResourceMeta({ difficulty: "Beginner", readingTime: "", thumbnail: "" });
       loadResources();
     } catch (err) { setSubmitError("Failed to submit resource. Please try again."); }
   };
+
+  const sortedResources = useMemo(() => {
+    const list = [...resources];
+    if (resourceSort === "oldest") {
+      return list.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+    }
+    if (resourceSort === "most-viewed") {
+      return list.sort((a, b) => Number(b.views || b.viewCount || 0) - Number(a.views || a.viewCount || 0));
+    }
+    return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  }, [resources, resourceSort]);
+
+  const timelineEvents = useMemo(() => {
+    const now = Date.now();
+    return events.filter((event) => {
+      const ts = new Date(event.date).getTime();
+      if (Number.isNaN(ts)) return eventTimelineTab === "upcoming";
+      return eventTimelineTab === "upcoming" ? ts >= now : ts < now;
+    });
+  }, [events, eventTimelineTab]);
+
+  const analyticsCards = useMemo(() => ({
+    totalViews: analytics?.totalViews ?? resources.reduce((sum, r) => sum + Number(r.views || r.viewCount || 0), 0),
+    popular: analytics?.mostPopularResource?.title || resources[0]?.title || "N/A",
+    distributionCount: analytics?.categoryDistribution?.length || CATEGORIES.length,
+  }), [analytics, resources]);
+
+  const categoryChartRows = useMemo(() => {
+    const fromAnalytics = analytics?.categoryDistribution;
+    if (Array.isArray(fromAnalytics) && fromAnalytics.length) {
+      return fromAnalytics.map((row) => ({
+        label: row.category || "Other",
+        value: Number(row.count || 0),
+      }));
+    }
+    return CATEGORIES.map((category) => ({
+      label: category,
+      value: resources.filter((r) => r.category === category).length,
+    }));
+  }, [analytics, resources]);
+
+  const growthChartRows = useMemo(() => {
+    const fromAnalytics = analytics?.resourceGrowth;
+    if (Array.isArray(fromAnalytics) && fromAnalytics.length) {
+      return fromAnalytics.map((row) => ({
+        label: row.label || row.month || "Period",
+        value: Number(row.value || row.count || 0),
+      }));
+    }
+    const last6 = Array.from({ length: 6 }).map((_, idx) => ({ label: `M${idx + 1}`, value: 0 }));
+    resources.forEach((_, idx) => {
+      last6[idx % last6.length].value += 1;
+    });
+    return last6;
+  }, [analytics, resources]);
+
+  const clearResourceFilters = () => {
+    setFilters({ approved: "", verified: "", category: "", type: "", q: "" });
+    setResourceSort("newest");
+  };
+
+  const pushActivity = (icon, text) => {
+    setActivityFeed((prev) => [
+      { id: `${Date.now()}-${Math.random()}`, icon, text, at: new Date().toLocaleTimeString() },
+      ...prev.slice(0, 19),
+    ]);
+  };
+
+  const handlePublishResourceUI = (resource) => {
+    setPublishedMap((prev) => ({ ...prev, [resource._id]: true }));
+    pushActivity("✅", `Resource published: ${resource.title}`);
+  };
+
+  const workflowStatus = (resource) => {
+    if (publishedMap[resource._id]) return "Published";
+    if (resource.approved) return "Approved";
+    return "Pending";
+  };
+
+  const workflowBadgeClass = (status) => {
+    if (status === "Published") return "published";
+    if (status === "Approved") return "approved";
+    return "pending";
+  };
+
+  const recentActivity = useMemo(() => {
+    const fromData = [
+      ...resources.slice(0, 3).map((r) => ({ id: `r-${r._id}`, icon: "✅", text: `Resource approved: ${r.title}`, at: "recently" })),
+      ...events.slice(0, 2).map((e) => ({ id: `e-${e._id}`, icon: "➕", text: `Event created: ${e.title}`, at: "recently" })),
+      ...quizzes.slice(0, 2).map((q) => ({ id: `q-${q._id}`, icon: "➕", text: `Quiz added: ${q.title}`, at: "recently" })),
+    ];
+    return [...activityFeed, ...fromData].slice(0, 10);
+  }, [activityFeed, resources, events, quizzes]);
 
   const handleSubmitEvent = async (e) => {
     e.preventDefault();
@@ -260,25 +374,26 @@ export default function AdminResources() {
   };
 
   return (
-    <AdminLayout pageTitle="Manage Resources & Content">
-      <div className="admin-resources">
+    <AdminLayout pageTitle="📂 Manage Resources & Content">
+      <div className="admin-resources page-container">
         {/* Main Tabs */}
         <div className="tabs">
-          <button className={activeTab === "submit" ? "active" : ""} onClick={() => setActiveTab("submit")}>Submit Resource</button>
-          <button className={activeTab === "resources" ? "active" : ""} onClick={() => setActiveTab("resources")}>Resources Management</button>
-          <button className={activeTab === "events" ? "active" : ""} onClick={() => setActiveTab("events")}>Events & Webinars</button>
-          <button className={activeTab === "quizzes" ? "active" : ""} onClick={() => setActiveTab("quizzes")}>Quiz & Assessment</button>
-          <button className={activeTab === "analytics" ? "active" : ""} onClick={() => setActiveTab("analytics")}>Analytics</button>
+          <button className={activeTab === "submit" ? "active" : ""} onClick={() => setActiveTab("submit")}>➕ Submit</button>
+          <button className={activeTab === "resources" ? "active" : ""} onClick={() => setActiveTab("resources")}>📂 Manage</button>
+          <button className={activeTab === "events" ? "active" : ""} onClick={() => setActiveTab("events")}>🎤 Events</button>
+          <button className={activeTab === "quizzes" ? "active" : ""} onClick={() => setActiveTab("quizzes")}>🧠 Quiz</button>
+          <button className={activeTab === "analytics" ? "active" : ""} onClick={() => setActiveTab("analytics")}>📊 Analytics</button>
         </div>
 
         {/* Submit Resource Form */}
         {activeTab === "submit" && (
-          <div className="submit-resource-form">
-            <h3>Submit a New Resource</h3>
+          <div className="submit-resource-form form-card">
+            <h3>➕ Submit a New Resource</h3>
             <form onSubmit={handleSubmitResource}>
               <label>
                 Title<span className="required">*</span>
                 <input type="text" value={submitForm.title} onChange={e => setSubmitForm({ ...submitForm, title: e.target.value })} required />
+                <small>Use a clear and searchable content title.</small>
               </label>
 
               <label>
@@ -287,6 +402,7 @@ export default function AdminResources() {
                   <option value="">Select Category</option>
                   {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
+                <small>Choose the best matching content category.</small>
               </label>
 
               <label>
@@ -294,11 +410,18 @@ export default function AdminResources() {
                 <select value={submitForm.type} onChange={e => setSubmitForm({ ...submitForm, type: e.target.value })} required>
                   {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
+                <small>Resource type controls how users consume this content.</small>
               </label>
 
               <label>
                 Description<span className="required">*</span>
-                <textarea value={submitForm.description} onChange={e => setSubmitForm({ ...submitForm, description: e.target.value })} required />
+                <textarea
+                  value={submitForm.description}
+                  maxLength={500}
+                  onChange={e => setSubmitForm({ ...submitForm, description: e.target.value })}
+                  required
+                />
+                <small>{submitForm.description.length}/500 characters</small>
               </label>
 
               <label>
@@ -310,73 +433,236 @@ export default function AdminResources() {
                 <label>
                   Or Upload PDF
                   <input type="file" accept="application/pdf" onChange={handleSubmitFileChange} />
+                  <div
+                    className="dropzone"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files?.[0];
+                      if (!file) return;
+                      if (file.type !== "application/pdf") {
+                        setSubmitError("Only PDF files are allowed.");
+                        return;
+                      }
+                      setSubmitFile(file);
+                    }}
+                  >
+                    Drag and drop PDF here (optional)
+                  </div>
                   {submitFile && <span className="file-name">{submitFile.name}</span>}
                 </label>
               )}
+
+              <label>
+                Tags
+                <input type="text" value={submitForm.tags} onChange={e => setSubmitForm({ ...submitForm, tags: e.target.value })} placeholder="safety, health" />
+                <small>Comma-separated tags improve discoverability.</small>
+                <div className="suggestions-row">
+                  <span>Suggested tags:</span>
+                  {SUGGESTED_TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      className="suggestion-chip"
+                      onClick={() => {
+                        const hasTag = (submitForm.tags || "").toLowerCase().includes(tag.toLowerCase());
+                        if (hasTag) return;
+                        const merged = submitForm.tags ? `${submitForm.tags}, ${tag}` : tag;
+                        setSubmitForm({ ...submitForm, tags: merged });
+                      }}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </label>
+
+              <label>
+                Difficulty Level
+                <select value={resourceMeta.difficulty} onChange={(e) => setResourceMeta({ ...resourceMeta, difficulty: e.target.value })}>
+                  {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </label>
+
+              <label>
+                Estimated Reading Time
+                <input type="text" value={resourceMeta.readingTime} onChange={(e) => setResourceMeta({ ...resourceMeta, readingTime: e.target.value })} placeholder="e.g., 8 min" />
+              </label>
+
+              <label>
+                Thumbnail Image (optional)
+                <input type="url" value={resourceMeta.thumbnail} onChange={(e) => setResourceMeta({ ...resourceMeta, thumbnail: e.target.value })} placeholder="https://..." />
+              </label>
 
               {submitError && <div className="error">{submitError}</div>}
               {submitSuccess && <div className="success">{submitSuccess}</div>}
 
               <button type="submit" className="btn primary">Submit Resource</button>
             </form>
+            <div className="resource-preview-card">
+              <h4>Thumbnail Preview</h4>
+              <div className="thumb-preview">
+                {resourceMeta.thumbnail ? (
+                  <img src={resourceMeta.thumbnail} alt="Resource thumbnail preview" />
+                ) : (
+                  <div className="thumb-placeholder">📄</div>
+                )}
+              </div>
+              <p className="preview-title">{submitForm.title || "Resource title preview"}</p>
+              <p><strong>Category:</strong> {submitForm.category || "Not selected"}</p>
+              <p><strong>Type:</strong> {submitForm.type || "Not selected"}</p>
+              <p><strong>Difficulty:</strong> {resourceMeta.difficulty}</p>
+              <p><strong>Reading Time:</strong> {resourceMeta.readingTime || "N/A"}</p>
+              <p className="preview-description">{submitForm.description || "Resource description preview..."}</p>
+            </div>
           </div>
         )}
 
         {/* Resources Management */}
         {activeTab === "resources" && (
-          <div className="resources-management">
-            <h3>Resources Management</h3>
-            <div className="filters">
-              <input type="text" placeholder="Search resources..." value={filters.q} onChange={e => setFilters({ ...filters, q: e.target.value })} />
-              <select value={filters.approved} onChange={e => setFilters({ ...filters, approved: e.target.value })}>
-                <option value="">All Approval Status</option>
-                <option value="true">Approved</option>
-                <option value="false">Pending</option>
-              </select>
-              <select value={filters.verified} onChange={e => setFilters({ ...filters, verified: e.target.value })}>
-                <option value="">All Verification Status</option>
-                <option value="true">Verified</option>
-                <option value="false">Unverified</option>
-              </select>
-              <select value={filters.category} onChange={e => setFilters({ ...filters, category: e.target.value })}>
-                <option value="">All Categories</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <select value={filters.type} onChange={e => setFilters({ ...filters, type: e.target.value })}>
-                <option value="">All Types</option>
-                {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            {loading ? <p>Loading...</p> : (
-              <div className="resources-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Title</th>
-                      <th>Category</th>
-                      <th>Type</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resources.map(resource => (
-                      <tr key={resource._id}>
-                        <td>{resource.title}</td>
-                        <td>{resource.category}</td>
-                        <td>{resource.type}</td>
-                        <td>{resource.approved ? 'Approved' : 'Pending'}</td>
-                        <td className="actions">
-                          <button className="approve" onClick={() => handleApproveResource(resource._id)}>Approve</button>
-                          <button className="reject" onClick={() => handleRejectResource(resource._id)}>Reject</button>
-                          <button className="delete" onClick={() => handleDeleteResource(resource._id)}>Delete</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div className="resources-layout">
+            <div className="resources-management">
+              <h3>📂 Resources Management</h3>
+              <div className="filters filter-card">
+                <input type="text" placeholder="Search resources..." value={filters.q} onChange={e => setFilters({ ...filters, q: e.target.value })} />
+                <select value={filters.approved} onChange={e => setFilters({ ...filters, approved: e.target.value })}>
+                  <option value="">All Approval Status</option>
+                  <option value="true">Approved</option>
+                  <option value="false">Pending</option>
+                </select>
+                <select value={filters.verified} onChange={e => setFilters({ ...filters, verified: e.target.value })}>
+                  <option value="">All Verification Status</option>
+                  <option value="true">Verified</option>
+                  <option value="false">Unverified</option>
+                </select>
+                <select value={filters.category} onChange={e => setFilters({ ...filters, category: e.target.value })}>
+                  <option value="">All Categories</option>
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select value={filters.type} onChange={e => setFilters({ ...filters, type: e.target.value })}>
+                  <option value="">All Types</option>
+                  {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <select value={resourceSort} onChange={(e) => setResourceSort(e.target.value)}>
+                  <option value="newest">Sort: newest</option>
+                  <option value="oldest">Sort: oldest</option>
+                  <option value="most-viewed">Sort: most viewed</option>
+                </select>
+                <button className="btn secondary" onClick={clearResourceFilters} type="button">Clear Filters</button>
               </div>
-            )}
+
+              <div className="view-toggle">
+                <button type="button" className={viewMode === "list" ? "active" : ""} onClick={() => setViewMode("list")}>List View</button>
+                <button type="button" className={viewMode === "grid" ? "active" : ""} onClick={() => setViewMode("grid")}>Grid View</button>
+              </div>
+
+              {loading ? <p>Loading...</p> : sortedResources.length ? (
+                viewMode === "list" ? (
+                  <div className="resources-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Title</th>
+                          <th>Category</th>
+                          <th>Type</th>
+                          <th>Workflow</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedResources.map(resource => {
+                          const status = workflowStatus(resource);
+                          return (
+                            <tr key={resource._id}>
+                              <td>{resource.title}</td>
+                              <td>{resource.category}</td>
+                              <td>{RESOURCE_TYPE_ICON[resource.type] || "📦"} {resource.type}</td>
+                              <td>
+                                <div className="workflow-row">
+                                  <span className="workflow-step pending">Pending</span>
+                                  <span className="workflow-arrow">→</span>
+                                  <span className={`workflow-step ${resource.approved ? "approved" : ""}`}>Approved</span>
+                                  <span className="workflow-arrow">→</span>
+                                  <span className={`workflow-step ${publishedMap[resource._id] ? "published" : ""}`}>Published</span>
+                                </div>
+                                <span className={`status-badge ${workflowBadgeClass(status)}`}>{status}</span>
+                              </td>
+                              <td className="actions">
+                                <button className="view" onClick={() => setSelectedResource(resource)}>👁 View</button>
+                                <button className="edit">✏ Edit</button>
+                                <button className="approve" onClick={() => handleApproveResource(resource._id)}>Approve</button>
+                                <button className="publish" onClick={() => handlePublishResourceUI(resource)}>Publish</button>
+                                <button className="reject" onClick={() => handleRejectResource(resource._id)}>Reject</button>
+                                <button className="delete" onClick={() => handleDeleteResource(resource._id)}>🗑 Delete</button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="resources-grid">
+                    {sortedResources.map((resource) => {
+                      const status = workflowStatus(resource);
+                      const thumb = resource.thumbnail || resource.image || resource.coverImage || "";
+                      return (
+                        <article key={resource._id} className="resource-card">
+                          <div className="resource-thumb">
+                            {thumb ? <img src={thumb} alt={resource.title} /> : <div className="resource-thumb-placeholder">📄</div>}
+                          </div>
+                          <h4>{resource.title}</h4>
+                          <p className="meta">{resource.category}</p>
+                          <p>{RESOURCE_TYPE_ICON[resource.type] || "📦"} {resource.type}</p>
+                          <span className={`status-badge ${workflowBadgeClass(status)}`}>{status}</span>
+                          <div className="workflow-row compact">
+                            <span className="workflow-step pending">Pending</span>
+                            <span className={`workflow-step ${resource.approved ? "approved" : ""}`}>Approved</span>
+                            <span className={`workflow-step ${publishedMap[resource._id] ? "published" : ""}`}>Published</span>
+                          </div>
+                          <p className="meta">Difficulty: {resource.difficulty || "Beginner"}</p>
+                          <p className="meta">Estimated Time: {resource.estimatedTime || "N/A"}</p>
+                          <p className="meta">Tags: {resource.tags || "N/A"}</p>
+                          <div className="actions">
+                            <button className="view" onClick={() => setSelectedResource(resource)}>👁 View</button>
+                            <button className="edit">✏ Edit</button>
+                            <button className="approve" onClick={() => handleApproveResource(resource._id)}>Approve</button>
+                            <button className="publish" onClick={() => handlePublishResourceUI(resource)}>Publish</button>
+                            <button className="reject" onClick={() => handleRejectResource(resource._id)}>Reject</button>
+                            <button className="delete" onClick={() => handleDeleteResource(resource._id)}>🗑 Delete</button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )
+              ) : (
+                <div className="empty-state">
+                  <p>📭 No resources found</p>
+                  <span>Start by adding your first resource</span>
+                </div>
+              )}
+            </div>
+
+            <aside className="activity-panel">
+              <h4>Recent Activity</h4>
+              {recentActivity.length ? (
+                recentActivity.map((item) => (
+                  <div className="activity-item" key={item.id}>
+                    <span className="activity-icon">{item.icon}</span>
+                    <div>
+                      <p>{item.text}</p>
+                      <small>{item.at}</small>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <p>No activity yet</p>
+                  <span>Actions will appear here</span>
+                </div>
+              )}
+            </aside>
           </div>
         )}
 
@@ -450,7 +736,7 @@ export default function AdminResources() {
 
             {activeEventTab === "manage-events" && (
               <div className="manage-events">
-                <h3>Manage Events & Webinars</h3>
+                <h3>🎤 Manage Events & Webinars</h3>
                 <div className="filters">
                   <input type="text" placeholder="Search events..." value={eventFilters.q} onChange={e => setEventFilters({ ...eventFilters, q: e.target.value })} />
                   <select value={eventFilters.published} onChange={e => setEventFilters({ ...eventFilters, published: e.target.value })}>
@@ -459,36 +745,33 @@ export default function AdminResources() {
                     <option value="false">Draft</option>
                   </select>
                 </div>
-                {loading ? <p>Loading...</p> : (
-                  <div className="events-table">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Title</th>
-                          <th>Type</th>
-                          <th>Date</th>
-                          <th>Status</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {events.map(event => (
-                          <tr key={event._id}>
-                            <td>{event.title}</td>
-                            <td>{event.type}</td>
-                            <td>{new Date(event.date).toLocaleDateString()}</td>
-                            <td>{event.published ? 'Published' : 'Draft'}</td>
-                            <td className="actions">
-                              <button className="edit">Edit</button>
-                              <button className={event.published ? "unpublish" : "publish"} onClick={() => handleTogglePublish(event._id)}>
-                                {event.published ? "Unpublish" : "Publish"}
-                              </button>
-                              <button className="delete" onClick={() => handleDeleteEvent(event._id)}>Delete</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div className="timeline-tabs">
+                  <button className={eventTimelineTab === "upcoming" ? "active" : ""} onClick={() => setEventTimelineTab("upcoming")}>Upcoming</button>
+                  <button className={eventTimelineTab === "past" ? "active" : ""} onClick={() => setEventTimelineTab("past")}>Past</button>
+                </div>
+                {loading ? <p>Loading...</p> : timelineEvents.length ? (
+                  <div className="event-cards-grid">
+                    {timelineEvents.map(event => (
+                      <article key={event._id} className="event-card">
+                        <h4>{event.title}</h4>
+                        <p><strong>Date:</strong> {new Date(event.date).toLocaleDateString()}</p>
+                        <p><strong>Time:</strong> {event.time || "N/A"}</p>
+                        <p><strong>Location:</strong> {event.location || "Online"}</p>
+                        <p><strong>Status:</strong> <span className={`status-badge ${event.published ? "approved" : "pending"}`}>{event.published ? "Published" : "Draft"}</span></p>
+                        <div className="actions">
+                          <button className="edit">✏ Edit</button>
+                          <button className={event.published ? "unpublish" : "publish"} onClick={() => handleTogglePublish(event._id)}>
+                            {event.published ? "Unpublish" : "Publish"}
+                          </button>
+                          <button className="delete" onClick={() => handleDeleteEvent(event._id)}>🗑 Delete</button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <p>📭 No events found</p>
+                    <span>Create an event to get started</span>
                   </div>
                 )}
               </div>
@@ -507,7 +790,14 @@ export default function AdminResources() {
             {activeQuizTab === "create-quiz" && (
               <div className="submit-quiz-form">
                 <h3>Create a New Quiz or Self-Assessment</h3>
+                <div className="quiz-stepper">
+                  <button type="button" className={quizStep === 1 ? "active" : ""} onClick={() => setQuizStep(1)}>Step 1: Basic info</button>
+                  <button type="button" className={quizStep === 2 ? "active" : ""} onClick={() => setQuizStep(2)}>Step 2: Questions</button>
+                  <button type="button" className={quizStep === 3 ? "active" : ""} onClick={() => setQuizStep(3)}>Step 3: Review</button>
+                </div>
                 <form onSubmit={handleSubmitQuiz}>
+                  {quizStep === 1 && (
+                  <>
                   <label>
                     Title<span className="required">*</span>
                     <input type="text" value={submitQuizForm.title} onChange={e => setSubmitQuizForm({ ...submitQuizForm, title: e.target.value })} required />
@@ -553,8 +843,14 @@ export default function AdminResources() {
                       placeholder="Brief description of the quiz"
                     />
                   </label>
+                  <div className="actions">
+                    <button type="button" className="btn secondary" onClick={() => setQuizStep(2)}>Next</button>
+                  </div>
+                  </>
+                  )}
 
                   {/* Questions Section */}
+                  {quizStep === 2 && (
                   <div className="questions-section">
                     <h4>Questions</h4>
                     {submitQuizForm.questions.map((q, index) => (
@@ -657,9 +953,15 @@ export default function AdminResources() {
                     >
                       Add Question
                     </button>
+                    <div className="actions">
+                      <button type="button" className="btn secondary" onClick={() => setQuizStep(1)}>Back</button>
+                      <button type="button" className="btn secondary" onClick={() => setQuizStep(3)}>Next</button>
+                    </div>
                   </div>
+                  )}
 
                   {/* Educational Links Section */}
+                  {quizStep === 3 && (
                   <div className="educational-links-section">
                     <h4>Educational Links</h4>
                     {submitQuizForm.educationalLinks.map((link, index) => (
@@ -704,12 +1006,23 @@ export default function AdminResources() {
                     >
                       Add Educational Link
                     </button>
+                    <div className="quiz-preview">
+                      <h4>Quiz Preview</h4>
+                      <p><strong>{submitQuizForm.title || "Untitled quiz"}</strong></p>
+                      <p>{submitQuizForm.description || "No description added."}</p>
+                      <p>Category: {submitQuizForm.category || "N/A"} | Type: {submitQuizForm.type} | Difficulty: {submitQuizForm.difficulty}</p>
+                      <p>Total Questions: {submitQuizForm.questions.length}</p>
+                    </div>
                   </div>
+                  )}
 
                   {submitQuizError && <div className="error">{submitQuizError}</div>}
                   {submitQuizSuccess && <div className="success">{submitQuizSuccess}</div>}
 
-                  <button type="submit" className="btn primary">Create Quiz/Assessment</button>
+                  <div className="actions">
+                    {quizStep > 1 ? <button type="button" className="btn secondary" onClick={() => setQuizStep((s) => s - 1)}>Previous</button> : null}
+                    <button type="submit" className="btn primary">Create Quiz/Assessment</button>
+                  </div>
                 </form>
           </div>
         )}
@@ -769,9 +1082,9 @@ export default function AdminResources() {
         {/* Analytics */}
         {activeTab === "analytics" && (
           <div className="analytics">
-            <h3>Resources Analytics</h3>
+            <h3>📊 Resources Analytics</h3>
             {analytics ? (
-              <div className="stats-grid">
+              <div className="stats-grid cms-stats-grid">
                 <div className="stat-card">
                   <h4>Total Resources</h4>
                   <span>{analytics.totalResources}</span>
@@ -788,12 +1101,72 @@ export default function AdminResources() {
                   <h4>Verified Resources</h4>
                   <span>{analytics.verifiedResources}</span>
                 </div>
+                <div className="stat-card">
+                  <h4>Total Views</h4>
+                  <span>{analyticsCards.totalViews}</span>
+                </div>
+                <div className="stat-card">
+                  <h4>Most Popular Resource</h4>
+                  <span className="stat-sub">{analyticsCards.popular}</span>
+                </div>
+                <div className="stat-card">
+                  <h4>Category Distribution</h4>
+                  <span>{analyticsCards.distributionCount}</span>
+                </div>
               </div>
             ) : (
               <p>Loading analytics...</p>
             )}
+            <div className="chart-grid">
+              <div className="chart-card">
+                <h4>Bar Chart - Category Usage</h4>
+                <div className="bar-chart">
+                  {categoryChartRows.map((row) => (
+                    <div key={row.label} className="bar-item" title={`${row.label}: ${row.value}`}>
+                      <div className="bar" style={{ height: `${Math.max(8, row.value * 10)}px` }} />
+                      <span>{row.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="chart-card">
+                <h4>Line Chart - Resource Growth</h4>
+                <div className="line-chart">
+                  {growthChartRows.map((row) => (
+                    <div key={row.label} className="line-point" title={`${row.label}: ${row.value}`}>
+                      <span className="dot" />
+                      <small>{row.label}</small>
+                      <strong>{row.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
+
+        {selectedResource ? (
+          <div className="resource-modal-backdrop" onClick={() => setSelectedResource(null)}>
+            <div className="resource-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>📄 Resource Preview</h3>
+              <div className="thumb-preview modal-thumb">
+                {selectedResource.thumbnail || selectedResource.image ? (
+                  <img src={selectedResource.thumbnail || selectedResource.image} alt={selectedResource.title} />
+                ) : (
+                  <div className="thumb-placeholder">📄</div>
+                )}
+              </div>
+              <p><strong>Title:</strong> {selectedResource.title}</p>
+              <p><strong>Category:</strong> {selectedResource.category}</p>
+              <p><strong>Type:</strong> {selectedResource.type}</p>
+              <p><strong>Description:</strong> {selectedResource.description || "No description available."}</p>
+              <p><strong>Link:</strong> {selectedResource.url ? <a href={selectedResource.url} target="_blank" rel="noreferrer">{selectedResource.url}</a> : "N/A"}</p>
+              <div className="actions">
+                <button className="btn secondary" onClick={() => setSelectedResource(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </AdminLayout>
   );

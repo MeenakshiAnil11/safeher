@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import GoogleMapComponent from '../../components/GoogleMapComponent';
 import api from '../../services/api';
 import { forwardGeocode } from '../../utils/geocoding';
@@ -15,6 +15,7 @@ export default function SafeZones() {
   const [zoneDescription, setZoneDescription] = useState('');
   const [addressInput, setAddressInput] = useState('');
   const [isFindingAddress, setIsFindingAddress] = useState(false);
+  const [selectedZoneId, setSelectedZoneId] = useState(null);
 
   useEffect(() => {
     fetchSafeZones();
@@ -128,6 +129,97 @@ export default function SafeZones() {
     }
   };
 
+  const formatTimestamp = (value) => {
+    if (!value) return '—';
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleString();
+  };
+
+  const getZoneStatus = (zone = {}) => {
+    const rawStatus = String(zone.status || zone.zoneStatus || '').toLowerCase();
+    if (rawStatus.includes('danger') || zone.isDanger === true) {
+      return { label: 'Danger', tone: 'danger' };
+    }
+    if (
+      zone.isInside === true ||
+      zone.currentlyInside === true ||
+      zone.isActive === true ||
+      rawStatus.includes('active') ||
+      rawStatus.includes('inside')
+    ) {
+      return { label: 'Active', tone: 'active' };
+    }
+    return { label: 'Outside', tone: 'outside' };
+  };
+
+  const resolvedSelectedZone = useMemo(() => {
+    if (!safeZones.length) return null;
+    return (
+      safeZones.find((zone) => String(zone._id) === String(selectedZoneId)) ||
+      safeZones.find((zone) => getZoneStatus(zone).tone === 'active') ||
+      safeZones[0]
+    );
+  }, [safeZones, selectedZoneId]);
+
+  const stats = useMemo(() => {
+    const total = safeZones.length;
+    const activeZone = safeZones.find((zone) => getZoneStatus(zone).tone === 'active') || null;
+    const lastEnteredZone =
+      [...safeZones]
+        .filter((zone) => zone.lastEntered || zone.lastEnteredAt)
+        .sort((a, b) => {
+          const at = new Date(a.lastEntered || a.lastEnteredAt).getTime();
+          const bt = new Date(b.lastEntered || b.lastEnteredAt).getTime();
+          return bt - at;
+        })[0] || null;
+
+    return {
+      totalZones: total,
+      activeZoneName: activeZone?.name || 'None',
+      lastEnteredZoneName: lastEnteredZone?.name || 'None',
+    };
+  }, [safeZones]);
+
+  const previewLocation = useMemo(() => {
+    if (resolvedSelectedZone) {
+      return {
+        latitude: Number(resolvedSelectedZone.latitude),
+        longitude: Number(resolvedSelectedZone.longitude),
+        accuracy: 24,
+        timestamp: new Date().toISOString(),
+      };
+    }
+    return {
+      latitude: mapCenter.lat,
+      longitude: mapCenter.lng,
+      accuracy: 24,
+      timestamp: new Date().toISOString(),
+    };
+  }, [resolvedSelectedZone, mapCenter]);
+
+  const previewCircles = useMemo(
+    () =>
+      safeZones.map((zone) => {
+        const status = getZoneStatus(zone);
+        const strokeColor =
+          status.tone === 'active' ? '#22C55E' : status.tone === 'danger' ? '#EF4444' : '#6b7280';
+        const fillColor =
+          status.tone === 'active' ? '#22C55E' : status.tone === 'danger' ? '#EF4444' : '#94a3b8';
+
+        return {
+          lat: Number(zone.latitude),
+          lng: Number(zone.longitude),
+          radius: Number(zone.radius) || 100,
+          strokeColor,
+          fillColor,
+          fillOpacity: 0.13,
+          strokeOpacity: 0.75,
+          strokeWeight: 2,
+        };
+      }),
+    [safeZones]
+  );
+
   if (loading) {
     return (
       <div className="safe-zones-container">
@@ -157,59 +249,122 @@ export default function SafeZones() {
         </button>
       </section>
 
-      {/* Safe Zones List */}
-      <section className="safe-zones-list">
-        {safeZones.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">🏠</div>
-            <p>No safe zones yet</p>
-            <button className="btn-secondary" onClick={() => setShowModal(true)}>
-              Create Your First Safe Zone
-            </button>
+      <section className="safe-zones-stats">
+        <article className="stat-tile">
+          <span>Total Safe Zones</span>
+          <strong>{stats.totalZones}</strong>
+        </article>
+        <article className="stat-tile">
+          <span>Currently Active Zone</span>
+          <strong>{stats.activeZoneName}</strong>
+        </article>
+        <article className="stat-tile">
+          <span>Last Entered Zone</span>
+          <strong>{stats.lastEnteredZoneName}</strong>
+        </article>
+      </section>
+
+      <section className="safezones-layout">
+        <section className="safe-zones-list">
+          {safeZones.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📍</div>
+              <h3>No safe zones yet</h3>
+              <p>Create your first safe zone to enable smart safety tracking.</p>
+              <button className="btn-secondary" onClick={() => setShowModal(true)}>
+                Create Your First Safe Zone
+              </button>
+            </div>
+          ) : (
+            <div className="zones-grid">
+              {safeZones.map((zone) => {
+                const status = getZoneStatus(zone);
+                const lastEntered = zone.lastEntered || zone.lastEnteredAt;
+                const lastExited = zone.lastExited || zone.lastExitedAt;
+                const visits = zone.visitCount ?? zone.visits ?? 0;
+                return (
+                  <div key={zone._id} className="zone-card card">
+                    <div className="zone-header">
+                      <div className="zone-icon">🛡️</div>
+                      <div className="zone-info">
+                        <h3>{zone.name}</h3>
+                        <p className="zone-coords">
+                          {Number(zone.latitude).toFixed(6)}, {Number(zone.longitude).toFixed(6)}
+                        </p>
+                      </div>
+                      <span className={`status ${status.tone}`}>{status.label}</span>
+                    </div>
+
+                    <div className="zone-details">
+                      <div className="detail-item">
+                        <span className="label">Radius</span>
+                        <span className="value">{zone.radius}m</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="label">Last Visited</span>
+                        <span className="value">{formatTimestamp(zone.lastVisited)}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="label">Last Entered</span>
+                        <span className="value">{formatTimestamp(lastEntered)}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="label">Last Exited</span>
+                        <span className="value">{formatTimestamp(lastExited)}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="label">Visits</span>
+                        <span className="value">{visits}</span>
+                      </div>
+                    </div>
+
+                    <div className="zone-actions">
+                      <button
+                        className="btn-map"
+                        onClick={() => setSelectedZoneId(zone._id)}
+                      >
+                        📍 View on Map
+                      </button>
+                      <button
+                        className="btn-edit"
+                        onClick={() => handleEditZone(zone)}
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        className="btn-delete"
+                        onClick={() => handleDeleteZone(zone._id)}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <aside className="safe-zones-map-panel card">
+          <div className="safe-zones-map-head">
+            <h3>Map Preview</h3>
+            <p>{resolvedSelectedZone ? resolvedSelectedZone.name : 'Safe Zones Overview'}</p>
           </div>
-        ) : (
-          <div className="zones-grid">
-            {safeZones.map((zone) => (
-              <div key={zone._id} className="zone-card">
-                <div className="zone-header">
-                  <div className="zone-icon">🏠</div>
-                  <div className="zone-info">
-                    <h3>{zone.name}</h3>
-                    <p className="zone-coords">
-                      {zone.latitude.toFixed(6)}, {zone.longitude.toFixed(6)}
-                    </p>
-                  </div>
-                </div>
-                <div className="zone-details">
-                  <div className="detail-item">
-                    <span className="label">Radius:</span>
-                    <span className="value">{zone.radius}m</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Last Visited:</span>
-                    <span className="value">
-                      {zone.lastVisited ? new Date(zone.lastVisited).toLocaleDateString() : 'Never'}
-                    </span>
-                  </div>
-                </div>
-                <div className="zone-actions">
-                  <button 
-                    className="btn-edit"
-                    onClick={() => handleEditZone(zone)}
-                  >
-                    ✏️ Edit
-                  </button>
-                  <button 
-                    className="btn-delete"
-                    onClick={() => handleDeleteZone(zone._id)}
-                  >
-                    🗑️ Delete
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="map-preview">
+            <GoogleMapComponent
+              location={previewLocation}
+              zoom={14}
+              height="400px"
+              showPopup={false}
+              circles={previewCircles}
+            />
           </div>
-        )}
+          <div className="map-preview-note">
+            <span>Green: Active</span>
+            <span>Gray: Outside</span>
+            <span>Red: Danger</span>
+          </div>
+        </aside>
       </section>
 
       {/* Modal for Create/Edit */}
@@ -290,7 +445,7 @@ export default function SafeZones() {
 
               <div className="map-preview">
                 <GoogleMapComponent
-                  location={editingZone || mapCenter.lat ? {
+                  location={mapCenter.lat ? {
                     latitude: mapCenter.lat,
                     longitude: mapCenter.lng,
                     timestamp: new Date()
@@ -298,6 +453,18 @@ export default function SafeZones() {
                   zoom={15}
                   height="300px"
                   onMapClick={handleMapClick}
+                  circles={[
+                    {
+                      lat: mapCenter.lat,
+                      lng: mapCenter.lng,
+                      radius,
+                      strokeColor: '#6C63FF',
+                      fillColor: '#6C63FF',
+                      fillOpacity: 0.12,
+                      strokeOpacity: 0.85,
+                      strokeWeight: 2
+                    }
+                  ]}
                 />
               </div>
             </div>

@@ -353,6 +353,28 @@ class LocationService {
   }
 
   /**
+   * Get nearby support services for map layers.
+   */
+  async getNearbySafetyPlaces(locationData, radiusMeters = 5000) {
+    if (!locationData?.latitude || !locationData?.longitude) {
+      return { police: [], hospitals: [], cafes: [], source: "none" };
+    }
+    const response = await api.get('/location/nearby-services', {
+      params: {
+        lat: locationData.latitude,
+        lng: locationData.longitude,
+        radiusMeters,
+      },
+    });
+    return {
+      police: response.data?.police || [],
+      hospitals: response.data?.hospitals || [],
+      cafes: response.data?.cafes || [],
+      source: response.data?.source || "database",
+    };
+  }
+
+  /**
    * Evaluate current point against safe/danger zones.
    */
   async checkGeoFenceStatus(locationData, sosModeActive = false) {
@@ -373,6 +395,38 @@ class LocationService {
       end: { lat: end.latitude, lng: end.longitude },
     });
     return response.data;
+  }
+
+  /**
+   * Log user safety activity event.
+   */
+  async logActivityEvent(eventType, description, locationData = null) {
+    try {
+      const payload = {
+        eventType,
+        description,
+        timestamp: new Date().toISOString(),
+        location: locationData
+          ? {
+              lat: locationData.latitude ?? locationData.lat ?? null,
+              lng: locationData.longitude ?? locationData.lng ?? null,
+            }
+          : undefined,
+      };
+      const response = await api.post('/activity/log', payload);
+      return response.data?.log || null;
+    } catch (error) {
+      console.error('Failed to log activity event:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get activity timeline for current user or provided user ID.
+   */
+  async getActivityTimeline(userId = 'me', limit = 50) {
+    const response = await api.get(`/activity/${userId}`, { params: { limit } });
+    return response.data?.events || [];
   }
 
   /**

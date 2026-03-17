@@ -205,3 +205,381 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Final safety intelligence dashboard refactor */
+.safety-audit-page {
+  --audit-primary: #6c63ff;
+  --audit-success: #22c55e;
+  --audit-warning: #f59e0b;
+  --audit-danger: #ef4444;
+  --audit-text: #0f172a;
+  --audit-muted: #64748b;
+  width: 100%;
+  max-width: 100%;
+}
+
+.safety-audit-head h1 {
+  font-size: clamp(1.6rem, 1.25rem + 1vw, 2.1rem);
+}
+
+.safety-audit-head p {
+  font-size: 0.92rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.summary-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(108, 99, 255, 0.12);
+}
+
+.summary-card p {
+  margin: 0;
+  color: var(--audit-muted);
+  font-size: 0.78rem;
+}
+
+.summary-card h3 {
+  margin: 2px 0 0;
+  font-size: 1rem;
+}
+
+.summary-badge {
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.tone-safe {
+  background: rgba(34, 197, 94, 0.16);
+  color: #15803d;
+}
+
+.tone-moderate {
+  background: rgba(245, 158, 11, 0.16);
+  color: #b45309;
+}
+
+.tone-risky {
+  background: rgba(239, 68, 68, 0.16);
+  color: #b91c1c;
+}
+
+.audit-middle-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.safety-audit-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.safety-audit-card h2 {
+  margin: 0 0 14px;
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+.rating-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rating-mini-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.rating-mini-card label {
+  margin-bottom: 6px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.safety-audit-stars {
+  gap: 4px;
+}
+
+.safety-audit-star {
+  font-size: 1.2rem;
+  transition: transform 140ms ease, color 160ms ease;
+}
+
+.safety-audit-star:not(.readonly):hover {
+  transform: scale(1.08);
+  color: #f59e0b;
+}
+
+.audit-mood-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.mood-pill {
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(108, 99, 255, 0.12);
+  color: #4f46e5;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.audit-comment {
+  width: 100%;
+  border: 1px solid #d9e2ee;
+  border-radius: 12px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.photo-preview-wrap {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.photo-preview {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.audit-message {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.audit-message.success {
+  color: #15803d;
+}
+
+.audit-message.error {
+  color: #b91c1c;
+}
+
+.safety-audit-submit {
+  margin-top: 12px;
+  background: linear-gradient(135deg, var(--audit-primary), #5b52ff);
+  border-radius: 12px;
+}
+
+.map-card-head p {
+  margin: -8px 0 12px;
+  color: var(--audit-muted);
+  font-size: 0.84rem;
+}
+
+.map-container {
+  height: 400px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.audit-bottom-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+}
+
+.audits-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.audit-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.audit-filters button {
+  border: 1px solid #d8e0ec;
+  background: #fff;
+  color: #475569;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.audit-filters button.active {
+  background: rgba(108, 99, 255, 0.14);
+  border-color: rgba(108, 99, 255, 0.34);
+  color: #4f46e5;
+}
+
+.safety-audit-list {
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.safety-audit-item {
+  margin-bottom: 10px;
+}
+
+.audit-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.audit-item-head h3 {
+  font-size: 1rem;
+}
+
+.safety-audit-pill.safe {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.safety-audit-pill.moderate {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+
+.safety-audit-pill.risky {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+}
+
+.safety-audit-empty {
+  border: 1px dashed #d1dae8;
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--audit-muted);
+}
+
+.insights-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.insight-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.insight-row span {
+  color: var(--audit-muted);
+}
+
+.alerts-mini-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.alerts-mini-list li {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 0.8rem;
+}
+
+.insight-empty {
+  margin: 0;
+  color: var(--audit-muted);
+  font-size: 0.84rem;
+}
+
+.safety-audit-loading {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--audit-muted);
+}
+
+.safety-audit-spinner {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--audit-primary);
+  animation: auditSpin 0.8s linear infinite;
+}
+
+@keyframes auditSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1200px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .audit-middle-grid,
+  .audit-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rating-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .audits-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

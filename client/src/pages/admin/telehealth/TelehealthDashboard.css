@@ -2,6 +2,18 @@
   padding: 0;
 }
 
+.telehealth-dashboard-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.telehealth-dashboard-main,
+.telehealth-dashboard-side {
+  display: grid;
+  gap: 20px;
+}
+
 .dashboard-header {
   margin-bottom: 2rem;
 }
@@ -50,6 +62,23 @@
   border-color: #8b5cf6;
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
   transform: translateY(-2px);
+}
+
+.live-status-widget {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.live-status-widget strong {
+  color: #111827;
+}
+
+.live-status-widget p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 0.85rem;
 }
 
 .metric-card.revenue {
@@ -213,6 +242,24 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 1.5rem;
+}
+
+.activity-panel {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.activity-panel h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.activity-item {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 10px;
 }
 
 .live-monitoring-section {
@@ -398,6 +445,10 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .telehealth-dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
   .metrics-grid {
     grid-template-columns: 1fr;
   }

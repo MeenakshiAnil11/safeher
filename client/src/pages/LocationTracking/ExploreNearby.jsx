@@ -2,22 +2,24 @@ import React, { useEffect, useMemo, useState } from "react";
 import { GoogleMap, InfoWindow, LoadScript, Marker } from "@react-google-maps/api";
 import "./ExploreNearby.css";
 
-const FILTERS = ["All Locations", "Hospitals", "Police Stations", "Safe Cafes"];
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "YOUR_GOOGLE_MAPS_API_KEY";
 const SEARCH_RADIUS_METERS = 2000;
+const SEARCH_RADIUS_STEPS = [SEARCH_RADIUS_METERS, 5000, 10000];
+const RESOURCE_TYPES = ["police", "hospital", "pharmacy", "cafe"];
 
 const TYPE_CONFIG = {
   hospital: { label: "Hospital", icon: "🏥" },
   police: { label: "Police", icon: "🛡️" },
-  cafe: { label: "Cafe", icon: "☕" },
+  pharmacy: { label: "Pharmacy", icon: "💊" },
+  cafe: { label: "Safe Cafe", icon: "☕" },
 };
 
-const FILTER_TO_TYPES = {
-  "All Locations": ["hospital", "police", "cafe"],
-  Hospitals: ["hospital"],
-  "Police Stations": ["police"],
-  "Safe Cafes": ["cafe"],
-};
+const FILTER_CHIPS = [
+  { type: "police", label: "Police Stations" },
+  { type: "hospital", label: "Hospitals" },
+  { type: "pharmacy", label: "Pharmacies" },
+  { type: "cafe", label: "Safe Cafes" },
+];
 
 const libraries = ["places"];
 
@@ -57,6 +59,7 @@ const normalizePlace = (place, userLocation, type) => {
 const getMarkerColor = (type) => {
   if (type === "hospital") return "#dc2626";
   if (type === "police") return "#2563eb";
+  if (type === "pharmacy") return "#7c3aed";
   if (type === "cafe") return "#059669";
   return "#6b7280";
 };
@@ -77,22 +80,71 @@ const createCategoryMarkerIcon = (type) => {
 };
 
 export default function ExploreNearby() {
-  const [activeFilter, setActiveFilter] = useState("All Locations");
+  const [activeTypes, setActiveTypes] = useState(RESOURCE_TYPES);
+  const [sortMode, setSortMode] = useState("nearest");
   const [mapRef, setMapRef] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [nearbyLocations, setNearbyLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [searchNotice, setSearchNotice] = useState("");
   const [phoneLoadingId, setPhoneLoadingId] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [locationAccuracy, setLocationAccuracy] = useState(null);
+  const [activeRadius, setActiveRadius] = useState(SEARCH_RADIUS_METERS);
+  const [savedIds, setSavedIds] = useState(() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem("safeher_saved_places") || "[]");
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const enrichPlace = (place) => {
+    const safetyBase = {
+      police: 88,
+      hospital: 82,
+      pharmacy: 72,
+      cafe: 65,
+    }[place.type] || 60;
+    const openBonus = place.isOpenNow === true ? 8 : place.isOpenNow === false ? -6 : 0;
+    const distancePenalty = Math.min(18, Math.round((place.distanceKm || 0) * 3.2));
+    const score = Math.max(35, Math.min(98, safetyBase + openBonus - distancePenalty));
+    const tone = score >= 75 ? "safe" : score >= 55 ? "moderate" : "risky";
+    return {
+      ...place,
+      rating: Number(place.rating || place.user_ratings_total ? place.rating : 0) || 0,
+      safetyScore: score,
+      safetyTone: tone,
+    };
+  };
 
   const filteredItems = useMemo(() => {
-    const allowedTypes = FILTER_TO_TYPES[activeFilter] || FILTER_TO_TYPES["All Locations"];
-    return nearbyLocations
-      .filter((item) => allowedTypes.includes(item.type))
-      .sort((a, b) => a.distanceKm - b.distanceKm);
-  }, [activeFilter, nearbyLocations]);
+    const base = nearbyLocations.filter((item) => activeTypes.includes(item.type));
+    if (sortMode === "safest") {
+      return [...base].sort((a, b) => (b.safetyScore || 0) - (a.safetyScore || 0));
+    }
+    if (sortMode === "highest-rated") {
+      return [...base].sort((a, b) => (b.rating || b.safetyScore || 0) - (a.rating || a.safetyScore || 0));
+    }
+    return [...base].sort((a, b) => a.distanceKm - b.distanceKm);
+  }, [activeTypes, nearbyLocations, sortMode]);
+
+  const insights = useMemo(() => {
+    const hospitals = nearbyLocations.filter((item) => item.type === "hospital").length;
+    const police = nearbyLocations.filter((item) => item.type === "police").length;
+    const avgSafety = nearbyLocations.length
+      ? nearbyLocations.reduce((sum, item) => sum + (item.safetyScore || 0), 0) / nearbyLocations.length
+      : 0;
+    const riskLevel = avgSafety >= 75 ? "Low Risk" : avgSafety >= 55 ? "Moderate Risk" : "Elevated Risk";
+    return {
+      hospitals,
+      police,
+      riskLevel,
+      riskTone: avgSafety >= 75 ? "safe" : avgSafety >= 55 ? "moderate" : "risky",
+    };
+  }, [nearbyLocations]);
 
   const requestCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -143,6 +195,7 @@ export default function ExploreNearby() {
       const queryByType = {
         hospital: "hospitals near me",
         police: "police station near me",
+        pharmacy: "pharmacy near me",
         cafe: "safe cafe near me",
       };
       service.textSearch(
@@ -161,6 +214,56 @@ export default function ExploreNearby() {
       );
     });
 
+  const fetchOverpassForType = async (location, type, radiusMeters) => {
+    const overpassTypeQuery = {
+      police: '["amenity"="police"]',
+      hospital: '["amenity"="hospital"]',
+      pharmacy: '["amenity"="pharmacy"]',
+      cafe: '["amenity"="cafe"]',
+    };
+    const query = `
+      [out:json][timeout:25];
+      (
+        node${overpassTypeQuery[type]}(around:${radiusMeters},${location.lat},${location.lng});
+        way${overpassTypeQuery[type]}(around:${radiusMeters},${location.lat},${location.lng});
+      );
+      out center 80;
+    `;
+
+    const response = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: new URLSearchParams({ data: query }).toString(),
+    });
+
+    if (!response.ok) return [];
+    const data = await response.json();
+    const elements = Array.isArray(data?.elements) ? data.elements : [];
+
+    return elements
+      .map((element, index) => {
+        const lat = element.lat ?? element.center?.lat;
+        const lng = element.lon ?? element.center?.lon;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        const distanceKm = getDistanceKm(location, { lat, lng });
+        return {
+          id: `${type}-osm-${element.id || index}`,
+          placeId: `${type}-osm-${element.id || index}`,
+          name: element.tags?.name || TYPE_CONFIG[type].label,
+          type,
+          typeLabel: TYPE_CONFIG[type].label,
+          icon: TYPE_CONFIG[type].icon,
+          address: element.tags?.["addr:full"] || element.tags?.["addr:street"] || "Address unavailable",
+          phone: element.tags?.phone || null,
+          isOpenNow: null,
+          distanceKm,
+          lat,
+          lng,
+        };
+      })
+      .filter(Boolean);
+  };
+
   const fitMapBounds = (locations) => {
     if (!mapRef || !window.google?.maps) return;
     if (!Array.isArray(locations) || locations.length === 0) {
@@ -176,70 +279,90 @@ export default function ExploreNearby() {
     mapRef.fitBounds(bounds);
   };
 
-  const loadNearbyPlaces = async (mapInstance, location, selectedFilter = activeFilter) => {
+  const loadNearbyPlaces = async (mapInstance, location) => {
     if (!mapInstance || !location || !window.google?.maps?.places) return;
     setLoading(true);
     setError("");
+    setSearchNotice("");
     try {
       const service = new window.google.maps.places.PlacesService(mapInstance);
-      const allowedTypes = FILTER_TO_TYPES[selectedFilter] || FILTER_TO_TYPES["All Locations"];
 
-      const byTypeResults = await Promise.all(
-        allowedTypes.map(async (type) => {
-          const nearbyResult = await fetchNearbyForType(service, {
-            location,
-            radius: SEARCH_RADIUS_METERS,
-            type,
-          });
-          const fallbackResult =
-            nearbyResult.results.length === 0
-              ? await fetchTextFallbackForType(service, location, type)
-              : { results: [], status: "SKIPPED" };
-          const rawResults = nearbyResult.results.length ? nearbyResult.results : fallbackResult.results;
+      for (let i = 0; i < SEARCH_RADIUS_STEPS.length; i += 1) {
+        const radius = SEARCH_RADIUS_STEPS[i];
+        setActiveRadius(radius);
+        if (i > 0) {
+          setSearchNotice("No nearby places found. Expanding search radius...");
+        }
 
-          const normalized = rawResults
-            .map((place) => normalizePlace(place, location, type))
-            .filter(Boolean);
+        const byTypeResults = await Promise.all(
+          RESOURCE_TYPES.map(async (type) => {
+            const nearbyResult = await fetchNearbyForType(service, {
+              location,
+              radius,
+              type,
+            });
+            const fallbackResult =
+              nearbyResult.results.length === 0
+                ? await fetchTextFallbackForType(service, location, type)
+                : { results: [], status: "SKIPPED" };
+            const rawResults = nearbyResult.results.length ? nearbyResult.results : fallbackResult.results;
 
-          // "Safe Cafes": prioritize safety-oriented names in ordering
-          const sorted =
-            type === "cafe"
-              ? normalized.sort((a, b) => {
-                  const safeA = /(safe|women|family|secure)/i.test(`${a.name || ""} ${a.address || ""}`) ? 1 : 0;
-                  const safeB = /(safe|women|family|secure)/i.test(`${b.name || ""} ${b.address || ""}`) ? 1 : 0;
-                  return safeB - safeA;
-                })
-              : normalized;
+            const normalized = rawResults
+              .map((place) => normalizePlace(place, location, type))
+              .filter(Boolean)
+              .map((place) => enrichPlace({ ...place, rating: Number(place.rating) || 0 }));
 
-          return {
-            type,
-            status: nearbyResult.status,
-            results: sorted,
-          };
-        })
-      );
+            const sorted =
+              type === "cafe"
+                ? normalized.sort((a, b) => {
+                    const safeA = /(safe|women|family|secure)/i.test(`${a.name || ""} ${a.address || ""}`) ? 1 : 0;
+                    const safeB = /(safe|women|family|secure)/i.test(`${b.name || ""} ${b.address || ""}`) ? 1 : 0;
+                    return safeB - safeA;
+                  })
+                : normalized;
 
-      const merged = byTypeResults.flatMap((entry) => entry.results);
+            return {
+              type,
+              status: nearbyResult.status,
+              results: sorted,
+            };
+          })
+        );
 
-      const uniqueByPlaceId = Array.from(new Map(merged.map((item) => [item.placeId, item])).values());
-      setNearbyLocations(uniqueByPlaceId);
-      const statuses = byTypeResults.map((entry) => entry.status);
-      if (
-        uniqueByPlaceId.length === 0 &&
-        statuses.every((s) => s === window.google.maps.places.PlacesServiceStatus.REQUEST_DENIED)
-      ) {
-        setError("Places API request denied. Enable Places API + billing and allow this domain in API key restrictions.");
+        let merged = byTypeResults.flatMap((entry) => entry.results);
+
+        if (merged.length === 0) {
+          const osmByType = await Promise.all(
+            RESOURCE_TYPES.map(async (type) => fetchOverpassForType(location, type, radius))
+          );
+          merged = osmByType.flat().map((item) => enrichPlace(item));
+        }
+
+        const uniqueByPlaceId = Array.from(new Map(merged.map((item) => [item.placeId, item])).values());
+        const statuses = byTypeResults.map((entry) => entry.status);
+        if (
+          uniqueByPlaceId.length === 0 &&
+          statuses.every((s) => s === window.google.maps.places.PlacesServiceStatus.REQUEST_DENIED)
+        ) {
+          setError("Places API request denied. Enable Places API + billing and allow this domain in API key restrictions.");
+          break;
+        }
+
+        if (uniqueByPlaceId.length > 0) {
+          setNearbyLocations(uniqueByPlaceId);
+          setSearchNotice("");
+          const bounds = new window.google.maps.LatLngBounds();
+          bounds.extend(location);
+          uniqueByPlaceId.forEach((item) => bounds.extend({ lat: item.lat, lng: item.lng }));
+          mapInstance.fitBounds(bounds);
+          return;
+        }
       }
-      if (uniqueByPlaceId.length > 0) {
-        const bounds = new window.google.maps.LatLngBounds();
-        bounds.extend(location);
-        uniqueByPlaceId.forEach((item) => bounds.extend({ lat: item.lat, lng: item.lng }));
-        mapInstance.fitBounds(bounds);
-      } else {
-        mapInstance.panTo(location);
-        mapInstance.setZoom(14);
-        setError("No nearby places found. Try expanding search radius.");
-      }
+
+      setNearbyLocations([]);
+      mapInstance.panTo(location);
+      mapInstance.setZoom(14);
+      setError("No nearby places found. Try expanding search radius.");
     } catch (e) {
       console.error("Failed to fetch nearby places:", e);
       setError("Could not load nearby places right now.");
@@ -257,9 +380,9 @@ export default function ExploreNearby() {
 
   useEffect(() => {
     if (mapRef && userLocation) {
-      loadNearbyPlaces(mapRef, userLocation, activeFilter);
+      loadNearbyPlaces(mapRef, userLocation);
     }
-  }, [mapRef, userLocation, activeFilter]);
+  }, [mapRef, userLocation]);
 
   useEffect(() => {
     fitMapBounds(filteredItems);
@@ -302,7 +425,25 @@ export default function ExploreNearby() {
     window.open(`tel:${item.phone.replace(/\s+/g, "")}`, "_self");
   };
 
+  const toggleSave = (item) => {
+    setSavedIds((prev) => {
+      const next = prev.includes(item.id) ? prev.filter((id) => id !== item.id) : [...prev, item.id];
+      localStorage.setItem("safeher_saved_places", JSON.stringify(next));
+      return next;
+    });
+  };
+
   const isApiConfigured = GOOGLE_MAPS_API_KEY && GOOGLE_MAPS_API_KEY !== "YOUR_GOOGLE_MAPS_API_KEY";
+
+  const toggleType = (type) => {
+    setActiveTypes((prev) => {
+      if (prev.includes(type)) {
+        const next = prev.filter((t) => t !== type);
+        return next.length === 0 ? prev : next;
+      }
+      return [...prev, type];
+    });
+  };
 
   return (
     <section className="explore-nearby-page">
@@ -312,17 +453,24 @@ export default function ExploreNearby() {
       </div>
 
       <div className="explore-nearby-filter-row">
-        <span className="explore-nearby-filter-label">⌯ Filter:</span>
-        {FILTERS.map((f) => (
+        <span className="explore-nearby-filter-label">⌯ Categories:</span>
+        {FILTER_CHIPS.map((chip) => (
           <button
-            key={f}
+            key={chip.type}
             type="button"
-            className={`explore-nearby-chip ${activeFilter === f ? "active" : ""}`}
-            onClick={() => setActiveFilter(f)}
+            className={`explore-nearby-chip ${activeTypes.includes(chip.type) ? "active" : ""}`}
+            onClick={() => toggleType(chip.type)}
           >
-            {f}
+            {chip.label}
           </button>
         ))}
+        <button
+          type="button"
+          className="explore-nearby-chip reset"
+          onClick={() => setActiveTypes(RESOURCE_TYPES)}
+        >
+          Show All
+        </button>
         <button type="button" className="explore-nearby-refresh" onClick={requestCurrentLocation}>
           Refresh Location
         </button>
@@ -333,17 +481,32 @@ export default function ExploreNearby() {
             Your location: {userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}
           </span>
           <span>
-            Accuracy: {locationAccuracy ? `±${Math.round(locationAccuracy)}m` : "N/A"}
+            Accuracy: {locationAccuracy ? `±${Math.round(locationAccuracy)}m` : "N/A"} · Radius: {activeRadius}m
           </span>
         </div>
       ) : null}
 
-      <div className="explore-nearby-grid">
+      <div className="explore-nearby-grid explore-layout">
         <article className="explore-nearby-map-card">
+          <div className="safety-insights-row">
+            <div className="insight-chip">
+              <strong>{insights.hospitals}</strong>
+              <span>Nearby hospitals</span>
+            </div>
+            <div className="insight-chip">
+              <strong>{insights.police}</strong>
+              <span>Police stations</span>
+            </div>
+            <div className={`insight-chip tone-${insights.riskTone}`}>
+              <strong>{insights.riskLevel}</strong>
+              <span>Area risk level</span>
+            </div>
+          </div>
           <div className="explore-nearby-legend">
             <span><i className="legend-dot hospital" /> Hospital</span>
             <span><i className="legend-dot police" /> Police</span>
-            <span><i className="legend-dot cafe" /> Cafe</span>
+            <span><i className="legend-dot pharmacy" /> Pharmacy</span>
+            <span><i className="legend-dot cafe" /> Safe Cafe</span>
             <span><i className="legend-dot you" /> You</span>
           </div>
           {!isApiConfigured ? (
@@ -431,9 +594,35 @@ export default function ExploreNearby() {
         </article>
 
         <aside className="explore-nearby-list-card">
-          <h2>Nearby Locations ({filteredItems.length})</h2>
+          <h2>Nearby Resources ({filteredItems.length})</h2>
+          <div className="sort-row">
+            <button type="button" className={sortMode === "nearest" ? "active" : ""} onClick={() => setSortMode("nearest")}>
+              Nearest
+            </button>
+            <button type="button" className={sortMode === "safest" ? "active" : ""} onClick={() => setSortMode("safest")}>
+              Safest
+            </button>
+            <button
+              type="button"
+              className={sortMode === "highest-rated" ? "active" : ""}
+              onClick={() => setSortMode("highest-rated")}
+            >
+              Highest rated
+            </button>
+          </div>
           {error ? <div className="explore-nearby-error">{error}</div> : null}
-          {loading ? <div className="explore-nearby-loading">Loading nearby places...</div> : null}
+          {searchNotice ? <div className="explore-nearby-loading">{searchNotice}</div> : null}
+          {loading ? (
+            <div className="explore-nearby-skeleton" aria-hidden="true">
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="skeleton-place-card">
+                  <div className="skeleton-line skeleton-line-lg" />
+                  <div className="skeleton-line" />
+                  <div className="skeleton-line skeleton-line-sm" />
+                </div>
+              ))}
+            </div>
+          ) : null}
           <div className="explore-nearby-list">
             {filteredItems.map((item) => (
               <div
@@ -464,9 +653,15 @@ export default function ExploreNearby() {
                     {item.isOpenNow === null ? "Status unknown" : item.isOpenNow ? "Open" : "Closed"}
                   </button>
                 </div>
+                <div className="resource-meta-row">
+                  <span className="category-pill">{item.typeLabel}</span>
+                  <span className={`safety-pill ${item.safetyTone}`}>
+                    {item.safetyTone === "safe" ? "Safe" : item.safetyTone === "moderate" ? "Moderate" : "Risky"}
+                  </span>
+                </div>
                 <p className="address">⌖ {item.address}</p>
                 <p className="distance">{item.distanceKm.toFixed(1)} km away</p>
-                <div className="explore-nearby-actions">
+                <div className="explore-nearby-actions triple">
                   <button
                     type="button"
                     className="navigate-btn"
@@ -488,12 +683,25 @@ export default function ExploreNearby() {
                   >
                     {item.phone ? "📞 Call" : phoneLoadingId === item.id ? "Loading..." : "Get Phone"}
                   </button>
+                  <button
+                    type="button"
+                    className={`save-btn ${savedIds.includes(item.id) ? "saved" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSave(item);
+                    }}
+                  >
+                    {savedIds.includes(item.id) ? "✓ Saved" : "☆ Save"}
+                  </button>
                 </div>
                 {item.phone ? <small className="phone-row">📱 {item.phone}</small> : null}
               </div>
             ))}
             {!loading && filteredItems.length === 0 ? (
-              <div className="explore-nearby-empty">No nearby places found. Try expanding search radius.</div>
+              <div className="explore-nearby-empty">
+                <strong>No nearby places found</strong>
+                <p>Try increasing search radius</p>
+              </div>
             ) : null}
           </div>
         </aside>

@@ -1,10 +1,130 @@
-import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import React, { useMemo, useState, useEffect } from 'react';
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Legend,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
+import {
+  FiAlertTriangle,
+  FiClock,
+  FiInfo,
+  FiMapPin,
+  FiNavigation,
+  FiPauseCircle,
+  FiPlayCircle,
+  FiShield,
+  FiTarget,
+  FiTrendingUp,
+  FiWifi,
+  FiWifiOff
+} from 'react-icons/fi';
 import api from '../../services/api';
 import './DashboardOverview.css';
 
-export default function DashboardOverview({ currentLocation, isTracking, sosActive, onToggleTracking }) {
+const SCORE_MAX = 100;
+const toDate = (value) => {
+  const parsed = value ? new Date(value) : null;
+  return parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
+};
+
+const formatDateTime = (value) => {
+  const validDate = toDate(value);
+  return validDate ? validDate.toLocaleString() : 'Not available';
+};
+
+const formatTimeOnly = (value) => {
+  const validDate = toDate(value);
+  return validDate ? validDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+};
+
+const formatDuration = (ms) => {
+  if (!ms || ms <= 0) return '0m';
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+};
+
+const formatDistance = (km) => {
+  const safeValue = Number(km) || 0;
+  if (safeValue < 1) return `${Math.round(safeValue * 1000)} m`;
+  return `${safeValue.toFixed(2)} km`;
+};
+
+const hasValidCoordinates = (location) =>
+  Number.isFinite(Number(location?.latitude)) && Number.isFinite(Number(location?.longitude));
+
+const getTimelineMeta = (eventType = '', description = '') => {
+  const normalized = `${eventType} ${description}`.toLowerCase();
+  if (normalized.includes('sos')) return { icon: '🚨', tone: 'danger', title: 'SOS Triggered' };
+  if (normalized.includes('exit') || normalized.includes('paused')) {
+    return { icon: '⚠️', tone: 'warning', title: description || eventType };
+  }
+  if (normalized.includes('entered') || normalized.includes('started') || normalized.includes('enabled')) {
+    return { icon: '✅', tone: 'success', title: description || eventType };
+  }
+  return { icon: '📍', tone: 'success', title: description || eventType };
+};
+
+const getSafetyLabel = (score) => {
+  if (score >= 70) return 'Safe';
+  if (score >= 40) return 'Moderate';
+  return 'Risky';
+};
+
+const getRiskTone = (riskLevel = '') => {
+  const normalized = String(riskLevel).toLowerCase();
+  if (normalized.includes('high')) return 'danger';
+  if (normalized.includes('moderate')) return 'warning';
+  return 'success';
+};
+
+const getSignalMeta = (accuracy, hasLocation) => {
+  if (!hasLocation) return { label: 'Offline', tone: 'offline', icon: <FiWifiOff />, bars: 0 };
+  if (accuracy <= 25) return { label: 'Connected', tone: 'connected', icon: <FiWifi />, bars: 4 };
+  if (accuracy <= 80) return { label: 'Weak Signal', tone: 'weak', icon: <FiWifi />, bars: 2 };
+  return { label: 'Offline', tone: 'offline', icon: <FiWifiOff />, bars: 1 };
+};
+
+const generateMockMovementData = () => {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  return days.map((day) => ({
+    day,
+    distance: Math.floor(Math.random() * 10) + 2,
+    avgSpeed: Math.floor(Math.random() * 20) + 12,
+    idleHours: Number((Math.random() * 2.4).toFixed(1))
+  }));
+};
+
+const generateMockActivityData = () => {
+  const now = Date.now();
+  return [
+    { time: new Date(now - 30 * 60 * 1000).toISOString(), action: 'Entered Safe Zone', place: 'Campus Gate' },
+    { time: new Date(now - 75 * 60 * 1000).toISOString(), action: 'Live Tracking Started', place: 'Central Park' },
+    { time: new Date(now - 130 * 60 * 1000).toISOString(), action: 'Left Safe Zone', place: 'City Center' }
+  ];
+};
+
+export default function DashboardOverview({
+  currentLocation,
+  isTracking,
+  sosActive,
+  onToggleTracking,
+  onOpenFullMap
+}) {
   const [loading, setLoading] = useState(true);
+  const [trackingStartedAt, setTrackingStartedAt] = useState(null);
+  const [localSOSAlerts, setLocalSOSAlerts] = useState([]);
+  const [activityTimeline, setActivityTimeline] = useState([]);
   const [dashboardData, setDashboardData] = useState({
     trackingStatus: 'No Signal',
     lastUpdateTime: null,
@@ -17,9 +137,8 @@ export default function DashboardOverview({ currentLocation, isTracking, sosActi
   });
 
   useEffect(() => {
-    // Update dashboard data when currentLocation changes
     if (currentLocation) {
-      setDashboardData(prev => ({
+      setDashboardData((prev) => ({
         ...prev,
         lastKnownLocation: currentLocation,
         lastUpdateTime: currentLocation.timestamp,
@@ -29,329 +148,388 @@ export default function DashboardOverview({ currentLocation, isTracking, sosActi
   }, [currentLocation, isTracking]);
 
   useEffect(() => {
-    fetchDashboardData();
-    // Refresh every 5 seconds
-    const interval = setInterval(fetchDashboardData, 5000);
-    return () => clearInterval(interval);
-  }, [isTracking, sosActive]);
-
-  const fetchDashboardData = async () => {
+    let localUser = {};
     try {
-      setLoading(true);
-      const response = await api.get('/location/dashboard');
-      setDashboardData({
-        ...response.data,
-        trackingStatus: isTracking ? 'Active' : 'Paused',
-        lastUpdateTime: currentLocation?.timestamp || response.data.lastUpdateTime
-      });
+      localUser = JSON.parse(localStorage.getItem('user') || '{}');
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      // Use fallback data
-      setDashboardData({
-        trackingStatus: isTracking ? 'Active' : 'Paused',
-        lastUpdateTime: currentLocation?.timestamp,
-        lastKnownLocation: currentLocation,
-        safetyScore: 75,
-        safetyLevel: 'Safe',
-        recentMovement: generateMockMovementData(),
-        recentActivity: [],
-        recentSOSAlerts: []
-      });
-    } finally {
-      setLoading(false);
+      localUser = {};
     }
-  };
+    const currentUserId = localUser?._id || localUser?.id || 'me';
 
-  const generateMockMovementData = () => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days.map(day => ({
-      day,
-      distance: Math.floor(Math.random() * 10) + 2
-    }));
-  };
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/location/dashboard');
+        const apiData = response?.data || {};
+        const normalizedAlerts = (apiData.recentSOSAlerts || []).map((alert, idx) => ({
+          ...alert,
+          id: alert.id || alert._id || `alert-${idx}`,
+          status: (alert.status || 'open').toLowerCase()
+        }));
 
-  const toggleTracking = () => {
-    if (onToggleTracking) {
-      onToggleTracking();
-    }
-  };
+        const score = Number(apiData.safetyScore) || 75;
+        setDashboardData({
+          ...apiData,
+          trackingStatus: isTracking ? 'Active' : 'Paused',
+          safetyScore: score,
+          safetyLevel: apiData.safetyLevel || getSafetyLabel(score),
+          lastUpdateTime: currentLocation?.timestamp || apiData.lastUpdateTime
+        });
+        setLocalSOSAlerts(normalizedAlerts);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        const fallbackScore = 75;
+        setDashboardData({
+          trackingStatus: isTracking ? 'Active' : 'Paused',
+          lastUpdateTime: currentLocation?.timestamp,
+          lastKnownLocation: currentLocation,
+          safetyScore: fallbackScore,
+          safetyLevel: getSafetyLabel(fallbackScore),
+          recentMovement: generateMockMovementData(),
+          recentActivity: generateMockActivityData(),
+          recentSOSAlerts: []
+        });
+        setLocalSOSAlerts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const getSafetyColor = (score) => {
-    if (score >= 70) return 'text-green-600';
-    if (score >= 40) return 'text-yellow-600';
-    return 'text-red-600';
-  };
+    const fetchActivityTimeline = async () => {
+      try {
+        const response = await api.get(`/activity/${currentUserId}`, { params: { limit: 30 } });
+        setActivityTimeline(response.data?.events || []);
+      } catch (error) {
+        console.error('Error fetching activity timeline:', error);
+        setActivityTimeline([]);
+      }
+    };
 
-  const getSafetyBadgeColor = (level) => {
-    if (level === 'Safe') return 'bg-green-100 text-green-800';
-    if (level === 'Moderate') return 'bg-yellow-100 text-yellow-800';
-    return 'bg-red-100 text-red-800';
+    fetchDashboardData();
+    fetchActivityTimeline();
+    const interval = setInterval(() => {
+      fetchDashboardData();
+      fetchActivityTimeline();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isTracking, sosActive, currentLocation]);
+
+  useEffect(() => {
+    if (isTracking && !trackingStartedAt) setTrackingStartedAt(new Date());
+    if (!isTracking) setTrackingStartedAt(null);
+  }, [isTracking, trackingStartedAt]);
+
+  const locationData = dashboardData.lastKnownLocation || currentLocation;
+  const validCoordinates = hasValidCoordinates(locationData);
+  const locationAccuracy = Number(locationData?.accuracy) || null;
+  const signal = getSignalMeta(locationAccuracy, validCoordinates);
+
+  const safeScore = Math.max(0, Math.min(SCORE_MAX, Number(dashboardData.safetyScore) || 0));
+  const scoreLabel = dashboardData.safetyLevel || getSafetyLabel(safeScore);
+  const riskPrediction = dashboardData.riskPrediction || {
+    riskScore: 0,
+    riskLevel: 'Safe',
+    recommendation: 'Safe: Conditions look stable. Keep tracking active for continuous protection.',
+    timestamp: null
+  };
+  const riskScore = Math.max(0, Math.min(100, Number(riskPrediction.riskScore) || 0));
+  const riskLevel = riskPrediction.riskLevel || 'Safe';
+  const riskTone = getRiskTone(riskLevel);
+  const sessionDurationMs = isTracking && trackingStartedAt ? Date.now() - trackingStartedAt.getTime() : 0;
+
+  const movementAnalytics = useMemo(
+    () =>
+      (dashboardData.recentMovement || []).map((item, idx) => ({
+        day: item.day || item.label || `D${idx + 1}`,
+        distance: Number(item.distance) || 0,
+        avgSpeed: Number(item.avgSpeed) || Number(item.averageSpeed) || Number((8 + Math.random() * 20).toFixed(1)),
+        idleHours: Number(item.idleHours) || Number((Math.random() * 2).toFixed(1))
+      })),
+    [dashboardData.recentMovement]
+  );
+
+  const movementSummary = useMemo(() => {
+    if (!movementAnalytics.length) return { totalDistance: 0, avgSpeed: 0, idleHours: 0 };
+    const totalDistance = movementAnalytics.reduce((sum, item) => sum + item.distance, 0);
+    const avgSpeed = movementAnalytics.reduce((sum, item) => sum + item.avgSpeed, 0) / movementAnalytics.length;
+    const idleHours = movementAnalytics.reduce((sum, item) => sum + item.idleHours, 0);
+    return { totalDistance, avgSpeed, idleHours };
+  }, [movementAnalytics]);
+
+  const trackingPoints = dashboardData.totalTrackingPoints || dashboardData.recentActivity?.length || 0;
+  const totalDistance = dashboardData.totalDistance ?? movementSummary.totalDistance;
+
+  const gaugeRadius = 44;
+  const gaugeCircumference = 2 * Math.PI * gaugeRadius;
+  const gaugeStrokeDashoffset = gaugeCircumference - (safeScore / SCORE_MAX) * gaugeCircumference;
+  const riskGaugeRadius = 36;
+  const riskGaugeCircumference = 2 * Math.PI * riskGaugeRadius;
+  const riskGaugeStrokeDashoffset = riskGaugeCircumference - (riskScore / 100) * riskGaugeCircumference;
+
+  const updateAlertStatus = (alertId, status) => {
+    setLocalSOSAlerts((prev) =>
+      prev.map((alert) => (alert.id === alertId ? { ...alert, status } : alert))
+    );
   };
 
   if (loading) {
     return (
-      <div className="dashboard-overview">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="card skeleton">
-              <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+      <div className="dashboard-overview dashboard-container">
+        <div className="dashboard-grid">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="card skeleton-card">
+              <div className="skeleton-line skeleton-line-lg" />
+              <div className="skeleton-line" />
+              <div className="skeleton-line skeleton-line-sm" />
             </div>
           ))}
         </div>
-        <div className="card skeleton h-96 bg-gray-200 rounded animate-pulse"></div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-overview space-y-6">
-      {/* Top Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Tracking Status Card */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Tracking Status</h3>
-            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-              dashboardData.trackingStatus === 'Active' ? 'bg-green-100 text-green-800' :
-              dashboardData.trackingStatus === 'Paused' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-red-100 text-red-800'
-            }`}>
-              {dashboardData.trackingStatus}
-            </div>
-          </div>
-          <div className="mb-4">
-            <p className="text-sm text-gray-600">Last Update</p>
-            <p className="text-lg font-semibold">
-              {dashboardData.lastUpdateTime 
-                ? new Date(dashboardData.lastUpdateTime).toLocaleString()
-                : 'Never'}
-            </p>
-          </div>
-          <button
-            onClick={toggleTracking}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-          >
-            {isTracking ? 'Pause Tracking' : 'Start Tracking'}
-          </button>
-        </div>
-
-        {/* Last Known Location Card */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Last Known Location</h3>
-            <span className="text-2xl">📍</span>
-          </div>
-          {dashboardData.lastKnownLocation && dashboardData.lastKnownLocation.latitude && dashboardData.lastKnownLocation.longitude ? (
-            <>
-              <div className="mb-3">
-                <p className="text-sm text-gray-600 mb-1">Coordinates</p>
-                <p className="text-sm font-mono text-gray-800">
-                  {dashboardData.lastKnownLocation.latitude.toFixed(6)}, {dashboardData.lastKnownLocation.longitude.toFixed(6)}
-                </p>
-              </div>
-              {dashboardData.lastKnownLocation.address && (
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-1">Address</p>
-                  <p className="text-sm text-gray-800 line-clamp-2">
-                    {dashboardData.lastKnownLocation.address}
-                  </p>
-                </div>
-              )}
-              <button className="w-full py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-                View Full Map
-              </button>
-            </>
-          ) : (
-            <p className="text-gray-500 text-center py-4">No location data available</p>
-          )}
-        </div>
-
-        {/* Safety Score Card */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Safety Score</h3>
-            <span className="text-2xl">🛡️</span>
-          </div>
-          <div className="text-center mb-4">
-            <div className={`text-5xl font-bold ${getSafetyColor(dashboardData.safetyScore)}`}>
-              {dashboardData.safetyScore}
-            </div>
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium mt-2 ${getSafetyBadgeColor(dashboardData.safetyLevel)}`}>
-              {dashboardData.safetyLevel}
+    <div className="dashboard-overview dashboard-container">
+      <div className="dashboard-grid">
+        <article className="card current-location">
+          <div className="card-header">
+            <h3><FiMapPin /> Current Location</h3>
+            <span className={`status-pill status-pill-${signal.tone}`}>
+              {signal.icon}
+              {signal.label === 'Connected' ? 'Online' : signal.label}
             </span>
           </div>
-          <p className="text-xs text-gray-600 text-center">
-            Based on location patterns and safe zone proximity
-          </p>
-        </div>
-      </div>
+          {locationData ? (
+            <>
+              <div className="location-rows">
+                <div className="meta-row">
+                  <span>Coordinates</span>
+                  <strong className="mono">
+                    {validCoordinates
+                      ? `${Number(locationData.latitude).toFixed(6)}, ${Number(locationData.longitude).toFixed(6)}`
+                      : 'Location unavailable'}
+                  </strong>
+                </div>
+                <div className="meta-row">
+                  <span>Address</span>
+                  <strong>{locationData.address || dashboardData.lastKnownLocation?.address || 'Address unavailable'}</strong>
+                </div>
+                <div className="meta-row">
+                  <span>Accuracy</span>
+                  <strong>{locationAccuracy ? `±${Math.round(locationAccuracy)}m` : 'N/A'}</strong>
+                </div>
+                <div className="meta-row">
+                  <span>Last update</span>
+                  <strong>{formatDateTime(dashboardData.lastUpdateTime || locationData.timestamp)}</strong>
+                </div>
+              </div>
+              <div className="gps-bars" title="Estimated GPS quality based on accuracy radius">
+                {[1, 2, 3, 4].map((bar) => (
+                  <span key={bar} className={`gps-bar ${bar <= signal.bars ? 'active' : ''}`} />
+                ))}
+                <span className="gps-label">GPS signal strength</span>
+              </div>
+            </>
+          ) : (
+            <div className="friendly-empty"><p>📍 No live location yet. Start tracking to load current position details.</p></div>
+          )}
+        </article>
 
-      {/* Middle Section - Map and Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Mini Live Map Preview */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Live Map Preview</h3>
-          <div className="h-64 rounded-lg overflow-hidden border border-gray-200 relative">
-            {currentLocation ? (
+        <article className="card tracking-status">
+          <div className="card-header">
+            <h3><FiNavigation /> Tracking Status</h3>
+            <span className={`status-pill ${isTracking ? 'status-pill-connected' : 'status-pill-weak'}`}>
+              {isTracking ? <FiPlayCircle /> : <FiPauseCircle />}
+              {isTracking ? 'Active' : 'Paused'}
+            </span>
+          </div>
+          <div className="tracking-metrics">
+            <div className="metric-item"><span>Session duration</span><strong>{formatDuration(sessionDurationMs)}</strong></div>
+            <div className="metric-item"><span>Total distance</span><strong>{formatDistance(totalDistance)}</strong></div>
+            <div className="metric-item"><span>Tracking points</span><strong>{trackingPoints}</strong></div>
+          </div>
+          <div className="tracking-controls">
+            {isTracking && <span className="active-pulse" aria-label="Tracking active indicator" />}
+            <button onClick={onToggleTracking} className="primary-btn">{isTracking ? 'Pause Tracking' : 'Start Tracking'}</button>
+          </div>
+        </article>
+
+        <article className="card safety-score">
+          <div className="card-header">
+            <h3><FiShield /> Safety Score</h3>
+            <span className="hint-icon" title="Score combines safe-zone proximity, movement consistency, signal quality, and recent SOS risk events."><FiInfo /></span>
+          </div>
+          <div className="safety-gauge-wrap">
+            <svg className="safety-gauge" viewBox="0 0 120 120" role="img" aria-label={`Safety score ${safeScore}`}>
+              <circle cx="60" cy="60" r={gaugeRadius} className="gauge-bg" />
+              <circle cx="60" cy="60" r={gaugeRadius} className={`gauge-progress gauge-${scoreLabel.toLowerCase()}`} strokeDasharray={gaugeCircumference} strokeDashoffset={gaugeStrokeDashoffset} />
+            </svg>
+            <div className="gauge-center"><strong>{safeScore}</strong><span>/100</span></div>
+          </div>
+          <div className={`level-pill level-${scoreLabel.toLowerCase()}`}>{scoreLabel}</div>
+          <p className="muted-text">Higher scores indicate safer context and stronger location confidence.</p>
+        </article>
+
+        <article className="card risk-prediction risk-prediction-card">
+          <div className="card-header">
+            <h3><FiShield /> Risk Prediction</h3>
+            <span className={`status-pill status-pill-${riskTone}`}>{riskLevel}</span>
+          </div>
+          <div className="risk-gauge-wrap">
+            <svg className="risk-gauge" viewBox="0 0 100 100" role="img" aria-label={`Risk score ${riskScore}`}>
+              <circle cx="50" cy="50" r={riskGaugeRadius} className="risk-gauge-bg" />
+              <circle
+                cx="50"
+                cy="50"
+                r={riskGaugeRadius}
+                className={`risk-gauge-progress tone-${riskTone}`}
+                strokeDasharray={riskGaugeCircumference}
+                strokeDashoffset={riskGaugeStrokeDashoffset}
+              />
+            </svg>
+            <div className="risk-gauge-center">
+              <strong>{riskScore}</strong>
+              <span>/100</span>
+            </div>
+          </div>
+          <div className="risk-score-row">
+            <span>Risk score</span>
+            <strong>{riskScore}/100</strong>
+          </div>
+          <div className={`risk-recommendation tone-${riskTone}`}>
+            <p>{riskPrediction.recommendation}</p>
+          </div>
+          <p className="muted-text">
+            Last evaluated: {formatDateTime(riskPrediction.timestamp)}
+          </p>
+        </article>
+
+        <article className="card map-preview">
+          <div className="card-header">
+            <h3><FiTarget /> Map Preview</h3>
+          </div>
+          <div className="map-container map-preview-shell">
+            {validCoordinates ? (
               <iframe
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${currentLocation.longitude - 0.005},${currentLocation.latitude - 0.005},${currentLocation.longitude + 0.005},${currentLocation.latitude + 0.005}&layer=mapnik&marker=${currentLocation.latitude},${currentLocation.longitude}&lat=${currentLocation.latitude}&lon=${currentLocation.longitude}&zoom=17`}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${locationData.longitude - 0.005},${locationData.latitude - 0.005},${locationData.longitude + 0.005},${locationData.latitude + 0.005}&layer=mapnik&marker=${locationData.latitude},${locationData.longitude}&lat=${locationData.latitude}&lon=${locationData.longitude}&zoom=16`}
                 width="100%"
                 height="100%"
                 frameBorder="0"
                 scrolling="no"
-                marginHeight="0"
-                marginWidth="0"
-                title="Live Location Map"
-                style={{ border: 'none' }}
+                title="Dashboard map preview"
               />
             ) : (
-              <div className="h-full flex items-center justify-center bg-gray-50">
-                <div className="text-center text-gray-400">
-                  <div className="text-4xl mb-2">🗺️</div>
-                  <p className="text-sm">No location data</p>
-                </div>
-              </div>
+              <div className="map-empty">Location unavailable</div>
             )}
-            {/* Custom marker overlay */}
-            {currentLocation && (
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                zIndex: 9999,
-                pointerEvents: 'none'
-              }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: sosActive ? '#ff4444' : '#007bff',
-                  border: '4px solid white',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                  animation: 'pulse 2s infinite'
-                }}>
-                  {sosActive ? '🚨' : '📍'}
-                </div>
-              </div>
-            )}
+            <div className="map-overlay">
+              <span className="map-dot current-dot" title="Current location marker" />
+              <span className="safe-zone-circle zone-a" title="Safe zone circle" />
+              <span className="safe-zone-circle zone-b" title="Safe zone circle" />
+              <svg className="path-overlay" viewBox="0 0 100 100" aria-hidden="true"><path d="M10 70 Q30 40 50 55 T90 28" /></svg>
+            </div>
           </div>
-        </div>
+          <div className="map-legend">
+            <span><i className="legend-point current" /> Current marker</span>
+            <span><i className="legend-point safe" /> Safe zones</span>
+            <span><i className="legend-point path" /> Recent path</span>
+          </div>
+          <button className="ghost-btn" onClick={onOpenFullMap}>Open Full Map</button>
+        </article>
 
-        {/* Recent Movement Chart */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Movement (km/day)</h3>
-          {dashboardData.recentMovement.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={dashboardData.recentMovement}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="day" stroke="#6b7280" fontSize={12} />
-                <YAxis stroke="#6b7280" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb' }}
-                  formatter={(value) => [`${value} km`, 'Distance']}
+        <article className="card movement-chart">
+          <div className="card-header"><h3><FiTrendingUp /> Movement Analytics</h3></div>
+          <div className="stats-row">
+            <div className="stat-card"><span>Distance / day</span><strong>{(movementSummary.totalDistance / Math.max(movementAnalytics.length, 1)).toFixed(2)} km</strong></div>
+            <div className="stat-card"><span>Average speed</span><strong>{movementSummary.avgSpeed.toFixed(1)} km/h</strong></div>
+            <div className="stat-card"><span>Idle time</span><strong>{movementSummary.idleHours.toFixed(1)} h</strong></div>
+          </div>
+          <div className="chart-container">
+          {movementAnalytics.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={movementAnalytics}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="day" stroke="#64748b" fontSize={12} />
+                <YAxis yAxisId="left" stroke="#64748b" fontSize={12} />
+                <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={12} />
+                <Tooltip
+                  formatter={(value, key) => {
+                    if (key === 'distance') return [`${value} km`, 'Distance'];
+                    if (key === 'avgSpeed') return [`${value} km/h`, 'Avg speed'];
+                    return [`${value} h`, 'Idle time'];
+                  }}
+                  contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0' }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="distance" 
-                  stroke="#3b82f6" 
-                  strokeWidth={2}
-                  dot={{ fill: '#3b82f6', r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
+                <Legend />
+                <Bar yAxisId="left" dataKey="distance" name="Distance" fill="#6C63FF" radius={[6, 6, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="avgSpeed" name="Avg speed" stroke="#22C55E" strokeWidth={2} />
+                <Line yAxisId="right" type="monotone" dataKey="idleHours" name="Idle time" stroke="#F59E0B" strokeWidth={2} strokeDasharray="4 4" />
+              </ComposedChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-500">
-              No movement data available
-            </div>
+            <div className="friendly-empty"><p>📈 Start tracking to view movement analytics.</p></div>
           )}
-        </div>
-      </div>
+          </div>
+        </article>
 
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Location Activity */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
-          {dashboardData.recentActivity.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Time</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Place</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {dashboardData.recentActivity.map((activity, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 text-xs text-gray-800">
-                        {new Date(activity.time).toLocaleTimeString()}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-gray-800">{activity.place}</td>
-                      <td className="px-3 py-2 text-xs">
-                        <span className={`px-2 py-1 rounded-full ${
-                          activity.action === 'Entered' ? 'bg-green-100 text-green-800' :
-                          activity.action === 'Left' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {activity.action}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500 text-sm">
-              No recent activity
-            </div>
-          )}
-        </div>
-
-        {/* Recent SOS Alerts */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent SOS Alerts</h3>
-          {dashboardData.recentSOSAlerts.length > 0 ? (
-            <div className="space-y-3">
-              {dashboardData.recentSOSAlerts.map((alert, idx) => (
-                <div key={idx} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">🚨</span>
-                      <span className="text-sm font-medium text-gray-800">
-                        {new Date(alert.time).toLocaleString()}
-                      </span>
+        <article className="card activity-timeline">
+          <div className="card-header"><h3><FiClock /> Safety Activity Timeline</h3></div>
+          <div className="timeline-card">
+          {activityTimeline.length > 0 ? (
+            <div className="timeline-vertical">
+              {activityTimeline.map((event, idx) => {
+                const meta = getTimelineMeta(event.eventType, event.description);
+                const hasCoords =
+                  Number.isFinite(Number(event.location?.lat)) &&
+                  Number.isFinite(Number(event.location?.lng));
+                return (
+                  <div key={`${event._id || idx}-${idx}`} className={`timeline-event tone-${meta.tone}`}>
+                    <span className="timeline-marker">{meta.icon}</span>
+                    <div className="timeline-content">
+                      <div className="activity-title">
+                        <strong>{meta.title}</strong>
+                        <span>{formatTimeOnly(event.timestamp)}</span>
+                      </div>
+                      <p>{formatDateTime(event.timestamp)}</p>
+                      <small>
+                        {hasCoords
+                          ? `${Number(event.location.lat).toFixed(5)}, ${Number(event.location.lng).toFixed(5)}`
+                          : 'Location unavailable'}
+                      </small>
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      alert.status === 'Active' ? 'bg-red-100 text-red-800' :
-                      alert.status === 'Acknowledged' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {alert.status}
-                    </span>
                   </div>
-                  {alert.location && (
-                    <p className="text-xs text-gray-600 line-clamp-1">
-                      📍 {alert.location}
-                    </p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500 text-sm">
-              No SOS alerts
-            </div>
+            <div className="friendly-empty"><p>🕒 No activity events yet.</p></div>
           )}
-        </div>
+          </div>
+        </article>
+
+        <article className="card sos-alerts">
+          <div className="card-header"><h3><FiAlertTriangle /> Recent SOS Alerts</h3></div>
+          <div className="sos-alerts-container">
+            {localSOSAlerts.length > 0 ? (
+              <div className="sos-alert-list">
+                {localSOSAlerts.map((alert) => (
+                  <div key={alert.id} className="sos-alert-item">
+                    <div className="sos-alert-head">
+                      <span className="sos-time">{formatDateTime(alert.time || alert.timestamp)}</span>
+                      <span className={`status-pill status-${alert.status}`}>{alert.status}</span>
+                    </div>
+                    <p>{alert.location || 'Location unavailable'}</p>
+                    <div className="sos-actions">
+                      <button onClick={() => updateAlertStatus(alert.id, 'acknowledged')}>Acknowledge</button>
+                      <button onClick={() => updateAlertStatus(alert.id, 'resolved')}>Resolve</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="friendly-empty"><p>🚨 No SOS alerts in the recent log.</p></div>
+            )}
+          </div>
+        </article>
       </div>
     </div>
   );

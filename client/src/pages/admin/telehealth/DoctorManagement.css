@@ -103,6 +103,10 @@
   border-top: 1px solid #e2e8f0;
 }
 
+.table-row:hover {
+  background: #f3f4f6;
+}
+
 .doctor-name {
   font-weight: 600;
   color: #1e293b;
@@ -115,7 +119,7 @@
 }
 
 /* Status Badges */
-.status-badge {
+.status {
   display: inline-block;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
@@ -124,22 +128,22 @@
   text-transform: uppercase;
 }
 
-.badge-pending {
+.status.badge-pending {
   background: #fef3c7;
   color: #92400e;
 }
 
-.badge-approved {
+.status.badge-approved {
   background: #d1fae5;
   color: #065f46;
 }
 
-.badge-suspended {
+.status.badge-suspended {
   background: #fee2e2;
   color: #991b1b;
 }
 
-.badge-rejected {
+.status.badge-rejected {
   background: #f3f4f6;
   color: #374151;
 }

@@ -69,6 +69,7 @@ export default function DashboardOverview() {
     totalRevenue: 0,
     totalProducts: 0,
     pendingOrders: 0,
+    lowStockAlerts: 0,
     failedPayments: 0,
   });
   const [allOrders, setAllOrders] = useState([]);
@@ -167,6 +168,7 @@ export default function DashboardOverview() {
         totalRevenue: Number(paymentStats.totalRevenue || 0),
         totalProducts: products.length,
         pendingOrders: orders.filter((o) => PENDING_STATUSES.includes(o.orderStatus)).length,
+        lowStockAlerts: products.filter((p) => Number(p.stock ?? p.inventory?.stock ?? p.quantity ?? 0) <= 5).length,
         failedPayments: Number(paymentStats.failedPayments || 0),
       });
       const failedEndpoints = [];
@@ -225,6 +227,13 @@ export default function DashboardOverview() {
       icon: "⏳",
       color: "#f59e0b",
       navigateTo: "/admin/ecommerce/orders",
+    },
+    {
+      title: "Low Stock Alerts",
+      value: stats.lowStockAlerts,
+      icon: "⚠️",
+      color: "#ea580c",
+      navigateTo: "/admin/ecommerce/inventory",
     },
     {
       title: "Failed Payments",

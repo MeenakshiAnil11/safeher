@@ -22,3 +22,11 @@ playwright-report/
 
 .zencoder/
 backend/serviceAccountKey.json 
+
+# AI models and datasets
+safeher-ai/models/
+safeher-ai/datasets/
+safeher-ai/reports/
+safeher-ai/api/__pycache__/
+notebooks/
+tests/reports/

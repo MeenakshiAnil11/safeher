@@ -141,6 +141,18 @@
   cursor: pointer;
 }
 
+.period-ai-read-controls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.period-ai-bubble.ai .period-ai-read-stop {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
 .period-ai-input-wrap {
   display: flex;
   gap: 8px;

@@ -1,19 +1,73 @@
-import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { BarChart, Bar, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import api from '../../services/api';
 import GoogleMapComponent from '../../components/GoogleMapComponent';
 import './LocationHistory.css';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
+
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+const haversineKm = (lat1, lon1, lat2, lon2) => {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+const formatDuration = (ms) => {
+  if (!ms || ms <= 0) return '0m';
+  const totalMinutes = Math.floor(ms / MINUTE_MS);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+};
+
+const formatDateTime = (ts) => {
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return 'Invalid time';
+  return d.toLocaleString();
+};
+
+const getFilterBounds = (filterKey, customRange) => {
+  const now = new Date();
+  if (filterKey === 'today') {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    return { start, end: now };
+  }
+  if (filterKey === 'last7') {
+    return { start: new Date(now.getTime() - 7 * DAY_MS), end: now };
+  }
+  if (filterKey === 'custom') {
+    const start = customRange.start ? new Date(customRange.start) : new Date(0);
+    const end = customRange.end ? new Date(`${customRange.end}T23:59:59`) : now;
+    return { start, end };
+  }
+  return { start: new Date(0), end: now };
+};
+
 export default function LocationHistory() {
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState('week'); // today, week, month, custom
+  const [dateRange, setDateRange] = useState('last7'); // today, last7, custom
   const [customRange, setCustomRange] = useState({ start: '', end: '' });
   const [locationHistory, setLocationHistory] = useState([]);
   const [filteredHistory, setFilteredHistory] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [replayProgress, setReplayProgress] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const animationRef = useRef(null);
+  const lastTickRef = useRef(0);
 
   useEffect(() => {
     fetchLocationHistory();
@@ -32,7 +86,7 @@ export default function LocationHistory() {
       if (response.data && response.data.length > 0) {
         // Ensure all required fields are present
         const validHistory = response.data.filter(item => 
-          item.latitude && item.longitude && item.timestamp
+          Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude)) && item.timestamp
         ).map(item => ({
           _id: item._id || item.timestamp,
           timestamp: item.timestamp,
@@ -59,13 +113,13 @@ export default function LocationHistory() {
   const generateMockHistory = () => {
     const now = new Date();
     const history = [];
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 120; i++) {
       history.push({
         _id: i,
         timestamp: new Date(now - i * 15 * 60 * 1000).toISOString(),
-        latitude: 12.9716 + (Math.random() - 0.5) * 0.01,
-        longitude: 77.5946 + (Math.random() - 0.5) * 0.01,
-        accuracy: 10 + Math.random() * 20,
+        latitude: 12.9716 + Math.sin(i / 8) * 0.004 + (Math.random() - 0.5) * 0.0012,
+        longitude: 77.5946 + Math.cos(i / 9) * 0.004 + (Math.random() - 0.5) * 0.0012,
+        accuracy: 8 + Math.random() * 18,
         address: `Location ${i + 1}`
       });
     }
@@ -76,27 +130,9 @@ export default function LocationHistory() {
     const now = new Date();
     let startDate, endDate;
 
-    switch (dateRange) {
-      case 'today':
-        startDate = new Date(now.setHours(0, 0, 0, 0));
-        endDate = new Date();
-        break;
-      case 'week':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        endDate = new Date();
-        break;
-      case 'month':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        endDate = new Date();
-        break;
-      case 'custom':
-        startDate = customRange.start ? new Date(customRange.start) : new Date(0);
-        endDate = customRange.end ? new Date(customRange.end) : new Date();
-        break;
-      default:
-        startDate = new Date(0);
-        endDate = new Date();
-    }
+    const bounds = getFilterBounds(dateRange, customRange);
+    startDate = bounds.start;
+    endDate = bounds.end;
 
     const filtered = locationHistory.filter(item => {
       const itemDate = new Date(item.timestamp);
@@ -104,31 +140,103 @@ export default function LocationHistory() {
     });
 
     setFilteredHistory(filtered);
+    setReplayProgress(0);
+    setSelectedLocation(null);
+    setIsPlaying(false);
   };
 
   const handlePlayPause = () => {
-    if (isPlaying) {
-      setIsPlaying(false);
-    } else {
-      setIsPlaying(true);
-    }
+    setIsPlaying((prev) => !prev);
   };
 
-  useEffect(() => {
-    if (isPlaying && currentIndex < filteredHistory.length - 1) {
-      const timer = setTimeout(() => {
-        setCurrentIndex(prev => prev + 1);
-      }, 1000 / playbackSpeed);
-      return () => clearTimeout(timer);
-    } else if (currentIndex >= filteredHistory.length - 1) {
-      setIsPlaying(false);
-      setCurrentIndex(0);
+  const replayMeta = useMemo(() => {
+    if (filteredHistory.length < 2) return null;
+    let cumulative = 0;
+    const segments = [];
+    for (let i = 1; i < filteredHistory.length; i++) {
+      const a = filteredHistory[i - 1];
+      const b = filteredHistory[i];
+      const startTs = new Date(a.timestamp).getTime();
+      const endTs = new Date(b.timestamp).getTime();
+      const duration = Math.max(1000, endTs - startTs);
+      segments.push({
+        start: a,
+        end: b,
+        startMs: cumulative,
+        endMs: cumulative + duration,
+      });
+      cumulative += duration;
     }
-  }, [isPlaying, currentIndex, filteredHistory.length, playbackSpeed]);
+    return { totalDurationMs: cumulative, segments };
+  }, [filteredHistory]);
+
+  const replayState = useMemo(() => {
+    if (!replayMeta || !replayMeta.totalDurationMs) return null;
+    const targetMs = clamp(replayProgress, 0, 1) * replayMeta.totalDurationMs;
+    const segment =
+      replayMeta.segments.find((item) => targetMs >= item.startMs && targetMs <= item.endMs) ||
+      replayMeta.segments[replayMeta.segments.length - 1];
+    const segDuration = Math.max(1, segment.endMs - segment.startMs);
+    const localT = clamp((targetMs - segment.startMs) / segDuration, 0, 1);
+    const latitude =
+      Number(segment.start.latitude) +
+      (Number(segment.end.latitude) - Number(segment.start.latitude)) * localT;
+    const longitude =
+      Number(segment.start.longitude) +
+      (Number(segment.end.longitude) - Number(segment.start.longitude)) * localT;
+    const replayTimestamp = new Date(
+      new Date(segment.start.timestamp).getTime() +
+        (new Date(segment.end.timestamp).getTime() - new Date(segment.start.timestamp).getTime()) * localT
+    ).toISOString();
+    return { latitude, longitude, replayTimestamp };
+  }, [replayMeta, replayProgress]);
+
+  useEffect(() => {
+    if (!isPlaying || !replayMeta?.totalDurationMs) return undefined;
+    const tick = (now) => {
+      if (!lastTickRef.current) lastTickRef.current = now;
+      const delta = now - lastTickRef.current;
+      lastTickRef.current = now;
+      setReplayProgress((prev) => {
+        const increment = (delta * playbackSpeed) / replayMeta.totalDurationMs;
+        const next = prev + increment;
+        if (next >= 1) {
+          setIsPlaying(false);
+          return 1;
+        }
+        return next;
+      });
+      animationRef.current = window.requestAnimationFrame(tick);
+    };
+    animationRef.current = window.requestAnimationFrame(tick);
+    return () => {
+      if (animationRef.current) window.cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+      lastTickRef.current = 0;
+    };
+  }, [isPlaying, playbackSpeed, replayMeta]);
+
+  useEffect(() => {
+    if (!isPlaying && animationRef.current) {
+      window.cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+      lastTickRef.current = 0;
+    }
+  }, [isPlaying]);
+
+  const getExportQuery = () => {
+    const { start, end } = getFilterBounds(dateRange, customRange);
+    const params = new URLSearchParams({
+      format: 'csv',
+      from: start.toISOString(),
+      to: end.toISOString()
+    });
+    return params.toString();
+  };
 
   const handleExportCSV = async () => {
     try {
-      const csv = await api.get('/location/history/export?format=csv');
+      const csv = await api.get(`/location/history/export?${getExportQuery()}`);
       const blob = new Blob([csv.data], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -144,13 +252,13 @@ export default function LocationHistory() {
   };
 
   const exportCSVClientSide = () => {
-    const headers = ['Timestamp', 'Latitude', 'Longitude', 'Accuracy', 'Address'];
+    const headers = ['Timestamp', 'Address', 'Latitude', 'Longitude', 'Accuracy'];
     const rows = filteredHistory.map(item => [
       item.timestamp,
+      item.address || 'N/A',
       item.latitude,
       item.longitude,
-      item.accuracy,
-      item.address || 'N/A'
+      item.accuracy
     ]);
     
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -210,10 +318,10 @@ export default function LocationHistory() {
       // Add summary
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0);
-      doc.text(`Total Points: ${filteredHistory.length}`, 20, 40);
-      if (stats) {
-        doc.text(`Distance: ${stats.totalDistance}`, 20, 50);
-        doc.text(`Duration: ${stats.duration}`, 20, 60);
+      doc.text(`Total Points: ${analytics?.pointCount || filteredHistory.length}`, 20, 40);
+      if (analytics) {
+        doc.text(`Distance: ${analytics.totalDistanceLabel}`, 20, 50);
+        doc.text(`Duration: ${analytics.trackingDurationLabel}`, 20, 60);
       }
       
       // Add table
@@ -224,8 +332,9 @@ export default function LocationHistory() {
       doc.setTextColor(102, 126, 234);
       doc.setFont(undefined, 'bold');
       doc.text('Time', 20, y);
-      doc.text('Coordinates', 60, y);
-      doc.text('Accuracy', 130, y);
+      doc.text('Address', 60, y);
+      doc.text('Coordinates', 135, y);
+      doc.text('Accuracy', 195, y);
       
       y += 5;
       doc.text('Address', 170, y);
@@ -242,9 +351,9 @@ export default function LocationHistory() {
         }
         
         doc.text(new Date(item.timestamp).toLocaleString().substring(0, 16), 20, y);
-        doc.text(`${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}`, 60, y);
-        doc.text(`±${Math.round(item.accuracy)}m`, 130, y);
-        doc.text(item.address || 'N/A', 170, y);
+        doc.text((item.address || 'N/A').substring(0, 28), 60, y);
+        doc.text(`${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}`, 135, y);
+        doc.text(`±${Math.round(item.accuracy)}m`, 195, y);
         
         y += 8;
       });
@@ -284,11 +393,52 @@ export default function LocationHistory() {
     const endTime = new Date(filteredHistory[filteredHistory.length - 1].timestamp);
     const duration = endTime - startTime;
 
+    const durationHours = duration / (1000 * 60 * 60);
+    const avgSpeed = durationHours > 0 ? totalDistance / durationHours : 0;
+
+    const timeline = [];
+    for (let i = 1; i < filteredHistory.length; i++) {
+      const prev = filteredHistory[i - 1];
+      const curr = filteredHistory[i];
+      const gapMs = new Date(curr.timestamp).getTime() - new Date(prev.timestamp).getTime();
+      const gapMinutes = gapMs / MINUTE_MS;
+      const segmentDistance = calculateDistance(prev.latitude, prev.longitude, curr.latitude, curr.longitude);
+      if (segmentDistance < 0.03 && gapMinutes >= 5) {
+        timeline.push({
+          type: 'stop',
+          time: curr.timestamp,
+          title: 'Stop detected',
+          description: `${gapMinutes.toFixed(0)} min stop near ${curr.address || 'unknown area'}`,
+        });
+      } else if (segmentDistance < 0.1 && gapMinutes >= 10) {
+        timeline.push({
+          type: 'pause',
+          time: curr.timestamp,
+          title: 'Pause in movement',
+          description: `${gapMinutes.toFixed(0)} min pause`,
+        });
+      }
+      if (gapMinutes >= 30) {
+        timeline.push({
+          type: 'inactivity',
+          time: curr.timestamp,
+          title: 'Unusual inactivity',
+          description: `${gapMinutes.toFixed(0)} min inactive period`,
+        });
+      }
+    }
+
     return {
-      totalPoints: filteredHistory.length,
-      totalDistance: totalDistance.toFixed(2) + ' km',
-      duration: formatDuration(duration),
-      avgAccuracy: (filteredHistory.reduce((sum, item) => sum + item.accuracy, 0) / filteredHistory.length).toFixed(1) + ' m'
+      pointCount: filteredHistory.length,
+      totalDistanceKm: totalDistance,
+      totalDistanceLabel: `${totalDistance.toFixed(2)} km`,
+      avgSpeedLabel: `${avgSpeed.toFixed(1)} km/h`,
+      trackingDurationMs: duration,
+      trackingDurationLabel: formatDuration(duration),
+      avgAccuracyLabel: `${(
+        filteredHistory.reduce((sum, item) => sum + item.accuracy, 0) / filteredHistory.length
+      ).toFixed(1)} m`,
+      timelineEvents: timeline.sort((a, b) => new Date(b.time) - new Date(a.time))
     };
   };
 
@@ -310,7 +460,73 @@ export default function LocationHistory() {
     return `${minutes}m`;
   };
 
-  const stats = calculateStats();
+  const analytics = calculateStats();
+
+  const timelineEvents = analytics?.timelineEvents || [];
+
+  const movementChartData = useMemo(() => {
+    if (!filteredHistory.length) return [];
+    const grouped = new Map();
+    filteredHistory.forEach((point) => {
+      const dt = new Date(point.timestamp);
+      const key = dt.toISOString().slice(0, 10);
+      const value = grouped.get(key) || { key, date: dt.toLocaleDateString(), distance: 0, points: 0 };
+      value.points += 1;
+      grouped.set(key, value);
+    });
+
+    const ordered = Array.from(grouped.values()).sort((a, b) => a.key.localeCompare(b.key));
+    for (let i = 1; i < filteredHistory.length; i++) {
+      const prev = filteredHistory[i - 1];
+      const curr = filteredHistory[i];
+      const key = new Date(curr.timestamp).toISOString().slice(0, 10);
+      const slot = ordered.find((item) => item.key === key);
+      if (slot) slot.distance += haversineKm(prev.latitude, prev.longitude, curr.latitude, curr.longitude);
+    }
+    return ordered.map((item) => ({ ...item, distance: Number(item.distance.toFixed(2)) }));
+  }, [filteredHistory]);
+
+  const routePathHistory = useMemo(
+    () =>
+      filteredHistory.map((item) => ({
+        latitude: item.latitude,
+        longitude: item.longitude,
+        timestamp: item.timestamp
+      })),
+    [filteredHistory]
+  );
+
+  const sampledTrackingHistory = useMemo(() => {
+    if (routePathHistory.length <= 60) return routePathHistory;
+    const step = Math.max(2, Math.ceil(routePathHistory.length / 45));
+    return routePathHistory.filter((_, idx) => idx % step === 0 || idx === routePathHistory.length - 1);
+  }, [routePathHistory]);
+
+  const mapPolylines = useMemo(() => {
+    if (routePathHistory.length < 2) return [];
+    return [
+      {
+        path: routePathHistory.map((item) => ({ lat: item.latitude, lng: item.longitude })),
+        strokeColor: '#6C63FF',
+        strokeOpacity: 0.9,
+        strokeWeight: 4
+      }
+    ];
+  }, [routePathHistory]);
+
+  const mapMarkers = useMemo(() => {
+    if (!filteredHistory.length) return [];
+    const first = filteredHistory[0];
+    const last = filteredHistory[filteredHistory.length - 1];
+    const markers = [
+      { lat: first.latitude, lng: first.longitude, title: 'Start point' },
+      { lat: last.latitude, lng: last.longitude, title: 'End point' }
+    ];
+    if (replayState) {
+      markers.push({ lat: replayState.latitude, lng: replayState.longitude, title: 'Replay marker' });
+    }
+    return markers;
+  }, [filteredHistory, replayState]);
 
   if (loading) {
     return (
@@ -336,16 +552,10 @@ export default function LocationHistory() {
             Today
           </button>
           <button
-            className={dateRange === 'week' ? 'active' : ''}
-            onClick={() => setDateRange('week')}
+            className={dateRange === 'last7' ? 'active' : ''}
+            onClick={() => setDateRange('last7')}
           >
-            This Week
-          </button>
-          <button
-            className={dateRange === 'month' ? 'active' : ''}
-            onClick={() => setDateRange('month')}
-          >
-            This Month
+            Last 7 Days
           </button>
           <button
             className={dateRange === 'custom' ? 'active' : ''}
@@ -374,23 +584,23 @@ export default function LocationHistory() {
       </section>
 
       {/* Stats Cards */}
-      {stats && (
+      {analytics && (
         <section className="stats-section">
           <div className="stat-card">
-            <h3>Total Points</h3>
-            <p>{stats.totalPoints}</p>
+            <h3>Total Distance Travelled</h3>
+            <p>{analytics.totalDistanceLabel}</p>
           </div>
           <div className="stat-card">
-            <h3>Distance</h3>
-            <p>{stats.totalDistance}</p>
+            <h3>Average Speed</h3>
+            <p>{analytics.avgSpeedLabel}</p>
           </div>
           <div className="stat-card">
-            <h3>Duration</h3>
-            <p>{stats.duration}</p>
+            <h3>Tracking Duration</h3>
+            <p>{analytics.trackingDurationLabel}</p>
           </div>
           <div className="stat-card">
-            <h3>Avg Accuracy</h3>
-            <p>{stats.avgAccuracy}</p>
+            <h3>Location Points</h3>
+            <p>{analytics.pointCount}</p>
           </div>
         </section>
       )}
@@ -403,6 +613,7 @@ export default function LocationHistory() {
             <button
               onClick={handlePlayPause}
               className="play-pause-btn"
+              disabled={!replayMeta}
             >
               {isPlaying ? '⏸️ Pause' : '▶️ Play'}
             </button>
@@ -413,17 +624,17 @@ export default function LocationHistory() {
               <option value={0.5}>0.5x</option>
               <option value={1}>1x</option>
               <option value={2}>2x</option>
-              <option value={5}>5x</option>
             </select>
             <div className="progress-bar">
               <div
                 className="progress-fill"
-                style={{ width: `${(currentIndex / filteredHistory.length) * 100}%` }}
+                style={{ width: `${(replayProgress || 0) * 100}%` }}
               />
             </div>
             <span>
-              {currentIndex + 1} / {filteredHistory.length}
+              {replayMeta ? `${Math.round((replayProgress || 0) * 100)}%` : '0%'}
             </span>
+            <span className="replay-time">🕒 {replayState ? formatDateTime(replayState.replayTimestamp) : 'Replay not started'}</span>
           </div>
         </div>
 
@@ -436,36 +647,69 @@ export default function LocationHistory() {
                 timestamp: selectedLocation.timestamp,
                 accuracy: selectedLocation.accuracy || 10
               }}
-              trackingHistory={filteredHistory.map(item => ({
-                latitude: item.latitude,
-                longitude: item.longitude,
-                timestamp: item.timestamp
-              }))}
+              trackingHistory={sampledTrackingHistory}
               zoom={18}
               height="400px"
-              showTrackingPath={true}
+              showTrackingPath={false}
+              polylines={mapPolylines}
+              markers={mapMarkers}
             />
           ) : filteredHistory.length > 0 ? (
             <GoogleMapComponent
               location={{
-                latitude: filteredHistory[currentIndex].latitude,
-                longitude: filteredHistory[currentIndex].longitude,
-                timestamp: filteredHistory[currentIndex].timestamp,
-                accuracy: filteredHistory[currentIndex].accuracy || 10
+                latitude: replayState?.latitude || filteredHistory[0].latitude,
+                longitude: replayState?.longitude || filteredHistory[0].longitude,
+                timestamp: replayState?.replayTimestamp || filteredHistory[0].timestamp,
+                accuracy: filteredHistory[0].accuracy || 10
               }}
-              trackingHistory={filteredHistory.map(item => ({
-                latitude: item.latitude,
-                longitude: item.longitude,
-                timestamp: item.timestamp
-              }))}
+              trackingHistory={sampledTrackingHistory}
               zoom={15}
               height="400px"
-              showTrackingPath={true}
+              showTrackingPath={false}
+              polylines={mapPolylines}
+              markers={mapMarkers}
             />
           ) : (
             <div className="map-placeholder">
               No location history for selected date range
             </div>
+          )}
+        </div>
+      </section>
+
+      <section className="analytics-panel">
+        <div className="movement-chart-card">
+          <h2>📈 Movement Analytics</h2>
+          {movementChartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={movementChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(value, key) => (key === 'distance' ? [`${value} km`, 'Distance'] : [value, 'Points'])} />
+                <Bar dataKey="distance" fill="#6C63FF" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="empty-box">No chart data for this range.</div>
+          )}
+        </div>
+        <div className="timeline-card">
+          <h2>🧭 Timeline Events</h2>
+          {timelineEvents.length > 0 ? (
+            <div className="timeline-list">
+              {timelineEvents.slice(0, 25).map((event, idx) => (
+                <div key={`${event.time}-${idx}`} className={`timeline-item ${event.type}`}>
+                  <div className="timeline-head">
+                    <strong>{event.title}</strong>
+                    <span>{formatDateTime(event.time)}</span>
+                  </div>
+                  <p>{event.description}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-box">No stops or inactivity events detected.</div>
           )}
         </div>
       </section>

@@ -44,6 +44,64 @@
   gap: 10px;
 }
 
+.helpline-actions {
+  align-items: stretch;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.helpline-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 112px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #fff;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+}
+
+.helpline-btn strong {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.helpline-btn span {
+  font-size: 0.72rem;
+  opacity: 0.94;
+}
+
+.helpline-btn.emergency {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.helpline-btn.women {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+}
+
+.helpline-btn.support {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+}
+
+.helpline-btn.medical {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+}
+
+.helpline-refresh-btn {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
 .find-support-alert-actions button {
   border: 1px solid rgba(255, 255, 255, 0.35);
   background: #fff;
@@ -63,7 +121,7 @@
 
 .find-support-map-card {
   min-height: 560px;
-  background: #e8f7f4;
+  background: #ffffff;
   border: 1px solid #d1e7e3;
   border-radius: 16px;
   position: relative;
@@ -93,6 +151,25 @@
   top: 57%;
   transform: translate(-50%, -50%);
   text-align: center;
+}
+
+.find-support-map-wrap {
+  margin-top: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.find-support-infowindow h4 {
+  margin: 0 0 4px;
+  font-size: 0.92rem;
+  color: #111827;
+}
+
+.find-support-infowindow p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #475569;
 }
 
 .find-support-map-center .map-pin {
@@ -230,6 +307,72 @@
   background: linear-gradient(90deg, #10b981 0%, #0ea5a4 100%);
 }
 
+.find-support-actions .call-now:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.find-support-empty,
+.find-support-error {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+}
+
+.find-support-empty {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.find-support-error {
+  margin-top: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.find-support-skeleton {
+  display: grid;
+  gap: 10px;
+}
+
+.find-support-skeleton-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+
+.find-support-skeleton-card .skeleton-line {
+  height: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: linear-gradient(110deg, #eef2f7 8%, #f8fafc 18%, #eef2f7 33%);
+  background-size: 200% 100%;
+  animation: supportShimmer 1.2s linear infinite;
+}
+
+.find-support-skeleton-card .skeleton-line-lg {
+  height: 14px;
+  width: 62%;
+}
+
+.find-support-skeleton-card .skeleton-line-md {
+  width: 48%;
+}
+
+.find-support-skeleton-card .skeleton-line-sm {
+  width: 34%;
+  margin-bottom: 0;
+}
+
+@keyframes supportShimmer {
+  to {
+    background-position-x: -200%;
+  }
+}
+
 .find-support-resources {
   margin-top: 16px;
   background: #fff;
@@ -276,4 +419,169 @@
   .find-support-resource-grid {
     grid-template-columns: 1fr;
   }
+
+  .helpline-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* SafeHer unified SaaS theme overrides */
+.find-support-page {
+  --safeher-primary: #6c63ff;
+  --safeher-success: #22c55e;
+  --safeher-warning: #f59e0b;
+  --safeher-danger: #ef4444;
+  --safeher-neutral: #f8fafc;
+  --safeher-text: #0f172a;
+  --safeher-muted: #64748b;
+}
+
+.find-support-head h1,
+.find-support-alert h2,
+.find-support-directory h2,
+.find-support-resources h3 {
+  color: var(--safeher-text);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.find-support-head p,
+.find-support-item .address,
+.find-support-item small,
+.find-support-resource-grid p {
+  color: var(--safeher-muted);
+}
+
+.find-support-alert {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-radius: 14px;
+  box-shadow: 0 12px 24px rgba(239, 68, 68, 0.2);
+}
+
+.find-support-map-card,
+.find-support-directory,
+.find-support-resources,
+.find-support-item,
+.find-support-resource-grid article {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.find-support-item:hover,
+.find-support-resource-grid article:hover {
+  transform: translateY(-2px);
+  border-color: rgba(108, 99, 255, 0.28);
+  box-shadow: 0 14px 28px rgba(108, 99, 255, 0.12);
+}
+
+.find-support-actions .call-now {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.find-support-actions .navigate {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.find-support-map-center .map-pin {
+  color: var(--safeher-primary);
+}
+
+.meta-row strong {
+  color: #15803d;
+}
+
+/* Spacing rhythm pass (8/12/16/24) */
+.find-support-page {
+  --sp-1: 8px;
+  --sp-2: 12px;
+  --sp-3: 16px;
+  --sp-4: 24px;
+  --sp-5: 32px;
+}
+
+.find-support-head,
+.find-support-alert,
+.find-support-grid,
+.find-support-resources {
+  margin-top: var(--sp-3);
+}
+
+.find-support-grid {
+  gap: var(--sp-3);
+}
+
+.find-support-alert,
+.find-support-map-card,
+.find-support-directory,
+.find-support-resources {
+  padding: var(--sp-3);
+}
+
+.find-support-alert-actions,
+.find-support-actions,
+.find-support-resource-grid {
+  gap: var(--sp-2);
+}
+
+.find-support-list {
+  gap: var(--sp-2);
+}
+
+.find-support-item,
+.find-support-resource-grid article {
+  padding: var(--sp-2);
+}
+
+.find-support-map-card {
+  min-height: 520px;
+}
+
+@media (max-width: 1100px) {
+  .find-support-alert,
+  .find-support-map-card,
+  .find-support-directory,
+  .find-support-resources {
+    padding: var(--sp-3);
+  }
+}
+
+/* Typography scale pass */
+.find-support-page {
+  --type-display: clamp(1.6rem, 1.2rem + 1.2vw, 2.2rem);
+  --type-h2: clamp(1.2rem, 1.05rem + 0.6vw, 1.5rem);
+  --type-h3: clamp(1rem, 0.92rem + 0.35vw, 1.2rem);
+  --type-body: clamp(0.9rem, 0.86rem + 0.2vw, 1rem);
+  --type-label: clamp(0.78rem, 0.75rem + 0.15vw, 0.86rem);
+}
+
+.find-support-head h1 {
+  font-size: var(--type-display);
+}
+
+.find-support-alert h2,
+.find-support-directory h2,
+.find-support-resources h3 {
+  font-size: var(--type-h2);
+}
+
+.find-support-item h3,
+.find-support-resource-grid h4,
+.find-support-map-center h3 {
+  font-size: var(--type-h3);
+}
+
+.find-support-page p,
+.find-support-page span,
+.find-support-page button,
+.find-support-page small {
+  font-size: var(--type-body);
+}
+
+.find-support-legend h4,
+.find-support-legend p,
+.meta-row {
+  font-size: var(--type-label);
 }
