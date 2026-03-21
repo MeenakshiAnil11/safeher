@@ -1142,3 +1142,60 @@
     justify-content: center;
   }
 }
+
+/* Cancel Order Confirmation Dialog (My Orders page) */
+.order-cancel-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  padding: 16px;
+}
+
+.order-cancel-modal {
+  width: min(420px, 100%);
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.24);
+  padding: 20px;
+}
+
+.order-cancel-modal h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #111827;
+}
+
+.order-cancel-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.order-cancel-modal-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.order-cancel-modal-btn.cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.order-cancel-modal-btn.ok {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.order-cancel-modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

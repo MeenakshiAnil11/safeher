@@ -420,22 +420,22 @@ export default function DashboardOverview() {
       {/* quick actions row */}
       <div className="quick-actions-section">
         <h3>Quick Actions</h3>
-        <div className="actions-grid">
-          <button className="action-btn" onClick={() => navigate("/admin/ecommerce/products")}>
-            <span className="action-icon">➕</span>
-            <span>Add Product</span>
+        <div className="quick-actions ecom-dashboard-quick-actions">
+          <button className="quick-action-card" type="button" onClick={() => navigate("/admin/ecommerce/products")}>
+            <div className="quick-action-icon">➕</div>
+            <p className="quick-action-text">Add Product</p>
           </button>
-          <button className="action-btn" onClick={() => navigate("/admin/ecommerce/coupons")}>
-            <span className="action-icon">🎟️</span>
-            <span>Create Coupon</span>
+          <button className="quick-action-card" type="button" onClick={() => navigate("/admin/ecommerce/coupons")}>
+            <div className="quick-action-icon">🎟️</div>
+            <p className="quick-action-text">Create Coupon</p>
           </button>
-          <button className="action-btn" onClick={() => navigate("/admin/ecommerce/orders")}>
-            <span className="action-icon">📋</span>
-            <span>View Orders</span>
+          <button className="quick-action-card" type="button" onClick={() => navigate("/admin/ecommerce/orders")}>
+            <div className="quick-action-icon">📋</div>
+            <p className="quick-action-text">View Orders</p>
           </button>
-          <button className="action-btn" onClick={() => navigate("/admin/ecommerce/reports")}>
-            <span className="action-icon">📊</span>
-            <span>Generate Report</span>
+          <button className="quick-action-card" type="button" onClick={() => navigate("/admin/ecommerce/reports")}>
+            <div className="quick-action-icon">📊</div>
+            <p className="quick-action-text">Generate Report</p>
           </button>
         </div>
       </div>

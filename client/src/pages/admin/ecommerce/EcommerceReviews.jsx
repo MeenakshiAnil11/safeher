@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../../../api";
+import { showConfirmAlert, showErrorAlert, showSuccessAlert, showWarningAlert } from "../../../utils/adminAlerts";
 import "./EcommercePages.css";
 
 export default function EcommerceReviews() {
@@ -41,7 +42,7 @@ export default function EcommerceReviews() {
     } catch (error) {
       console.error("Error fetching reviews:", error);
       if (error.response?.status === 403) {
-        alert("Access denied. Admin privileges required.");
+        await showWarningAlert("Access denied. Admin privileges required.", { timer: undefined });
       }
     } finally {
       setLoading(false);
@@ -60,18 +61,18 @@ export default function EcommerceReviews() {
   const handleApprove = async (productId, reviewIndex) => {
     try {
       await api.put(`/reviews/admin/${productId}/${reviewIndex}/approve`);
-      alert("Review approved successfully!");
+      await showSuccessAlert("Review approved successfully!");
       fetchReviews();
       fetchStats();
     } catch (error) {
       console.error("Error approving review:", error);
-      alert(error.response?.data?.message || "Failed to approve review");
+      await showErrorAlert(error.response?.data?.message || "Failed to approve review", { timer: undefined });
     }
   };
 
   const handleHide = async (productId, reviewIndex) => {
     if (!hideReason.trim()) {
-      alert("Please provide a reason for hiding this review");
+      await showWarningAlert("Please provide a reason for hiding this review", { timer: undefined });
       return;
     }
 
@@ -79,30 +80,35 @@ export default function EcommerceReviews() {
       await api.put(`/reviews/admin/${productId}/${reviewIndex}/hide`, {
         reason: hideReason,
       });
-      alert("Review hidden successfully!");
+      await showSuccessAlert("Review hidden successfully!");
       setShowHideModal(null);
       setHideReason("");
       fetchReviews();
       fetchStats();
     } catch (error) {
       console.error("Error hiding review:", error);
-      alert(error.response?.data?.message || "Failed to hide review");
+      await showErrorAlert(error.response?.data?.message || "Failed to hide review", { timer: undefined });
     }
   };
 
   const handleDelete = async (productId, reviewIndex) => {
-    if (!window.confirm("Are you sure you want to delete this review? This action cannot be undone.")) {
+    const confirmed = await showConfirmAlert({
+      title: "Delete Review?",
+      text: "Are you sure you want to delete this review? This action cannot be undone.",
+      confirmButtonText: "OK",
+    });
+    if (!confirmed) {
       return;
     }
 
     try {
       await api.delete(`/reviews/admin/${productId}/${reviewIndex}`);
-      alert("Review deleted successfully!");
+      await showSuccessAlert("Review deleted successfully!");
       fetchReviews();
       fetchStats();
     } catch (error) {
       console.error("Error deleting review:", error);
-      alert(error.response?.data?.message || "Failed to delete review");
+      await showErrorAlert(error.response?.data?.message || "Failed to delete review", { timer: undefined });
     }
   };
 
@@ -263,8 +269,10 @@ export default function EcommerceReviews() {
           <tbody>
             {filteredReviews.length === 0 ? (
               <tr>
-                <td colSpan="7" className="empty-state">
-                  {loading ? "Loading reviews..." : "No reviews found"}
+                <td colSpan="7" className="reviews-empty-state-cell">
+                  <span className="reviews-empty-state-text">
+                    {loading ? "Loading reviews..." : "No reviews found"}
+                  </span>
                 </td>
               </tr>
             ) : (

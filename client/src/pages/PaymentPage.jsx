@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { setSubscribedLocal } from "../services/subscriptionAccess";
 
 export default function PaymentPage() {
   const navigate = useNavigate();
@@ -158,7 +159,7 @@ export default function PaymentPage() {
       
       if (response.data.success) {
         // Update localStorage to track subscription
-        localStorage.setItem("isSubscribed", "true");
+        setSubscribedLocal(true);
         localStorage.setItem("subscriptionPlan", plan);
         
         alert("Payment successful! Subscription activated. You will be redirected to articles.");

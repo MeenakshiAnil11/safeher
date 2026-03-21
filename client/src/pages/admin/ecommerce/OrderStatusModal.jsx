@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { showErrorAlert, showWarningAlert } from "../../../utils/adminAlerts";
 import "./OrderStatusModal.css";
 
 export default function OrderStatusModal({ order, onClose, onUpdate, onPaymentStatusUpdate }) {
@@ -14,7 +15,9 @@ export default function OrderStatusModal({ order, onClose, onUpdate, onPaymentSt
     
     // Validate tracking number for shipped status
     if (orderStatus === "shipped" && !trackingNumber.trim()) {
-      alert("Tracking number is required when order status is 'Shipped'");
+      await showWarningAlert("Tracking number is required when order status is 'Shipped'", {
+        timer: undefined,
+      });
       return;
     }
 
@@ -42,7 +45,7 @@ export default function OrderStatusModal({ order, onClose, onUpdate, onPaymentSt
       onClose();
     } catch (error) {
       console.error("Error updating order:", error);
-      alert("Failed to update order. Please try again.");
+      await showErrorAlert("Failed to update order. Please try again.", { timer: undefined });
     } finally {
       setUpdating(false);
     }

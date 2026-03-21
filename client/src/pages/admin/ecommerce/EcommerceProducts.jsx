@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../../api";
 import ProductForm from "./ProductForm";
 import SuccessDialog from "../../../components/SuccessDialog";
@@ -6,6 +7,7 @@ import { resolveApiPath } from "../../../config/apiConfig";
 import "./EcommercePages.css";
 
 export default function EcommerceProducts() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,6 +16,7 @@ export default function EcommerceProducts() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [deletingProduct, setDeletingProduct] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [dialogMessage, setDialogMessage] = useState("");
   const [dialogType, setDialogType] = useState("success");
@@ -56,21 +59,28 @@ export default function EcommerceProducts() {
     setShowForm(true);
   };
 
-  const handleEditProduct = (product) => {
-    setEditingProduct(product);
-    setShowForm(true);
+  const handleEditProduct = (id) => {
+    navigate(`/admin/products/edit/${id}`);
   };
 
-  const handleDeleteProduct = async (product) => {
-    if (!window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
-      return;
-    }
+  const handleDeleteProduct = (product) => {
+    setDeletingProduct(product);
+  };
 
+  const handleCancelDelete = () => {
+    if (isDeleting) return;
+    setDeletingProduct(null);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!deletingProduct?._id) return;
     try {
-      await api.delete(`/products/${product._id}`);
+      setIsDeleting(true);
+      await api.delete(`/products/${deletingProduct._id}`);
       setDialogMessage("Product deleted successfully!");
       setDialogType("success");
       setShowDialog(true);
+      setDeletingProduct(null);
       fetchProducts();
       setTimeout(() => setShowDialog(false), 2000);
     } catch (error) {
@@ -79,6 +89,8 @@ export default function EcommerceProducts() {
       setDialogType("error");
       setShowDialog(true);
       setTimeout(() => setShowDialog(false), 3000);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -214,19 +226,23 @@ export default function EcommerceProducts() {
                       {product.isActive ? "Active" : "Inactive"}
                     </button>
                   </td>
-                  <td>
-                    <div className="action-buttons">
+                  <td className="actions">
+                    <div className="action-buttons product-actions-inline">
                       <button 
-                        className="btn-edit" 
-                        onClick={() => handleEditProduct(product)}
+                        className="ecom-product-action-btn ecom-product-action-btn-edit" 
+                        onClick={() => handleEditProduct(product._id)}
                         title="Edit product"
+                        aria-label={`Edit ${product.name}`}
+                        type="button"
                       >
                         Edit
                       </button>
                       <button 
-                        className="btn-delete" 
+                        className="ecom-product-action-btn ecom-product-action-btn-delete" 
                         onClick={() => handleDeleteProduct(product)}
                         title="Delete product"
+                        aria-label={`Delete ${product.name}`}
+                        type="button"
                       >
                         Delete
                       </button>
@@ -248,6 +264,35 @@ export default function EcommerceProducts() {
           }}
           onSuccess={handleFormSuccess}
         />
+      )}
+
+      {deletingProduct && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-product-title"
+          onClick={handleCancelDelete}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 id="delete-product-title">Confirm Delete</h3>
+            </div>
+            <div className="modal-body">
+              <p>
+                Are you sure you want to delete "{deletingProduct.name}"? This action cannot be undone.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn-cancel" onClick={handleCancelDelete} disabled={isDeleting}>
+                Cancel
+              </button>
+              <button type="button" className="btn-submit" onClick={confirmDeleteProduct} disabled={isDeleting}>
+                {isDeleting ? "Deleting..." : "OK"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <SuccessDialog

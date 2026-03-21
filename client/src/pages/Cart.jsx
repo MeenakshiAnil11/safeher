@@ -6,6 +6,7 @@ import CartIcon from "../components/CartIcon";
 import OrdersIcon from "../components/OrdersIcon";
 import WishlistIcon from "../components/WishlistIcon";
 import ShopModuleSidebar from "../components/ShopModuleSidebar";
+import { getImageUrl } from "../utils/imageUtils";
 import "./CategoryProducts.css";
 import "./Cart.css";
 
@@ -258,8 +259,15 @@ const Cart = () => {
                         <div className="cart-v2-item-left">
                           <div className="cart-v2-item-image" aria-hidden="true">
                             <img
-                              src={item.product?.images?.[0]?.url || "/images/placeholder-product.jpg"}
+                              src={
+                                getImageUrl(item.product?.images?.[0]?.url || item.product?.image) ||
+                                "/images/placeholder-product.jpg"
+                              }
                               alt={item.product?.name || "Product"}
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = "/images/placeholder-product.jpg";
+                              }}
                             />
                           </div>
 

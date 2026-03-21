@@ -8,6 +8,7 @@ import WishlistIcon from "../components/WishlistIcon";
 import ProductCard from "../components/ProductCard";
 import ShopModuleSidebar from "../components/ShopModuleSidebar";
 import { logout } from "../services/auth";
+import { getImageUrl } from "../utils/imageUtils";
 import menstrualHero from "../assets/menstrual-hero2.jpg";
 import pregnancyHero from "../assets/pregnancy-hero1.jpg";
 import wellnessHero from "../assets/wellness-hero2.jpg";
@@ -338,7 +339,10 @@ const EcommerceUserDashboard = () => {
                     {wishlistItems.map((item) => (
                       <Link key={item._id} to={`/shop/products/${item._id}`} className="dashboard-wishlist-row">
                         <img
-                          src={item.images?.[0]?.url || "/images/placeholder-product.jpg"}
+                          src={
+                            getImageUrl(item.images?.[0]?.url || item.image) ||
+                            "/images/placeholder-product.jpg"
+                          }
                           alt={item.name}
                           onError={(e) => {
                             e.currentTarget.onerror = null;

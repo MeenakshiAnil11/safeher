@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../../../api";
 import StockUpdateModal from "./StockUpdateModal";
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from "../../../utils/adminAlerts";
 import "./EcommercePages.css";
 
 export default function EcommerceInventory() {
@@ -36,7 +37,7 @@ export default function EcommerceInventory() {
   const handleUpdateStock = async (productId, newStock) => {
     try {
       await api.put(`/products/${productId}`, { stock: newStock });
-      alert("Stock updated successfully!");
+      await showSuccessAlert("Stock updated successfully!");
       fetchInventory();
     } catch (error) {
       console.error("Error updating stock:", error);
@@ -45,17 +46,22 @@ export default function EcommerceInventory() {
   };
 
   const handleMarkOutOfStock = async (product) => {
-    if (!window.confirm(`Mark "${product.name}" as out of stock?`)) {
+    const confirmed = await showConfirmAlert({
+      title: "Mark Out Of Stock?",
+      text: `Mark "${product.name}" as out of stock?`,
+      confirmButtonText: "OK",
+    });
+    if (!confirmed) {
       return;
     }
 
     try {
       await api.put(`/products/${product._id}`, { stock: 0 });
-      alert("Product marked as out of stock");
+      await showSuccessAlert("Product marked as out of stock");
       fetchInventory();
     } catch (error) {
       console.error("Error updating stock:", error);
-      alert("Failed to update stock. Please try again.");
+      await showErrorAlert("Failed to update stock. Please try again.", { timer: undefined });
     }
   };
 
@@ -73,6 +79,12 @@ export default function EcommerceInventory() {
     if (stock === 0) return { label: "Out of Stock", color: "#ef4444", icon: "❌" };
     if (stock <= lowStockThreshold) return { label: "Low Stock", color: "#f59e0b", icon: "⚠️" };
     return { label: "In Stock", color: "#10b981", icon: "✅" };
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "—";
+    const d = new Date(date);
+    return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-IN");
   };
 
   const lowStockCount = inventory.filter(i => i.stock > 0 && i.stock <= lowStockThreshold).length;
@@ -154,8 +166,9 @@ export default function EcommerceInventory() {
         </div>
       </div>
 
-      <div className="inventory-table">
-        <table>
+      <div className="inventory-table-container">
+        <div className="inventory-table">
+          <table>
           <thead>
             <tr>
               <th>Product</th>
@@ -208,27 +221,31 @@ export default function EcommerceInventory() {
                     <td>
                       <span className="threshold-badge">{lowStockThreshold}</span>
                     </td>
-                    <td>
-                      <span className="status-badge" style={{ backgroundColor: status.color }}>
-                        <span className="status-icon">{status.icon}</span>
-                        {status.label}
-                      </span>
+                    <td className="status-cell">
+                      <div className="status inventory-status">
+                        <span className="status-badge" style={{ backgroundColor: status.color }}>
+                          <span className="status-icon">{status.icon}</span>
+                          {status.label}
+                        </span>
+                      </div>
                     </td>
-                    <td>{new Date(item.updatedAt).toLocaleDateString()}</td>
-                    <td>
-                      <div className="action-buttons">
+                    <td>{formatDate(item.updatedAt)}</td>
+                    <td className="actions-cell">
+                      <div className="actions inventory-actions">
                         <button 
                           className="btn-edit" 
                           onClick={() => setSelectedProduct(item)}
                           title="Update stock quantity"
+                          type="button"
                         >
                           Update Stock
                         </button>
                         {item.stock > 0 && (
                           <button 
-                            className="btn-mark-out" 
+                            className="btn-mark-out mark-out-btn" 
                             onClick={() => handleMarkOutOfStock(item)}
                             title="Mark as out of stock"
+                            type="button"
                           >
                             Mark Out
                           </button>
@@ -240,7 +257,8 @@ export default function EcommerceInventory() {
               })
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       {selectedProduct && (

@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
+import { FaEdit, FaSearch, FaTrash } from "react-icons/fa";
+import { useNavigate, useParams } from "react-router-dom";
 import api from "../../../api";
+import { showConfirmAlert, showErrorAlert, showSuccessAlert, showWarningAlert } from "../../../utils/adminAlerts";
 import "./EcommercePages.css";
 
 export default function EcommerceCategories() {
+  const navigate = useNavigate();
+  const { id: editCategoryId } = useParams();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,6 +30,11 @@ export default function EcommerceCategories() {
     fetchCategories();
     fetchParentCategories();
   }, [filter, parentFilter, pagination.page]);
+
+  useEffect(() => {
+    if (!editCategoryId || categories.length === 0) return;
+    handleEdit(editCategoryId);
+  }, [editCategoryId, categories]);
 
   const fetchCategories = async () => {
     try {
@@ -53,7 +62,7 @@ export default function EcommerceCategories() {
     } catch (error) {
       console.error("Error fetching categories:", error);
       if (error.response?.status === 403) {
-        alert("Access denied. Admin privileges required.");
+        await showWarningAlert("Access denied. Admin privileges required.", { timer: undefined });
       }
     } finally {
       setLoading(false);
@@ -70,6 +79,7 @@ export default function EcommerceCategories() {
   };
 
   const handleCreate = () => {
+    navigate("/admin/ecommerce/categories");
     setEditingCategory(null);
     setFormData({
       name: "",
@@ -82,7 +92,10 @@ export default function EcommerceCategories() {
     setShowForm(true);
   };
 
-  const handleEdit = (category) => {
+  const handleEdit = (id) => {
+    const category = categories.find((cat) => cat._id === id);
+    if (!category) return;
+    navigate(`/admin/ecommerce/categories/edit/${id}`);
     setEditingCategory(category);
     setFormData({
       name: category.name || "",
@@ -96,18 +109,23 @@ export default function EcommerceCategories() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this category? This action cannot be undone.")) {
+    const confirmed = await showConfirmAlert({
+      title: "Delete Category?",
+      text: "Are you sure you want to delete this category? This action cannot be undone.",
+      confirmButtonText: "OK",
+    });
+    if (!confirmed) {
       return;
     }
 
     try {
       await api.delete(`/categories/admin/${id}`);
-      alert("Category deleted successfully!");
+      await showSuccessAlert("Category deleted successfully!");
       fetchCategories();
       fetchParentCategories();
     } catch (error) {
       console.error("Error deleting category:", error);
-      alert(error.response?.data?.message || "Failed to delete category");
+      await showErrorAlert(error.response?.data?.message || "Failed to delete category", { timer: undefined });
     }
   };
 
@@ -123,19 +141,20 @@ export default function EcommerceCategories() {
 
       if (editingCategory) {
         await api.put(`/categories/admin/${editingCategory._id}`, submitData);
-        alert("Category updated successfully!");
+        await showSuccessAlert("Category updated successfully!");
       } else {
         await api.post("/categories/admin", submitData);
-        alert("Category created successfully!");
+        await showSuccessAlert("Category created successfully!");
       }
 
       setShowForm(false);
       setEditingCategory(null);
+      navigate("/admin/ecommerce/categories");
       fetchCategories();
       fetchParentCategories();
     } catch (error) {
       console.error("Error saving category:", error);
-      alert(error.response?.data?.message || "Failed to save category");
+      await showErrorAlert(error.response?.data?.message || "Failed to save category", { timer: undefined });
     }
   };
 
@@ -157,13 +176,13 @@ export default function EcommerceCategories() {
 
   return (
     <div className="ecommerce-page">
-      <div className="page-header">
+      <div className="page-header category-header">
         <div>
           <h2>Category Management</h2>
           <p>Create and manage product categories</p>
         </div>
-        <button className="btn-primary" onClick={handleCreate}>
-          <FaPlus /> Create Category
+        <button className="create-category-btn" onClick={handleCreate} type="button">
+          + Create Category
         </button>
       </div>
 
@@ -210,28 +229,35 @@ export default function EcommerceCategories() {
         </select>
       </div>
 
-      <div className="categories-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Slug</th>
-              <th>Parent Category</th>
-              <th>Icon</th>
-              <th>Display Order</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCategories.length === 0 ? (
+      {filteredCategories.length === 0 ? (
+        <div className="category-empty-state">
+          <div className="category-empty-icon" aria-hidden="true">📂</div>
+          <h3>No Categories Found</h3>
+          <p>
+            {searchTerm || filter !== "all" || parentFilter !== "all"
+              ? "No categories match your current filters."
+              : "You haven’t created any categories yet."}
+          </p>
+          <button type="button" className="create-category-btn" onClick={handleCreate}>
+            + Create Category
+          </button>
+        </div>
+      ) : (
+        <div className="categories-table">
+          <table>
+            <thead>
               <tr>
-                <td colSpan="7" className="empty-state">
-                  {loading ? "Loading categories..." : "No categories found"}
-                </td>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Parent Category</th>
+                <th>Icon</th>
+                <th>Display Order</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
-            ) : (
-              filteredCategories.map((category) => (
+            </thead>
+            <tbody>
+              {filteredCategories.map((category) => (
                 <tr key={category._id}>
                   <td>
                     <div className="category-name">
@@ -267,30 +293,34 @@ export default function EcommerceCategories() {
                       {category.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td>
-                    <div className="action-buttons">
+                  <td className="actions">
+                    <div className="action-buttons category-actions">
                       <button
-                        className="btn-edit"
-                        onClick={() => handleEdit(category)}
+                        className="icon-btn edit-btn"
+                        onClick={() => handleEdit(category._id)}
                         title="Edit category"
+                        aria-label={`Edit ${category.name}`}
+                        type="button"
                       >
                         <FaEdit />
                       </button>
                       <button
-                        className="btn-delete"
+                        className="icon-btn delete-btn"
                         onClick={() => handleDelete(category._id)}
                         title="Delete category"
+                        aria-label={`Delete ${category.name}`}
+                        type="button"
                       >
                         <FaTrash />
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Pagination */}
       {pagination.pages > 1 && (
@@ -321,7 +351,16 @@ export default function EcommerceCategories() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{editingCategory ? "Edit Category" : "Create Category"}</h3>
-              <button className="close-btn" onClick={() => setShowForm(false)}>×</button>
+              <button
+                className="close-btn"
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingCategory(null);
+                  navigate("/admin/ecommerce/categories");
+                }}
+              >
+                ×
+              </button>
             </div>
             <form onSubmit={handleSubmit} className="modal-body">
               <div className="form-group">
@@ -397,7 +436,15 @@ export default function EcommerceCategories() {
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn-cancel" onClick={() => setShowForm(false)}>
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingCategory(null);
+                    navigate("/admin/ecommerce/categories");
+                  }}
+                >
                   Cancel
                 </button>
                 <button type="submit" className="btn-submit">

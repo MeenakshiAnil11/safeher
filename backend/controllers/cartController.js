@@ -72,7 +72,7 @@ export const addToCart = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    if (product.stock < quantity) {
+    if (product.stock < quantityNum) {
       return res.status(400).json({
         message: `Only ${product.stock} items available in stock`,
       });
@@ -84,14 +84,25 @@ export const addToCart = async (req, res) => {
       cart = await Cart.create({ user: userId, items: [] });
     }
 
+    // Clean up any corrupted cart rows (e.g., null/invalid product refs) before matching.
+    const originalItemCount = cart.items.length;
+    cart.items = cart.items.filter(
+      (item) => item?.product && mongoose.Types.ObjectId.isValid(String(item.product))
+    );
+    if (cart.items.length !== originalItemCount) {
+      console.warn(
+        `addToCart cleanup: removed ${originalItemCount - cart.items.length} invalid cart item(s) for user ${userId}`
+      );
+    }
+
     // Check if product already in cart
     const existingItemIndex = cart.items.findIndex(
-      (item) => item.product.toString() === productId
+      (item) => item?.product?.toString?.() === productId
     );
 
     if (existingItemIndex !== -1) {
       // Update quantity
-      const newQuantity = cart.items[existingItemIndex].quantity + quantity;
+      const newQuantity = Number(cart.items[existingItemIndex].quantity || 0) + quantityNum;
       if (newQuantity > product.stock) {
         return res.status(400).json({
           message: `Only ${product.stock} items available in stock`,
@@ -107,7 +118,7 @@ export const addToCart = async (req, res) => {
       // Add new item
       cart.items.push({
         product: productId,
-        quantity,
+        quantity: quantityNum,
         price: product.price,
       });
     }

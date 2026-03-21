@@ -124,15 +124,13 @@ export default function EcommerceCoupons() {
 
   return (
     <div className="ecommerce-page">
-      <div className="page-header">
-        <div>
-          <h2>Coupon & Offers</h2>
-          <p>Create and manage discount coupons and promotional offers</p>
-        </div>
-        <button className="btn-primary" onClick={() => setShowForm(true)}>
+      <div className="coupon-header">
+        <h2>Coupon & Offers</h2>
+        <button className="create-btn" onClick={() => setShowForm(true)}>
           + Create Coupon
         </button>
       </div>
+      <p className="coupon-subtitle">Create and manage discount coupons and promotional offers</p>
 
       <div className="filters-bar">
         <input
@@ -157,7 +155,7 @@ export default function EcommerceCoupons() {
         </select>
       </div>
 
-      <div className="coupons-table">
+      <div className="table-container coupons-table">
         <table>
           <thead>
             <tr>
@@ -228,9 +226,9 @@ export default function EcommerceCoupons() {
                       </span>
                     </td>
                     <td>
-                      <div className="action-buttons">
+                      <div className="actions-cell">
                         <button
-                          className="btn-edit"
+                          className="action-btn edit-btn"
                           onClick={() => {
                             setEditingCoupon(coupon);
                             setShowForm(true);
@@ -240,14 +238,14 @@ export default function EcommerceCoupons() {
                           Edit
                         </button>
                         <button
-                          className="btn-toggle"
+                          className="action-btn activate-btn"
                           onClick={() => handleToggleStatus(coupon._id)}
                           title={coupon.isActive ? "Deactivate" : "Activate"}
                         >
                           {coupon.isActive ? "Deactivate" : "Activate"}
                         </button>
                         <button
-                          className="btn-delete"
+                          className="action-btn delete-btn"
                           onClick={() => handleDelete(coupon._id)}
                           title="Delete coupon"
                         >

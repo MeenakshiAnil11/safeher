@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../../../api";
 import SuccessDialog from "../../../components/SuccessDialog";
+import { getImageUrl } from "../../../utils/imageUtils";
 import "./ProductForm.css";
 
 export default function ProductForm({ product, onClose, onSuccess }) {
@@ -67,7 +68,7 @@ export default function ProductForm({ product, onClose, onSuccess }) {
       features: Array.isArray(p.features) ? p.features.join("\n") : p.features || "",
       healthBenefits: Array.isArray(p.healthBenefits) ? p.healthBenefits.join("\n") : p.healthBenefits || "",
       usageInstructions: p.usageInstructions || "",
-      ingredients: Array.isArray(p.ingredients) ? p.ingredients.join(", ") : p.ingredients || "",
+      ingredients: Array.isArray(p.ingredients) ? p.ingredients.join("\n") : p.ingredients || "",
       expiryDate: p.expiryDate ? new Date(p.expiryDate).toISOString().split("T")[0] : "",
       manufacturer: {
         name: p.manufacturer?.name || "",
@@ -287,7 +288,9 @@ export default function ProductForm({ product, onClose, onSuccess }) {
         features: formData.features ? formData.features.split("\n").map((f) => f.trim()).filter((f) => f) : [],
         healthBenefits: formData.healthBenefits ? formData.healthBenefits.split("\n").filter(b => b.trim()) : [],
         usageInstructions: formData.usageInstructions.trim() || undefined,
-        ingredients: formData.ingredients ? formData.ingredients.split(",").map(i => i.trim()).filter(i => i) : [],
+        ingredients: formData.ingredients
+          ? formData.ingredients.split(/\r?\n|,/).map((i) => i.trim()).filter((i) => i)
+          : [],
         expiryDate: formData.expiryDate || undefined,
         manufacturer: formData.manufacturer.name ? formData.manufacturer : undefined
       };
@@ -562,7 +565,10 @@ export default function ProductForm({ product, onClose, onSuccess }) {
               <div className="image-preview-grid">
                 {images.map((img, index) => (
                   <div key={index} className="image-preview">
-                    <img src={img.url} alt={img.alt || `Product ${index + 1}`} />
+                    <img
+                      src={img.url?.startsWith("data:") ? img.url : (getImageUrl(img.url) || "/images/placeholder-product.jpg")}
+                      alt={img.alt || `Product ${index + 1}`}
+                    />
                     <button
                       type="button"
                       className="remove-image"
@@ -613,13 +619,13 @@ export default function ProductForm({ product, onClose, onSuccess }) {
             </div>
 
             <div className="form-group">
-              <label>Ingredients (comma-separated)</label>
-              <input
-                type="text"
+              <label>Ingredients</label>
+              <textarea
                 name="ingredients"
                 value={formData.ingredients}
                 onChange={handleChange}
-                placeholder="Ingredient 1, Ingredient 2, ..."
+                placeholder="Enter ingredients (comma-separated or one per line)"
+                rows={3}
               />
             </div>
 

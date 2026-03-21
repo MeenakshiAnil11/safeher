@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FaArrowLeft, FaChevronRight, FaLock, FaVolumeUp } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
+import { isSubscribedLocal, subscribeToSubscriptionUpdates } from "../../services/subscriptionAccess";
 import { educationArticles } from "../../data/educationArticles";
 import "./educationArticleReader.css";
 
@@ -17,8 +18,8 @@ export default function EducationArticleReader() {
   const [summary, setSummary] = useState("");
   const [menu, setMenu] = useState({ visible: false, x: 0, y: 0 });
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(isSubscribedLocal());
 
-  const isSubscribed = localStorage.getItem("isSubscribed") === "true";
   const article = useMemo(() => educationArticles.find((item) => item.id === id), [id]);
 
   useEffect(() => {
@@ -28,6 +29,13 @@ export default function EducationArticleReader() {
       window.removeEventListener("click", closeMenu);
       window.speechSynthesis.cancel();
     };
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToSubscriptionUpdates((subscribed) => {
+      setIsSubscribed(Boolean(subscribed));
+    });
+    return unsubscribe;
   }, []);
 
   if (!article) {

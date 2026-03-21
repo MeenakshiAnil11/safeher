@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { isSubscribedLocal, setSubscribedLocal, subscribeToSubscriptionUpdates } from "../../services/subscriptionAccess";
 import { educationArticles } from "../../data/educationArticles";
 import "./educationalContent.css";
 
@@ -69,17 +70,15 @@ export default function EducationalContent() {
   const [loadingSubscription, setLoadingSubscription] = useState(true);
 
   useEffect(() => {
-    const localStatus = localStorage.getItem("isSubscribed");
-    if (localStatus === "true") {
-      setIsSubscribed(true);
-    }
+    setIsSubscribed(isSubscribedLocal());
 
     const fetchSubscription = async () => {
       try {
-        const response = await api.get("/payment/subscription-status");
-        const subscribed = Boolean(response?.data?.isSubscribed);
+        const response = await api.get("/subscription/status");
+        const sub = response?.data?.subscription;
+        const subscribed = Boolean(sub?.status === "active" && sub?.planType !== "free");
         setIsSubscribed(subscribed);
-        localStorage.setItem("isSubscribed", subscribed ? "true" : "false");
+        setSubscribedLocal(subscribed);
       } catch (error) {
         // Keep local fallback only if API is unavailable.
       } finally {
@@ -88,6 +87,11 @@ export default function EducationalContent() {
     };
 
     fetchSubscription();
+
+    const unsubscribe = subscribeToSubscriptionUpdates((subscribed) => {
+      setIsSubscribed(Boolean(subscribed));
+    });
+    return unsubscribe;
   }, []);
 
   const categories = useMemo(() => {

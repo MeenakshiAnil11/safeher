@@ -175,10 +175,14 @@ export default function Login() {
             Access SOS, health, and trusted contacts instantly.
           </p>
 
-          {error && <div className="error">{error}</div>}
+          {error && (
+            <div className="error-alert">
+              Invalid email or password. Please check your credentials and try again.
+            </div>
+          )}
           {success && <div className="success">{success}</div>}
 
-          <form onSubmit={onSubmit} className="auth-form">
+          <form onSubmit={onSubmit} className="auth-form form-container">
             <input
               type="email"
               name="email"

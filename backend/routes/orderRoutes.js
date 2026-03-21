@@ -4,7 +4,10 @@ import {
   createOrder,
   getOrders,
   getOrderById,
+  reorderOrder,
   cancelOrder,
+  requestOrderRefund,
+  processOrderRefundByAdmin,
   requestReturnRefund,
   getAllOrders,
   getOrderByIdAdmin,
@@ -19,10 +22,14 @@ const router = express.Router();
 // User routes - require authentication
 router.post("/", protect, createOrder);
 router.get("/", protect, getOrders);
+router.post("/reorder/:orderId", protect, reorderOrder);
+router.post("/reorder", protect, reorderOrder);
 // Invoice route must come before /:id route to avoid route conflicts
 router.get("/:id/invoice", protect, generateInvoice);
 router.get("/:id", protect, getOrderById);
 router.put("/:id/cancel", protect, cancelOrder);
+router.post("/request-refund/:orderId", protect, requestOrderRefund);
+router.post("/refund/:orderId", protect, requestOrderRefund); // backward compatibility
 router.put("/:id/return-request", protect, requestReturnRefund);
 
 // Admin routes - require authentication and admin role
@@ -31,5 +38,6 @@ router.get("/admin/:id", protect, adminOnly, getOrderByIdAdmin);
 router.put("/admin/:id/status", protect, adminOnly, updateOrderStatus);
 router.put("/admin/:id/payment-status", protect, adminOnly, updatePaymentStatus);
 router.put("/admin/:id/return-decision", protect, adminOnly, decideReturnRefund);
+router.post("/admin/:id/refund", protect, adminOnly, processOrderRefundByAdmin);
 
 export default router;

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { isSubscribedLocal, setSubscribedLocal, subscribeToSubscriptionUpdates } from "../../services/subscriptionAccess";
 import { conceiveArticleCategories, conceiveArticlesData } from "../../data/conceiveArticlesData";
 
 const SAVED_ARTICLES_KEY = "conceive_saved_articles";
@@ -13,16 +14,25 @@ export default function ConceiveArticles() {
   const [savedArticleIds, setSavedArticleIds] = useState([]);
 
   useEffect(() => {
+    setIsSubscribed(isSubscribedLocal());
+
     const fetchSubscriptionStatus = async () => {
       try {
-        const response = await api.get("/payment/subscription-status");
-        setIsSubscribed(response.data.isSubscribed);
+        const response = await api.get("/subscription/status");
+        const sub = response?.data?.subscription;
+        const subscribed = Boolean(sub?.status === "active" && sub?.planType !== "free");
+        setIsSubscribed(subscribed);
+        setSubscribedLocal(subscribed);
       } catch (error) {
-        const localSubscribed = localStorage.getItem("isSubscribed");
-        setIsSubscribed(localSubscribed === "true");
+        setIsSubscribed(isSubscribedLocal());
       }
     };
     fetchSubscriptionStatus();
+
+    const unsubscribe = subscribeToSubscriptionUpdates((subscribed) => {
+      setIsSubscribed(Boolean(subscribed));
+    });
+    return unsubscribe;
   }, []);
 
   useEffect(() => {

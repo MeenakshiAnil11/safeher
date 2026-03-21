@@ -4,6 +4,7 @@ import Product from "../models/Product.js";
 import Coupon from "../models/Coupon.js";
 import mongoose from "mongoose";
 import PDFDocument from "pdfkit";
+import Razorpay from "razorpay";
 import { sendEmail } from "../config/mailer.js";
 
 const formatPaymentMethod = (method = "") => {
@@ -72,6 +73,49 @@ const sendOrderConfirmationEmail = async (order) => {
     });
   } catch (error) {
     console.error("Order confirmation email failed:", error.message);
+  }
+};
+
+const sendOrderStatusUpdateEmail = async (order, previousStatus = "") => {
+  try {
+    const userEmail = order?.user?.email;
+    const currentStatus = String(order?.orderStatus || "").toLowerCase();
+
+    if (!userEmail || !["shipped", "delivered"].includes(currentStatus)) return;
+    if (previousStatus && previousStatus.toLowerCase() === currentStatus) return;
+
+    const frontendBase = process.env.FRONTEND_URL || "http://localhost:3000";
+    const orderLink = `${frontendBase}/shop/orders/${order._id}`;
+    const statusTitle = currentStatus === "shipped" ? "Your order has been shipped" : "Your order has been delivered";
+    const statusText =
+      currentStatus === "shipped"
+        ? "Good news! Your order is now on the way."
+        : "Your order has been delivered successfully.";
+
+    const trackingBlock = order?.trackingNumber
+      ? `<p style="margin:0 0 8px;"><strong>Tracking Number:</strong> ${order.trackingNumber}</p>`
+      : "";
+
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:720px;margin:0 auto;color:#1f2937;">
+        <h2 style="margin:0 0 12px;">${statusTitle}</h2>
+        <p style="margin:0 0 10px;">${statusText}</p>
+        <p style="margin:0 0 8px;"><strong>Order ID:</strong> ${order.orderNumber}</p>
+        <p style="margin:0 0 8px;"><strong>Current Status:</strong> ${currentStatus.toUpperCase()}</p>
+        ${trackingBlock}
+        <p style="margin:12px 0 0;">
+          View your order: <a href="${orderLink}" target="_blank" rel="noreferrer">${orderLink}</a>
+        </p>
+      </div>
+    `;
+
+    await sendEmail({
+      to: userEmail,
+      subject: `Order Update: ${order.orderNumber} is ${currentStatus.toUpperCase()}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Order status update email failed:", error.message);
   }
 };
 
@@ -502,6 +546,149 @@ export const getOrderById = async (req, res) => {
   }
 };
 
+// POST /api/orders/reorder/:orderId - Reorder items from a previous order
+export const reorderOrder = async (req, res) => {
+  try {
+    console.log("Reorder API hit");
+    const userId = req.userId;
+    const orderId = req.params?.orderId || req.body?.orderId;
+    console.log("Order ID:", orderId, "User ID:", userId);
+
+    if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ success: false, message: "Valid orderId is required" });
+    }
+
+    const order = await Order.findOne({ _id: orderId, user: userId }).lean();
+    console.log("Order found:", Boolean(order));
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+    console.log("Order item count:", Array.isArray(order.items) ? order.items.length : 0);
+    if (!order.items || order.items.length === 0) {
+      return res.status(400).json({ success: false, message: "No items in order" });
+    }
+
+    let cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+      cart = await Cart.create({ user: userId, items: [] });
+    }
+
+    const addedItems = [];
+    const skippedItems = [];
+
+    for (const orderItem of order.items || []) {
+      console.log("Processing item:", {
+        itemId: orderItem?._id?.toString?.() || null,
+        product: orderItem?.product?.toString?.() || null,
+        productId: orderItem?.productId?.toString?.() || null,
+        quantity: orderItem?.quantity,
+        qty: orderItem?.qty,
+      });
+      const productRef = orderItem?.productId || orderItem?.product || "";
+      const productId = String(productRef || "");
+      const requestedQty = Number(orderItem?.quantity ?? orderItem?.qty ?? 0);
+
+      if (!mongoose.Types.ObjectId.isValid(productId) || requestedQty < 1) {
+        console.log("Invalid item data, skipping:", { productId, requestedQty });
+        skippedItems.push({
+          productId: productId || null,
+          name: orderItem?.name || "Unknown product",
+          quantity: requestedQty || 0,
+          reason: "Invalid product data",
+        });
+        continue;
+      }
+
+      const product = await Product.findById(productId).select("name stock isActive price").lean();
+      console.log("Product:", product ? { id: product._id, stock: product.stock, isActive: product.isActive } : null);
+      if (!product || !product.isActive) {
+        console.log("Product not found/inactive, skipping:", productId);
+        skippedItems.push({
+          productId,
+          name: orderItem?.name || product?.name || "Unknown product",
+          quantity: requestedQty,
+          reason: "Product no longer available",
+        });
+        continue;
+      }
+
+      if (product.stock < requestedQty) {
+        console.log("Out of stock, skipping:", { productId, requestedQty, stock: product.stock });
+        skippedItems.push({
+          productId,
+          name: product.name || orderItem?.name || "Unknown product",
+          quantity: requestedQty,
+          availableStock: product.stock,
+          reason: "Some items are out of stock",
+        });
+        continue;
+      }
+
+      const existingIndex = cart.items.findIndex((item) => item.product.toString() === productId);
+      if (existingIndex !== -1) {
+        const nextQty = Number(cart.items[existingIndex].quantity || 0) + requestedQty;
+        if (nextQty > product.stock) {
+          console.log("Cart merge exceeds stock, skipping:", { productId, nextQty, stock: product.stock });
+          skippedItems.push({
+            productId,
+            name: product.name || orderItem?.name || "Unknown product",
+            quantity: requestedQty,
+            availableStock: product.stock,
+            reason: "Some items are out of stock",
+          });
+          continue;
+        }
+        cart.items[existingIndex].quantity = nextQty;
+        if (product.price < cart.items[existingIndex].price) {
+          cart.items[existingIndex].price = product.price;
+        }
+      } else {
+        cart.items.push({
+          product: product._id,
+          quantity: requestedQty,
+          price: product.price,
+        });
+      }
+
+      addedItems.push({
+        productId,
+        name: product.name || orderItem?.name || "Unknown product",
+        quantity: requestedQty,
+      });
+    }
+
+    if (addedItems.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No available items to reorder",
+        addedCount: 0,
+        skippedCount: skippedItems.length,
+        skippedItems,
+      });
+    }
+
+    await cart.save();
+    console.log("Cart updated:", { userId, addedCount: addedItems.length, skippedCount: skippedItems.length });
+
+    const message =
+      skippedItems.length > 0
+        ? "Reorder completed with partial success"
+        : "Items reordered successfully";
+
+    return res.status(200).json({
+      success: true,
+      message,
+      addedCount: addedItems.length,
+      skippedCount: skippedItems.length,
+      addedItems,
+      skippedItems,
+    });
+  } catch (error) {
+    console.error("reorderOrder error:", error);
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
 // PUT /api/orders/:id/cancel - Cancel order
 export const cancelOrder = async (req, res) => {
   try {
@@ -542,6 +729,223 @@ export const cancelOrder = async (req, res) => {
   } catch (error) {
     console.error("cancelOrder error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// POST /api/orders/request-refund/:orderId - User requests refund for cancelled UPI order
+export const requestOrderRefund = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { orderId } = req.params;
+
+    if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
+
+    const order = await Order.findOne({ _id: orderId, user: userId });
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    if (order.orderStatus !== "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Only cancelled orders can be refunded",
+      });
+    }
+
+    if (order.paymentMethod !== "upi") {
+      return res.status(400).json({
+        success: false,
+        message: "Refund is only applicable for UPI orders",
+      });
+    }
+
+    if (order.paymentStatus !== "paid") {
+      return res.status(400).json({
+        success: false,
+        message: "Payment not completed",
+      });
+    }
+
+    if (!order.paymentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment ID missing",
+      });
+    }
+
+    if (order.refundStatus && order.refundStatus !== "None") {
+      return res.status(400).json({
+        success: false,
+        message: "Refund already requested or processed",
+      });
+    }
+
+    order.refundStatus = "Requested";
+    order.refundRequestedAt = new Date();
+    await order.save();
+
+    return res.json({
+      success: true,
+      message: "Refund requested successfully",
+      refundStatus: order.refundStatus,
+    });
+  } catch (error) {
+    console.error("requestOrderRefund error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+// POST /api/orders/admin/:id/refund - Admin approves and processes refund via Razorpay
+export const processOrderRefundByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { decision = "approve" } = req.body || {};
+    const normalizedDecision = String(decision).toLowerCase();
+
+    if (!["approve", "reject"].includes(normalizedDecision)) {
+      return res.status(400).json({
+        success: false,
+        message: "Decision must be approve or reject",
+      });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    if (order.refundStatus !== "Requested") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid refund state",
+      });
+    }
+
+    if (normalizedDecision === "reject") {
+      order.refundStatus = "Rejected";
+      order.refundProcessedAt = new Date();
+      await order.save();
+      return res.json({
+        success: true,
+        message: "Refund request rejected",
+        order,
+      });
+    }
+
+    if (order.orderStatus !== "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Order must be cancelled",
+      });
+    }
+    if (order.paymentMethod !== "upi") {
+      return res.status(400).json({
+        success: false,
+        message: "Refund is only applicable for UPI orders",
+      });
+    }
+    if (order.paymentStatus !== "paid") {
+      return res.status(400).json({
+        success: false,
+        message: "Payment not completed",
+      });
+    }
+    if (!order.paymentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment ID missing",
+      });
+    }
+
+    order.refundStatus = "Processing";
+    await order.save();
+
+    try {
+      const keyId = process.env.RAZORPAY_KEY_ID || "";
+      const keySecret = process.env.RAZORPAY_KEY_SECRET || "";
+      if (!keyId || !keySecret) {
+        throw new Error("Razorpay keys are missing");
+      }
+
+      const razorpay = new Razorpay({
+        key_id: keyId,
+        key_secret: keySecret,
+      });
+
+      // Fetch payment details first to avoid requesting more than captured.
+      const payment = await razorpay.payments.fetch(order.paymentId);
+      const capturedAmountPaise = Number(payment?.amount || 0);
+      const alreadyRefundedPaise = Number(payment?.amount_refunded || 0);
+      const remainingRefundablePaise = capturedAmountPaise - alreadyRefundedPaise;
+
+      if (remainingRefundablePaise <= 0 || payment?.status === "refunded") {
+        order.refundStatus = "Completed";
+        order.refundProcessedAt = new Date();
+        order.paymentStatus = "refunded";
+        await order.save();
+        return res.json({
+          success: true,
+          message: "Payment is already fully refunded",
+          refundId: order.refundId || "",
+        });
+      }
+
+      const requestedAmountPaise = Math.round(Number(order.total || 0) * 100);
+      if (!requestedAmountPaise || requestedAmountPaise <= 0) {
+        throw new Error("Invalid refund amount");
+      }
+
+      const amountToRefundPaise = Math.min(requestedAmountPaise, remainingRefundablePaise);
+
+      const refund = await razorpay.payments.refund(order.paymentId, {
+        amount: amountToRefundPaise,
+      });
+
+      order.refundStatus = "Completed";
+      order.refundId = refund?.id || "";
+      order.refundProcessedAt = new Date();
+      order.paymentStatus = "refunded";
+      await order.save();
+
+      return res.json({
+        success: true,
+        message: "Refund completed successfully",
+        refundId: order.refundId,
+      });
+    } catch (refundError) {
+      console.error("Admin refund processing error:", refundError);
+      // Keep request pending so admin can retry after fixing payment mismatch/network issues.
+      order.refundStatus = "Requested";
+      await order.save();
+      return res.status(500).json({
+        success: false,
+        message:
+          refundError?.error?.description ||
+          refundError?.description ||
+          refundError?.message ||
+          "Refund failed",
+      });
+    }
+  } catch (error) {
+    console.error("processOrderRefundByAdmin error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -586,7 +990,7 @@ export const requestReturnRefund = async (req, res) => {
 // GET /api/admin/orders - Get all orders (Admin only)
 export const getAllOrders = async (req, res) => {
   try {
-    const { status, paymentStatus, orderNumber, userEmail, page = 1, limit = 50 } = req.query;
+    const { status, paymentStatus, refundStatus, orderNumber, userEmail, page = 1, limit = 50 } = req.query;
 
     const query = {};
 
@@ -603,6 +1007,10 @@ export const getAllOrders = async (req, res) => {
     // Filter by payment status
     if (paymentStatus) {
       query.paymentStatus = paymentStatus;
+    }
+
+    if (refundStatus) {
+      query.refundStatus = refundStatus;
     }
 
     // Search by order number
@@ -687,6 +1095,7 @@ export const updateOrderStatus = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
+    const previousStatus = String(order.orderStatus || "");
 
     // If cancelling, restore stock using atomic bulk operations
     if (normalizedStatus === "cancelled" && order.orderStatus !== "cancelled") {
@@ -720,6 +1129,10 @@ export const updateOrderStatus = async (req, res) => {
       .populate("user", "name email phone")
       .populate("items.product", "name images")
       .lean();
+
+    if (["shipped", "delivered"].includes(normalizedStatus) && previousStatus !== normalizedStatus) {
+      await sendOrderStatusUpdateEmail(populatedOrder, previousStatus);
+    }
 
     res.json({
       message: "Order status updated successfully",

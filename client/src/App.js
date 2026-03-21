@@ -95,6 +95,7 @@ import EcommerceCoupons from "./pages/admin/ecommerce/EcommerceCoupons";
 import EcommerceReviews from "./pages/admin/ecommerce/EcommerceReviews";
 import EcommercePayments from "./pages/admin/ecommerce/EcommercePayments";
 import EcommerceReports from "./pages/admin/ecommerce/EcommerceReports";
+import EditProduct from "./pages/admin/ecommerce/EditProduct";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminTrackerManagement from "./pages/admin/AdminTrackerManagement";
 import PeriodTrackerAdminPage from "./pages/admin/tracker/PeriodTrackerAdminPage";
@@ -288,14 +289,32 @@ function AppRoutes() {
         <Route path="dashboard" element={<Navigate to="/admin/ecommerce/overview" replace />} />
         <Route path="products" element={<EcommerceProducts />} />
         <Route path="categories" element={<EcommerceCategories />} />
+        <Route path="categories/edit/:id" element={<EcommerceCategories />} />
         <Route path="inventory" element={<EcommerceInventory />} />
         <Route path="orders" element={<EcommerceOrders />} />
         <Route path="coupons" element={<EcommerceCoupons />} />
         <Route path="reviews" element={<EcommerceReviews />} />
         <Route path="payments" element={<EcommercePayments />} />
         <Route path="reports" element={<EcommerceReports />} />
+        <Route path="products/edit/:id" element={<EditProduct />} />
       </Route>
+      <Route
+        path="/admin/products/edit/:id"
+        element={
+          <AdminRoute>
+            <EditProduct />
+          </AdminRoute>
+        }
+      />
       {/* Telehealth Routes */}
+      <Route
+        path="/admin/categories/edit/:id"
+        element={
+          <AdminRoute>
+            <EcommerceCategories />
+          </AdminRoute>
+        }
+      />
       <Route
         path="/admin/telehealth"
         element={

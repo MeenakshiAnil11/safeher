@@ -239,149 +239,159 @@ const CategoryProducts = () => {
   const renderFiltersPanel = (extraClass = "") => (
     <div
       ref={filterPanelRef}
-      className={`cp2-sort-filter ${filtersExpanded ? "is-open" : "is-collapsed"} ${extraClass}`.trim()}
+      className={`filter-container cp2-sort-filter ${filtersExpanded ? "is-open" : "is-collapsed"} ${extraClass}`.trim()}
     >
-      <div className="cp2-sort-filter-head">
-        <span className="cp2-filter-title">Sort &amp; Filter</span>
-        <div className="cp2-sort-head-actions">
-          {filtersExpanded && (
-            <button className="clear-filters" onClick={clearFilters}>
+      <div
+        className="filter-header cp2-sort-filter-head"
+        onClick={() => setFiltersExpanded((prev) => !prev)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setFiltersExpanded((prev) => !prev);
+          }
+        }}
+        aria-expanded={filtersExpanded}
+        aria-controls={`cp2-filter-panel-${extraClass || "desktop"}`}
+      >
+        <h3 className="cp2-filter-title">Sort &amp; Filter</h3>
+        <span className={`arrow cp2-filter-chevron ${filtersExpanded ? "open" : ""}`} aria-hidden="true">⌄</span>
+      </div>
+
+      {filtersExpanded && (
+        <div
+          className="filter-content cp2-filter-body"
+          id={`cp2-filter-panel-${extraClass || "desktop"}`}
+        >
+          <div className="cp2-sort-head-actions">
+            <button
+              className="clear-filters"
+              onClick={(e) => {
+                e.stopPropagation();
+                clearFilters();
+              }}
+            >
               Clear Filters
             </button>
-          )}
-          <button
-            type="button"
-            className="cp2-filter-toggle-btn"
-            onClick={() => setFiltersExpanded((prev) => !prev)}
-            aria-expanded={filtersExpanded}
-            aria-controls={`cp2-filter-panel-${extraClass || "desktop"}`}
-            aria-label={filtersExpanded ? "Collapse sort and filter panel" : "Expand sort and filter panel"}
-          >
-            <span className={`cp2-filter-chevron ${filtersExpanded ? "open" : ""}`} aria-hidden="true">⌄</span>
-          </button>
-        </div>
-      </div>
+          </div>
 
-      <div
-        className="cp2-filter-body"
-        id={`cp2-filter-panel-${extraClass || "desktop"}`}
-        aria-hidden={!filtersExpanded}
-      >
-        <div className="cp2-filter-panels">
-          <section className="cp2-filter-group">
-            <h4>Sort By</h4>
-            <div className="cp2-filter-content cp2-option-stack">
-              <label className="cp2-option-item">
-                <input
-                  type="radio"
-                  name={`sort-${extraClass || "desktop"}`}
-                  value="newest"
-                  checked={sortBy === "newest"}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                  aria-label="Sort by newest"
-                />
-                <span>Newest</span>
-              </label>
-              <label className="cp2-option-item">
-                <input
-                  type="radio"
-                  name={`sort-${extraClass || "desktop"}`}
-                  value="price-asc"
-                  checked={sortBy === "price-asc"}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                  aria-label="Sort by price low to high"
-                />
-                <span>Price: Low to High</span>
-              </label>
-              <label className="cp2-option-item">
-                <input
-                  type="radio"
-                  name={`sort-${extraClass || "desktop"}`}
-                  value="price-desc"
-                  checked={sortBy === "price-desc"}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                  aria-label="Sort by price high to low"
-                />
-                <span>Price: High to Low</span>
-              </label>
-              <label className="cp2-option-item">
-                <input
-                  type="radio"
-                  name={`sort-${extraClass || "desktop"}`}
-                  value="rating"
-                  checked={sortBy === "rating"}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                  aria-label="Sort by rating"
-                />
-                <span>Rating</span>
-              </label>
-            </div>
-          </section>
-
-          <section className="cp2-filter-group">
-            <h4>Price Range</h4>
-            <div className="cp2-filter-content cp2-option-stack">
-              {PRICE_BUCKETS.map((bucket) => (
-                <label key={bucket.key} className="cp2-option-item">
+          <div className="cp2-filter-panels">
+            <section className="cp2-filter-group">
+              <h4>Sort By</h4>
+              <div className="cp2-filter-content cp2-option-stack">
+                <label className="cp2-option-item filter-option">
                   <input
                     type="radio"
-                    name={`price-range-${extraClass || "desktop"}`}
-                    value={bucket.key}
-                    checked={selectedPriceBucket === bucket.key}
-                    onChange={(e) => {
-                      applyPriceBucket(e.target.value);
-                      handleFilterChange();
-                    }}
-                    aria-label={`Price range ${bucket.label}`}
+                    name={`sort-${extraClass || "desktop"}`}
+                    value="newest"
+                    checked={sortBy === "newest"}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    aria-label="Sort by newest"
                   />
-                  <span>{bucket.label}</span>
+                  <span>Newest</span>
                 </label>
-              ))}
-            </div>
-          </section>
-
-          <section className="cp2-filter-group">
-            <h4>Rating</h4>
-            <div className="cp2-filter-content cp2-option-stack">
-              {[5, 4, 3].map((rating) => (
-                <label key={rating} className="cp2-option-item">
+                <label className="cp2-option-item filter-option">
                   <input
                     type="radio"
-                    name={`minRating-${extraClass || "desktop"}`}
-                    value={rating}
-                    checked={minRating === rating.toString()}
+                    name={`sort-${extraClass || "desktop"}`}
+                    value="price-asc"
+                    checked={sortBy === "price-asc"}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    aria-label="Sort by price low to high"
+                  />
+                  <span>Price: Low to High</span>
+                </label>
+                <label className="cp2-option-item filter-option">
+                  <input
+                    type="radio"
+                    name={`sort-${extraClass || "desktop"}`}
+                    value="price-desc"
+                    checked={sortBy === "price-desc"}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    aria-label="Sort by price high to low"
+                  />
+                  <span>Price: High to Low</span>
+                </label>
+                <label className="cp2-option-item filter-option">
+                  <input
+                    type="radio"
+                    name={`sort-${extraClass || "desktop"}`}
+                    value="rating"
+                    checked={sortBy === "rating"}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    aria-label="Sort by rating"
+                  />
+                  <span>Rating</span>
+                </label>
+              </div>
+            </section>
+
+            <section className="cp2-filter-group">
+              <h4>Price Range</h4>
+              <div className="cp2-filter-content cp2-option-stack">
+                {PRICE_BUCKETS.map((bucket) => (
+                  <label key={bucket.key} className="cp2-option-item filter-option">
+                    <input
+                      type="radio"
+                      name={`price-range-${extraClass || "desktop"}`}
+                      value={bucket.key}
+                      checked={selectedPriceBucket === bucket.key}
+                      onChange={(e) => {
+                        applyPriceBucket(e.target.value);
+                        handleFilterChange();
+                      }}
+                      aria-label={`Price range ${bucket.label}`}
+                    />
+                    <span>{bucket.label}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <section className="cp2-filter-group">
+              <h4>Rating</h4>
+              <div className="cp2-filter-content cp2-option-stack">
+                {[5, 4, 3].map((rating) => (
+                  <label key={rating} className="cp2-option-item filter-option">
+                    <input
+                      type="radio"
+                      name={`minRating-${extraClass || "desktop"}`}
+                      value={rating}
+                      checked={minRating === rating.toString()}
+                      onChange={(e) => {
+                        setMinRating(e.target.value);
+                        handleFilterChange();
+                      }}
+                      aria-label={`${rating} stars and up`}
+                    />
+                    <span className="rating-stars">{"★".repeat(rating)}{"☆".repeat(5 - rating)}</span>
+                    <span className="rating-text">& up</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <section className="cp2-filter-group">
+              <h4>Availability</h4>
+              <div className="cp2-filter-content cp2-option-stack">
+                <label className="cp2-option-item filter-option">
+                  <input
+                    type="checkbox"
+                    checked={inStock}
                     onChange={(e) => {
-                      setMinRating(e.target.value);
+                      setInStock(e.target.checked);
                       handleFilterChange();
                     }}
-                    aria-label={`${rating} stars and up`}
+                    aria-label="In stock only"
                   />
-                  <span className="rating-stars">{"★".repeat(rating)}{"☆".repeat(5 - rating)}</span>
-                  <span className="rating-text">& up</span>
+                  <span>In Stock Only</span>
                 </label>
-              ))}
-            </div>
-          </section>
-
-          <section className="cp2-filter-group">
-            <h4>Availability</h4>
-            <div className="cp2-filter-content cp2-option-stack">
-              <label className="cp2-option-item">
-                <input
-                  type="checkbox"
-                  checked={inStock}
-                  onChange={(e) => {
-                    setInStock(e.target.checked);
-                    handleFilterChange();
-                  }}
-                  aria-label="In stock only"
-                />
-                <span>In Stock Only</span>
-              </label>
-            </div>
-          </section>
+              </div>
+            </section>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 

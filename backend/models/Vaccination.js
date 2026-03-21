@@ -6,6 +6,8 @@ const VaccinationSchema = new mongoose.Schema({
   name: { type: String, required: true },
   date: { type: Date, required: true },
   nextDue: { type: Date }, // Next vaccination due date
+  lotNumber: { type: String, trim: true },
+  provider: { type: String, trim: true },
   doctor: { type: String },
   notes: { type: String },
   reminder: { type: Boolean, default: true },

@@ -58,15 +58,45 @@ export default function SymptomLogForm({ onClose, onSuccess }) {
     setIsSubmitting(true);
 
     try {
+      const intensityValue = parseInt(formData.hotFlashIntensity, 10);
+      const sleepQualityValue = parseInt(formData.sleepQuality, 10);
+      const cycleMap = {
+        regular: "regular",
+        irregular: "slightly-irregular",
+        missed: "missed",
+        heavy: "very-irregular",
+      };
+      const sleepMap = {
+        1: "poor",
+        2: "fair",
+        3: "good",
+        4: "good",
+        5: "excellent",
+      };
+      const symptomIntensity =
+        intensityValue <= 3 ? "mild" : intensityValue <= 6 ? "moderate" : "severe";
+
       const payload = {
         ...formData,
-        hotFlashIntensity: parseInt(formData.hotFlashIntensity),
-        sleepQuality: parseInt(formData.sleepQuality),
+        hotFlashIntensity: intensityValue,
+        sleepQuality: sleepQualityValue,
         weight: formData.weight ? parseFloat(formData.weight) : null,
         date: new Date().toISOString()
       };
 
-      await api.post('/perimenopause/symptoms', payload);
+      const backendPayload = {
+        date: payload.date,
+        mood: payload.mood,
+        weight: payload.weight,
+        notes: payload.notes,
+        cycleIrregularity: cycleMap[payload.cycleStatus] || "regular",
+        hotFlashes: intensityValue > 0,
+        hotFlashCount: intensityValue,
+        symptomIntensity,
+        sleepQuality: sleepMap[sleepQualityValue] || "good",
+      };
+
+      await api.post("/perimenopause/logs", backendPayload);
       appendLog(payload);
       
       // Show success toast
@@ -84,9 +114,10 @@ export default function SymptomLogForm({ onClose, onSuccess }) {
 
     } catch (error) {
       console.error('Error saving symptom data:', error);
+      const serverMessage = error?.response?.data?.message || error?.response?.data?.error;
       
       // Show error toast
-      setToastMessage("Failed to save entry. Please try again.");
+      setToastMessage(serverMessage || "Failed to save entry. Please try again.");
       setToastType("error");
       setShowToast(true);
       

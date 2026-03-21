@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { isSubscribedLocal, subscribeToSubscriptionUpdates } from "../../services/subscriptionAccess";
 import { conceiveArticlesData, getConceiveArticleById } from "../../data/conceiveArticlesData";
 import "./ConceiveArticleDetail.css";
 
@@ -12,6 +13,7 @@ export default function ConceiveArticleDetail() {
   const [summary, setSummary] = useState("");
   const [menu, setMenu] = useState({ visible: false, x: 0, y: 0 });
   const [isReading, setIsReading] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(isSubscribedLocal());
 
   const article = useMemo(() => getConceiveArticleById(articleId), [articleId]);
   const sectionIds = useMemo(
@@ -97,6 +99,13 @@ export default function ConceiveArticleDetail() {
     if (window.speechSynthesis) window.speechSynthesis.cancel();
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToSubscriptionUpdates((subscribed) => {
+      setIsSubscribed(Boolean(subscribed));
+    });
+    return unsubscribe;
+  }, []);
+
   const handleRightClick = (event) => {
     event.preventDefault();
     setMenu({
@@ -161,7 +170,6 @@ export default function ConceiveArticleDetail() {
     );
   }
 
-  const isSubscribed = localStorage.getItem("isSubscribed") === "true";
   if (article.isPaid && !isSubscribed) {
     return (
       <div className="min-h-screen bg-gray-50 p-8">

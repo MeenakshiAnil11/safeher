@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import SubscriptionModal from "../../components/SubscriptionModal";
+import { isSubscribedLocal, subscribeToSubscriptionUpdates } from "../../services/subscriptionAccess";
 import { getPregnancyArticleById } from "../../data/pregnancyArticles";
 import "./PregnancyArticleReader.css";
 
@@ -22,9 +23,9 @@ export default function PregnancyArticleReader() {
   const [openSubscription, setOpenSubscription] = useState(false);
   const [bookmarks, setBookmarks] = useState([]);
   const [isReading, setIsReading] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(isSubscribedLocal());
 
   const article = useMemo(() => getPregnancyArticleById(articleId), [articleId]);
-  const isSubscribed = localStorage.getItem("isSubscribed") === "true";
 
   useEffect(() => {
     const savedBookmarks = JSON.parse(localStorage.getItem(BOOKMARK_KEY) || "[]");
@@ -47,6 +48,13 @@ export default function PregnancyArticleReader() {
     },
     []
   );
+
+  useEffect(() => {
+    const unsubscribe = subscribeToSubscriptionUpdates((subscribed) => {
+      setIsSubscribed(Boolean(subscribed));
+    });
+    return unsubscribe;
+  }, []);
 
   const toggleBookmark = () => {
     if (!article) return;
@@ -148,8 +156,8 @@ export default function PregnancyArticleReader() {
         open={openSubscription}
         onClose={() => setOpenSubscription(false)}
         onSubscribe={() => {
-          localStorage.setItem("isSubscribed", "true");
           setOpenSubscription(false);
+          navigate("/subscription#plans");
         }}
       />
     </section>

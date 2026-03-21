@@ -1278,22 +1278,22 @@ export default function Health() {
                 </div>
                 <div className="sym-severity-block">
                   <div className="sym-severity-header">
-                    <span className="vt-label">Severity: {symForm.severity}/10</span>
-                    <span className="sym-severity-label">{Number(symForm.severity) <= 3 ? 'Mild' : Number(symForm.severity) <= 6 ? 'Moderate' : 'Severe'}</span>
+                    <span className="vt-label">Severity: {symForm.severity}/5</span>
+                    <span className="sym-severity-label">{Number(symForm.severity) <= 2 ? 'Mild' : Number(symForm.severity) <= 4 ? 'Moderate' : 'Severe'}</span>
                   </div>
                   <input
                     type="range"
                     min="1"
-                    max="10"
+                    max="5"
                     value={symForm.severity}
                     onChange={e=>setSymForm({...symForm, severity:e.target.value})}
                     className="sym-slider"
-                    style={{ '--slider-pct': `${((Number(symForm.severity) - 1) / 9) * 100}%` }}
+                    style={{ '--slider-pct': `${((Number(symForm.severity) - 1) / 4) * 100}%` }}
                   />
                   <div className="sym-severity-labels">
                     <span>1 (Minimal)</span>
-                    <span>5 (Moderate)</span>
-                    <span>10 (Severe)</span>
+                    <span>3 (Moderate)</span>
+                    <span>5 (Severe)</span>
                   </div>
                 </div>
                 <label className="vt-field vt-field-full">
@@ -1358,8 +1358,8 @@ export default function Health() {
                           </div>
                         </td>
                         <td>
-                          <span className={`sym-severity-badge ${s.severity <= 3 ? 'mild' : s.severity <= 6 ? 'moderate' : 'severe'}`}>
-                            {s.severity}/10 - {s.severity <= 3 ? 'Mild' : s.severity <= 6 ? 'Moderate' : 'Severe'}
+                          <span className={`sym-severity-badge ${s.severity <= 2 ? 'mild' : s.severity <= 4 ? 'moderate' : 'severe'}`}>
+                            {s.severity}/5 - {s.severity <= 2 ? 'Mild' : s.severity <= 4 ? 'Moderate' : 'Severe'}
                           </span>
                         </td>
                         <td>{s.notes || '—'}</td>

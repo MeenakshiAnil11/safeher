@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import SubscriptionModal from "../../components/SubscriptionModal";
+import { isSubscribedLocal, subscribeToSubscriptionUpdates } from "../../services/subscriptionAccess";
 import { pregnancyArticles } from "../../data/pregnancyArticles";
 import { pregnancyVideos } from "../../data/pregnancyVideos";
 import { pregnancyFAQs } from "../../data/pregnancyFAQs";
@@ -50,9 +51,9 @@ export default function PregnancyResourceHub({ currentWeek: currentWeekProp = 20
   const [readArticles, setReadArticles] = useState([]);
   const [watchedVideos, setWatchedVideos] = useState([]);
   const [healthData, setHealthData] = useState({});
+  const [isSubscribed, setIsSubscribed] = useState(isSubscribedLocal());
 
   const currentWeek = Number(currentWeekProp) || getWeekFromStorage();
-  const isSubscribed = localStorage.getItem("isSubscribed") === "true";
   const recommendationIcon = (type = "") => {
     const normalized = String(type).toLowerCase();
     if (normalized.includes("article")) return "📘";
@@ -68,6 +69,13 @@ export default function PregnancyResourceHub({ currentWeek: currentWeekProp = 20
     setBookmarks(Array.isArray(savedBookmarks) ? savedBookmarks : []);
     setReadArticles(Array.isArray(savedRead) ? savedRead : []);
     setWatchedVideos(Array.isArray(savedVideos) ? savedVideos : []);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToSubscriptionUpdates((subscribed) => {
+      setIsSubscribed(Boolean(subscribed));
+    });
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -531,8 +539,8 @@ export default function PregnancyResourceHub({ currentWeek: currentWeekProp = 20
         open={openSubscription}
         onClose={() => setOpenSubscription(false)}
         onSubscribe={() => {
-          localStorage.setItem("isSubscribed", "true");
           setOpenSubscription(false);
+          navigate("/subscription#plans");
         }}
       />
     </section>

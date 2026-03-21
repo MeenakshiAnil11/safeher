@@ -1,6 +1,75 @@
 import Product from "../models/Product.js";
 import EcommerceCategory from "../models/EcommerceCategory.js";
 
+const toUploadsPath = (value) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  // Keep absolute/data/blob URLs as-is.
+  if (/^(https?:\/\/|data:|blob:)/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("/uploads/")) return trimmed;
+  if (trimmed.startsWith("uploads/")) return `/${trimmed}`;
+  if (trimmed.startsWith("/")) return trimmed;
+  return `/uploads/${trimmed}`;
+};
+
+const normalizeImageEntry = (entry) => {
+  if (typeof entry === "string") {
+    const url = toUploadsPath(entry);
+    return url ? { url, alt: "Product image" } : null;
+  }
+
+  if (entry && typeof entry === "object") {
+    const url = toUploadsPath(entry.url || entry.path || entry.image);
+    if (!url) return null;
+    return {
+      url,
+      alt: entry.alt || "Product image",
+    };
+  }
+
+  return null;
+};
+
+const normalizeImageList = (images) => {
+  if (!Array.isArray(images)) return [];
+  return images.map(normalizeImageEntry).filter(Boolean);
+};
+
+const normalizeProductForResponse = (product) => {
+  if (!product || typeof product !== "object") return product;
+
+  const normalized = { ...product };
+  const normalizedImages = normalizeImageList(normalized.images);
+  const normalizedSingleImage = toUploadsPath(normalized.image);
+
+  normalized.images = normalizedImages;
+  normalized.image = normalizedSingleImage || normalizedImages[0]?.url || "";
+
+  return normalized;
+};
+
+const syncPrimaryImage = (payload) => {
+  if (!payload || typeof payload !== "object") return payload;
+
+  const normalizedImages = normalizeImageList(payload.images);
+  const normalizedSingleImage = toUploadsPath(payload.image);
+
+  if (normalizedImages.length > 0) {
+    payload.images = normalizedImages;
+    payload.image = normalizedImages[0].url;
+  } else if (normalizedSingleImage) {
+    payload.image = normalizedSingleImage;
+    payload.images = [{ url: normalizedSingleImage, alt: "Product image" }];
+  }
+
+  return payload;
+};
+
 const parseStringArrayField = (value) => {
   if (Array.isArray(value)) {
     return value.map((item) => String(item || "").trim()).filter(Boolean);
@@ -130,7 +199,7 @@ export const getProducts = async (req, res) => {
     // Optimize query - select only needed fields for listing
     const products = await Product.find(query)
       .select(
-        "name shortDescription price originalPrice images image category stock rating isActive isFeatured isBestSeller discount features healthBenefits ingredients"
+        "name shortDescription description price originalPrice images image category stock rating isActive isFeatured isBestSeller discount features healthBenefits usageInstructions ingredients"
       )
       .populate("category", "name slug icon")
       .sort(sortOptions)
@@ -141,7 +210,7 @@ export const getProducts = async (req, res) => {
     const total = await Product.countDocuments(query);
 
     res.json({
-      products,
+      products: products.map(normalizeProductForResponse),
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -178,7 +247,7 @@ export const getProductById = async (req, res) => {
       );
     }
 
-    res.json({ product });
+    res.json({ product: normalizeProductForResponse(product) });
   } catch (error) {
     console.error("getProductById error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -195,7 +264,7 @@ export const getFeaturedProducts = async (req, res) => {
       .limit(limit)
       .lean();
 
-    res.json({ products });
+    res.json({ products: products.map(normalizeProductForResponse) });
   } catch (error) {
     console.error("getFeaturedProducts error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -212,7 +281,7 @@ export const getBestSellers = async (req, res) => {
       .limit(limit)
       .lean();
 
-    res.json({ products });
+    res.json({ products: products.map(normalizeProductForResponse) });
   } catch (error) {
     console.error("getBestSellers error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -265,7 +334,7 @@ export const addReview = async (req, res) => {
 
     res.json({
       message: "Review added successfully",
-      product: updatedProduct,
+      product: normalizeProductForResponse(updatedProduct),
     });
   } catch (error) {
     console.error("addReview error:", error);
@@ -290,7 +359,7 @@ export const searchProducts = async (req, res) => {
       .limit(Number(limit))
       .lean();
 
-    res.json({ products });
+    res.json({ products: products.map(normalizeProductForResponse) });
   } catch (error) {
     console.error("searchProducts error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -347,6 +416,7 @@ export const createProduct = async (req, res) => {
         }
       }
     }
+    syncPrimaryImage(productData);
 
     // Comprehensive validation
     const errors = [];
@@ -468,7 +538,7 @@ export const createProduct = async (req, res) => {
 
     res.status(201).json({
       message: "Product created successfully",
-      product: populatedProduct,
+      product: normalizeProductForResponse(populatedProduct),
     });
   } catch (error) {
     console.error("createProduct error:", error);
@@ -490,7 +560,6 @@ export const updateProduct = async (req, res) => {
         // If parsing fails, use as is
       }
     }
-
     updateData = normalizeProductArrayFields(updateData);
 
     // Handle existing images from FormData (if editing)
@@ -544,6 +613,8 @@ export const updateProduct = async (req, res) => {
         }
       }
     }
+
+    syncPrimaryImage(updateData);
 
     // Comprehensive validation for updates
     const errors = [];
@@ -662,7 +733,7 @@ export const updateProduct = async (req, res) => {
 
     res.json({
       message: "Product updated successfully",
-      product,
+      product: normalizeProductForResponse(product),
     });
   } catch (error) {
     console.error("updateProduct error:", error);

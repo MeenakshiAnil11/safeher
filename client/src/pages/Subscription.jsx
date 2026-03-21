@@ -4,6 +4,7 @@ import UserHeader from "../components/UserHeader";
 import SubscriptionSidebar from "../components/SubscriptionSidebar";
 
 import api from "../services/api";
+import { setSubscribedLocal } from "../services/subscriptionAccess";
 import "./subscription.css";
 
 const CHAT_BOT_RESPONSES = [
@@ -89,6 +90,7 @@ export default function Subscription() {
   const [appliedCoupon, setAppliedCoupon] = useState("");
   const [openFaq, setOpenFaq] = useState(null);
   const [msg, setMsg] = useState("");
+  const [paying, setPaying] = useState(false);
 
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([
@@ -106,6 +108,10 @@ export default function Subscription() {
       ]);
       setSub(statusRes.data.subscription);
       setBilling(billRes.data.billingHistory || []);
+      const active =
+        statusRes.data.subscription?.status === "active" &&
+        statusRes.data.subscription?.planType !== "free";
+      setSubscribedLocal(active);
     } catch { /* silent */ }
     setLoading(false);
   }, []);
@@ -166,20 +172,81 @@ export default function Subscription() {
     }
   };
 
-  const handlePayment = async () => {
-    setCheckoutStep(2);
-    try {
-      await api.post("/subscription/subscribe", {
-        planType: checkoutPlan,
-        paymentId: "pay_" + Date.now(),
-        paymentMethod: "card",
-        coupon: appliedCoupon
-      });
-      setCheckoutStep(3);
-      fetchData();
-    } catch {
-      setMsg("Payment failed. Please try again.");
+  const openRazorpayCheckout = async (orderPayload) => {
+    if (!window.Razorpay) {
+      setMsg("Razorpay SDK not loaded. Please refresh and try again.");
+      return;
+    }
+
+    const options = {
+      key: orderPayload.keyId,
+      amount: orderPayload.order.amount,
+      currency: orderPayload.order.currency,
+      name: "SafeHer Premium",
+      description: `${checkoutPlan === "monthly" ? "Monthly" : checkoutPlan === "yearly" ? "Yearly" : "Lifetime"} Plan`,
+      order_id: orderPayload.order.id,
+      handler: async function (response) {
+        try {
+          setCheckoutStep(2);
+          await api.post("/subscription/verify-payment", {
+            planType: checkoutPlan,
+            coupon: appliedCoupon || null,
+            paymentMethod: "razorpay",
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+          setSubscribedLocal(true);
+          setCheckoutStep(3);
+          fetchData();
+        } catch (error) {
+          setMsg(error.response?.data?.message || "Payment verification failed.");
+          setCheckoutStep(1);
+        } finally {
+          setPaying(false);
+        }
+      },
+      prefill: {
+        name: JSON.parse(localStorage.getItem("user") || "{}")?.name || "",
+        email: JSON.parse(localStorage.getItem("user") || "{}")?.email || "",
+      },
+      theme: {
+        color: "#7c3aed",
+      },
+      modal: {
+        ondismiss: () => {
+          setPaying(false);
+          if (checkoutStep !== 3) setCheckoutStep(1);
+        },
+      },
+    };
+
+    const razorpay = new window.Razorpay(options);
+    razorpay.on("payment.failed", function (response) {
+      setMsg(response?.error?.description || "Payment failed. Please try again.");
+      setPaying(false);
       setCheckoutStep(1);
+    });
+    razorpay.open();
+  };
+
+  const handlePayment = async () => {
+    if (!checkoutPlan) return;
+    setPaying(true);
+    try {
+      const orderRes = await api.post("/subscription/create-order", {
+        planType: checkoutPlan,
+        coupon: appliedCoupon || null,
+      });
+
+      if (!orderRes.data?.success || !orderRes.data?.order?.id) {
+        throw new Error("Unable to initialize Razorpay payment.");
+      }
+
+      await openRazorpayCheckout(orderRes.data);
+    } catch (error) {
+      setMsg(error.response?.data?.message || error.message || "Payment failed. Please try again.");
+      setPaying(false);
     }
   };
 
@@ -187,6 +254,7 @@ export default function Subscription() {
     if (!window.confirm("Are you sure you want to cancel your subscription?")) return;
     try {
       await api.post("/subscription/cancel");
+      setSubscribedLocal(false);
       setMsg("Subscription cancelled.");
       fetchData();
     } catch { setMsg("Failed to cancel."); }
@@ -195,6 +263,7 @@ export default function Subscription() {
   const handleUpgrade = async (planType) => {
     try {
       await api.post("/subscription/upgrade", { planType, paymentId: "pay_upg_" + Date.now() });
+      setSubscribedLocal(true);
       setMsg(`Upgraded to ${planType}!`);
       fetchData();
     } catch { setMsg("Upgrade failed."); }
@@ -345,7 +414,9 @@ export default function Subscription() {
                   <div className="sub-summary-row"><span>{checkoutPlan === "monthly" ? "Monthly Premium" : checkoutPlan === "yearly" ? "Yearly Premium" : "Lifetime Premium"}</span><span>₹{planPrice(checkoutPlan)}</span></div>
                   {discount > 0 && <div className="sub-summary-row discount"><span>Discount ({discount}%)</span><span>-₹{planPrice(checkoutPlan) - finalPrice(checkoutPlan)}</span></div>}
                   <div className="sub-summary-total"><span>Total</span><span>₹{finalPrice(checkoutPlan)}</span></div>
-                  <button className="sub-pay-btn" onClick={handlePayment}>Pay ₹{finalPrice(checkoutPlan)}</button>
+                  <button className="sub-pay-btn" onClick={handlePayment} disabled={paying}>
+                    {paying ? "Opening Razorpay..." : `Pay ₹${finalPrice(checkoutPlan)} with Razorpay`}
+                  </button>
                   <button className="sub-back-btn" onClick={() => { setCheckoutStep(0); setCheckoutPlan(null); }}>← Back to Plans</button>
                 </div>
               </div>

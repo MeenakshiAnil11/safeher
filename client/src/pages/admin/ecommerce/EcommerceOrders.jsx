@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "../../../api";
 import OrderDetailModal from "./OrderDetailModal";
 import OrderStatusModal from "./OrderStatusModal";
+import { showErrorAlert, showSuccessAlert, showWarningAlert } from "../../../utils/adminAlerts";
 import "./EcommercePages.css";
 
 export default function EcommerceOrders() {
@@ -9,14 +10,18 @@ export default function EcommerceOrders() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
+  const [refundFilter, setRefundFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [statusModalOrder, setStatusModalOrder] = useState(null);
+  const [showRefundDecisionModal, setShowRefundDecisionModal] = useState(false);
+  const [refundDecisionState, setRefundDecisionState] = useState({ orderId: "", decision: "" });
+  const [processingRefundDecision, setProcessingRefundDecision] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, pages: 0 });
 
   useEffect(() => {
     fetchOrders();
-  }, [filter, paymentFilter, pagination.page]);
+  }, [filter, paymentFilter, refundFilter, pagination.page]);
 
   useEffect(() => {
     // Keep admin list up to date with newly placed user orders
@@ -25,7 +30,7 @@ export default function EcommerceOrders() {
     }, 8000);
 
     return () => clearInterval(intervalId);
-  }, [filter, paymentFilter, pagination.page, searchTerm]);
+  }, [filter, paymentFilter, refundFilter, pagination.page, searchTerm]);
 
   const fetchOrders = async () => {
     try {
@@ -42,6 +47,9 @@ export default function EcommerceOrders() {
       if (paymentFilter !== "all") {
         params.paymentStatus = paymentFilter;
       }
+      if (refundFilter !== "all") {
+        params.refundStatus = refundFilter;
+      }
 
       if (searchTerm) {
         params.orderNumber = searchTerm;
@@ -53,7 +61,7 @@ export default function EcommerceOrders() {
     } catch (error) {
       console.error("Error fetching orders:", error);
       if (error.response?.status === 403) {
-        alert("Access denied. Admin privileges required.");
+        await showWarningAlert("Access denied. Admin privileges required.", { timer: undefined });
       }
     } finally {
       setLoading(false);
@@ -63,23 +71,23 @@ export default function EcommerceOrders() {
   const handleStatusUpdate = async (orderId, updateData) => {
     try {
       await api.put(`/orders/admin/${orderId}/status`, updateData);
-      alert("Order status updated successfully!");
+      await showSuccessAlert("Order status updated successfully!");
       fetchOrders();
       setStatusModalOrder(null);
     } catch (error) {
       console.error("Error updating order status:", error);
-      alert(error.response?.data?.message || "Failed to update order status");
+      await showErrorAlert(error.response?.data?.message || "Failed to update order status", { timer: undefined });
     }
   };
 
   const handlePaymentStatusUpdate = async (orderId, paymentStatus) => {
     try {
       await api.put(`/orders/admin/${orderId}/payment-status`, { paymentStatus });
-      alert("Payment status updated successfully!");
+      await showSuccessAlert("Payment status updated successfully!");
       fetchOrders();
     } catch (error) {
       console.error("Error updating payment status:", error);
-      alert(error.response?.data?.message || "Failed to update payment status");
+      await showErrorAlert(error.response?.data?.message || "Failed to update payment status", { timer: undefined });
     }
   };
 
@@ -96,11 +104,39 @@ export default function EcommerceOrders() {
         decision,
         adminNote: note,
       });
-      alert(`Return request ${decision}d successfully.`);
+      await showSuccessAlert(`Return request ${decision}d successfully.`);
       fetchOrders();
     } catch (error) {
       console.error("Error deciding return request:", error);
-      alert(error.response?.data?.message || "Failed to process return request");
+      await showErrorAlert(error.response?.data?.message || "Failed to process return request", { timer: undefined });
+    }
+  };
+
+  const openRefundDecisionModal = (orderId, decision) => {
+    setRefundDecisionState({ orderId, decision });
+    setShowRefundDecisionModal(true);
+  };
+
+  const closeRefundDecisionModal = () => {
+    if (processingRefundDecision) return;
+    setShowRefundDecisionModal(false);
+    setRefundDecisionState({ orderId: "", decision: "" });
+  };
+
+  const handleRefundDecision = async () => {
+    try {
+      const { orderId, decision } = refundDecisionState;
+      if (!orderId || !decision) return;
+      setProcessingRefundDecision(true);
+      const response = await api.post(`/orders/admin/${orderId}/refund`, { decision });
+      await showSuccessAlert(response?.data?.message || "Refund status updated successfully.");
+      closeRefundDecisionModal();
+      fetchOrders();
+    } catch (error) {
+      console.error("Error processing refund request:", error);
+      await showErrorAlert(error.response?.data?.message || "Refund action failed", { timer: undefined });
+    } finally {
+      setProcessingRefundDecision(false);
     }
   };
 
@@ -202,6 +238,21 @@ export default function EcommerceOrders() {
           <option value="paid">Paid</option>
           <option value="failed">Failed</option>
           <option value="refunded">Refunded</option>
+        </select>
+        <select
+          value={refundFilter}
+          onChange={(e) => {
+            setRefundFilter(e.target.value);
+            setPagination({ ...pagination, page: 1 });
+          }}
+          className="filter-select"
+        >
+          <option value="all">All Refund Status</option>
+          <option value="None">None</option>
+          <option value="Requested">Requested</option>
+          <option value="Processing">Processing</option>
+          <option value="Completed">Completed</option>
+          <option value="Rejected">Rejected</option>
         </select>
         <button type="button" className="btn-view" onClick={fetchOrders} title="Refresh orders list">
           Refresh
@@ -323,10 +374,33 @@ export default function EcommerceOrders() {
                           </button>
                         </>
                       )}
+                      {order.refundStatus === "Requested" && (
+                        <>
+                          <button
+                            className="btn-view"
+                            onClick={() => openRefundDecisionModal(order._id, "approve")}
+                            title="Approve and process refund"
+                          >
+                            Approve Refund
+                          </button>
+                          <button
+                            className="btn-delete"
+                            onClick={() => openRefundDecisionModal(order._id, "reject")}
+                            title="Reject refund request"
+                          >
+                            Reject Refund
+                          </button>
+                        </>
+                      )}
                     </div>
                     {order.returnRequest?.status && order.returnRequest.status !== "none" && (
                       <div className="return-request-chip">
                         Return: {order.returnRequest.status}
+                      </div>
+                    )}
+                    {order.refundStatus && order.refundStatus !== "None" && (
+                      <div className="refund-request-chip">
+                        Refund: {order.refundStatus}
                       </div>
                     )}
                   </td>
@@ -379,6 +453,36 @@ export default function EcommerceOrders() {
           onUpdate={handleStatusUpdate}
           onPaymentStatusUpdate={handlePaymentStatusUpdate}
         />
+      )}
+
+      {showRefundDecisionModal && (
+        <div className="refund-decision-modal-overlay" onClick={closeRefundDecisionModal}>
+          <div className="refund-decision-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>
+              {refundDecisionState.decision === "approve"
+                ? "Approve and process refund for this order?"
+                : "Reject this refund request?"}
+            </h3>
+            <div className="refund-decision-modal-actions">
+              <button
+                type="button"
+                className="refund-decision-btn cancel"
+                onClick={closeRefundDecisionModal}
+                disabled={processingRefundDecision}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="refund-decision-btn ok"
+                onClick={handleRefundDecision}
+                disabled={processingRefundDecision}
+              >
+                {processingRefundDecision ? "Processing..." : "OK"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

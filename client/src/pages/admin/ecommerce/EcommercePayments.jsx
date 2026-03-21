@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../../../api";
+import { showErrorAlert, showSuccessAlert, showWarningAlert } from "../../../utils/adminAlerts";
 import "./EcommercePages.css";
 
 export default function EcommercePayments() {
@@ -44,7 +45,7 @@ export default function EcommercePayments() {
     } catch (error) {
       console.error("Error fetching payments:", error);
       if (error.response?.status === 403) {
-        alert("Access denied. Admin privileges required.");
+        await showWarningAlert("Access denied. Admin privileges required.", { timer: undefined });
       }
     } finally {
       setLoading(false);
@@ -62,7 +63,7 @@ export default function EcommercePayments() {
 
   const handleViewRazorpayDetails = async (paymentId) => {
     if (!paymentId) {
-      alert("No Razorpay payment ID available");
+      await showWarningAlert("No Razorpay payment ID available", { timer: undefined });
       return;
     }
 
@@ -73,7 +74,9 @@ export default function EcommercePayments() {
       setSelectedPayment(paymentId);
     } catch (error) {
       console.error("Error fetching Razorpay details:", error);
-      alert(error.response?.data?.message || "Failed to fetch Razorpay payment details");
+      await showErrorAlert(error.response?.data?.message || "Failed to fetch Razorpay payment details", {
+        timer: undefined,
+      });
     } finally {
       setLoadingRazorpay(false);
     }
@@ -81,7 +84,7 @@ export default function EcommercePayments() {
 
   const handleMarkResolved = async () => {
     if (!resolveStatus) {
-      alert("Please select a resolution status");
+      await showWarningAlert("Please select a resolution status", { timer: undefined });
       return;
     }
 
@@ -90,7 +93,7 @@ export default function EcommercePayments() {
         paymentStatus: resolveStatus,
         notes: resolveNotes,
       });
-      alert("Payment marked as resolved successfully!");
+      await showSuccessAlert("Payment marked as resolved successfully!");
       setShowResolveModal(null);
       setResolveStatus("paid");
       setResolveNotes("");
@@ -98,7 +101,9 @@ export default function EcommercePayments() {
       fetchStats();
     } catch (error) {
       console.error("Error marking payment as resolved:", error);
-      alert(error.response?.data?.message || "Failed to mark payment as resolved");
+      await showErrorAlert(error.response?.data?.message || "Failed to mark payment as resolved", {
+        timer: undefined,
+      });
     }
   };
 
@@ -146,7 +151,7 @@ export default function EcommercePayments() {
           <p>Monitor payment flow and transaction details</p>
         </div>
         <button
-          className="btn-primary"
+          className="header-btn"
           onClick={() => {
             setFilter("failed");
             setPagination({ ...pagination, page: 1 });

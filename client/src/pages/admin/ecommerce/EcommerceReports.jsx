@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import api from "../../../api";
+import { showInfoAlert } from "../../../utils/adminAlerts";
 import "./EcommercePages.css";
 
 const COLORS = ["#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#ec4899"];
@@ -154,8 +155,8 @@ export default function EcommerceReports() {
     }
   };
 
-  const handleExport = () => {
-    alert("Export functionality coming soon!");
+  const handleExport = async () => {
+    await showInfoAlert("Export functionality coming soon!");
   };
 
   if (loading && !summary) {
@@ -169,7 +170,7 @@ export default function EcommerceReports() {
           <h2>Reports & Analytics</h2>
           <p>Sales reports, analytics, and business insights</p>
         </div>
-        <button className="btn-primary" onClick={handleExport}>
+        <button className="header-btn" onClick={handleExport}>
           Export Report
         </button>
       </div>

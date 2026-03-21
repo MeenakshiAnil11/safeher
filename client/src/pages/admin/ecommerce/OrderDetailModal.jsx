@@ -255,6 +255,36 @@ export default function OrderDetailModal({ order, onClose, onStatusUpdate }) {
               </div>
             </div>
           )}
+
+          {order.refundStatus && order.refundStatus !== "None" && (
+            <div className="order-section">
+              <h3>UPI Refund</h3>
+              <div className="info-grid">
+                <div>
+                  <label>Refund Status</label>
+                  <p>{order.refundStatus}</p>
+                </div>
+                {order.refundId && (
+                  <div>
+                    <label>Refund ID</label>
+                    <p>{order.refundId}</p>
+                  </div>
+                )}
+                {order.refundRequestedAt && (
+                  <div>
+                    <label>Requested At</label>
+                    <p>{new Date(order.refundRequestedAt).toLocaleString()}</p>
+                  </div>
+                )}
+                {order.refundProcessedAt && (
+                  <div>
+                    <label>Processed At</label>
+                    <p>{new Date(order.refundProcessedAt).toLocaleString()}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="order-modal-footer">

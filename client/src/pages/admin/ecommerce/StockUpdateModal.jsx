@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { showErrorAlert, showWarningAlert } from "../../../utils/adminAlerts";
 import "./StockUpdateModal.css";
 
 export default function StockUpdateModal({ product, onClose, onUpdate }) {
@@ -21,7 +22,7 @@ export default function StockUpdateModal({ product, onClose, onUpdate }) {
       }
 
       if (newStock < 0) {
-        alert("Stock cannot be negative");
+        await showWarningAlert("Stock cannot be negative", { timer: undefined });
         setLoading(false);
         return;
       }
@@ -30,7 +31,7 @@ export default function StockUpdateModal({ product, onClose, onUpdate }) {
       onClose();
     } catch (error) {
       console.error("Error updating stock:", error);
-      alert("Failed to update stock. Please try again.");
+      await showErrorAlert("Failed to update stock. Please try again.", { timer: undefined });
     } finally {
       setLoading(false);
     }

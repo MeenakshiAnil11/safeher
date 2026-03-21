@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaRedo, FaTruck } from "react-icons/fa";
+import toast from "react-hot-toast";
 import api from "../services/api";
 import SearchBar from "../components/SearchBar";
 import CartIcon from "../components/CartIcon";
@@ -54,6 +55,9 @@ const OrderHistory = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [query, setQuery] = useState("");
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelOrderId, setCancelOrderId] = useState("");
+  const [cancellingOrder, setCancellingOrder] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -97,32 +101,67 @@ const OrderHistory = () => {
     });
   }, [orders, activeTab, query]);
 
-  const handleReorder = async (order) => {
+  const handleReorder = async (orderId) => {
+    console.log("Reorder clicked:", orderId);
     try {
-      for (const item of order.items || []) {
-        await api.post("/cart/add", { productId: item.product, quantity: item.quantity });
+      const response = await api.post(`/orders/reorder/${orderId}`);
+      console.log("Reorder response:", response?.data);
+      const data = response?.data || {};
+      const addedCount = Number(data.addedCount || 0);
+      const skippedCount = Number(data.skippedCount || 0);
+
+      if (addedCount > 0 && skippedCount > 0) {
+        toast.success("Items added to cart");
+        toast("Some items are out of stock", { icon: "⚠️" });
+        navigate("/shop/cart");
+        return;
       }
-      navigate("/shop/cart");
+
+      if (addedCount > 0) {
+        toast.success("Items added to cart");
+        navigate("/shop/cart");
+        return;
+      }
+
+      const firstSkipReason = data?.skippedItems?.[0]?.reason;
+      toast.error(firstSkipReason || data.message || "Reorder failed");
     } catch (error) {
-      console.error("Error reordering:", error);
-      window.alert("Failed to reorder.");
+      console.error("Reorder error:", error?.response?.data || error?.message || error);
+      const apiMessage = error?.response?.data?.message;
+      const firstSkipReason = error?.response?.data?.skippedItems?.[0]?.reason;
+      toast.error(firstSkipReason || apiMessage || "Reorder failed");
     }
   };
 
-  const handleCancelOrder = async (orderId) => {
-    if (!window.confirm("Cancel this order?")) return;
+  const openCancelModal = (orderId) => {
+    setCancelOrderId(orderId);
+    setShowCancelModal(true);
+  };
+
+  const closeCancelModal = () => {
+    if (cancellingOrder) return;
+    setShowCancelModal(false);
+    setCancelOrderId("");
+  };
+
+  const handleCancelOrder = async () => {
+    if (!cancelOrderId) return;
     try {
-      await api.put(`/orders/${orderId}/cancel`, { reason: "Cancelled by user" });
+      setCancellingOrder(true);
+      await api.put(`/orders/${cancelOrderId}/cancel`, { reason: "Cancelled by user" });
       setOrders((prev) =>
         prev.map((o) =>
-          o._id === orderId
+          o._id === cancelOrderId
             ? { ...o, orderStatus: "cancelled", updatedAt: new Date().toISOString() }
             : o
         )
       );
+      closeCancelModal();
     } catch (error) {
       console.error("Error cancelling order:", error);
       window.alert(error.response?.data?.message || "Failed to cancel order.");
+    } finally {
+      setCancellingOrder(false);
     }
   };
 
@@ -281,7 +320,7 @@ const OrderHistory = () => {
                     <div className="order-actions-v2">
                       <Link to={`/shop/orders/${order._id}`} className="btn-view-details">View Details</Link>
                       {canCancel && (
-                        <button type="button" className="btn-cancel-order" onClick={() => handleCancelOrder(order._id)}>
+                        <button type="button" className="btn-cancel-order" onClick={() => openCancelModal(order._id)}>
                           Cancel Order
                         </button>
                       )}
@@ -291,7 +330,7 @@ const OrderHistory = () => {
                         </Link>
                       )}
                       {canReorder && (
-                        <button type="button" className="btn-reorder" onClick={() => handleReorder(order)}>
+                        <button type="button" className="btn-reorder" onClick={() => handleReorder(order._id)}>
                           <FaRedo /> Reorder
                         </button>
                       )}
@@ -303,6 +342,32 @@ const OrderHistory = () => {
           )}
         </main>
       </div>
+
+      {showCancelModal && (
+        <div className="order-cancel-modal-overlay" onClick={closeCancelModal}>
+          <div className="order-cancel-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Cancel this order?</h3>
+            <div className="order-cancel-modal-actions">
+              <button
+                type="button"
+                className="order-cancel-modal-btn cancel"
+                onClick={closeCancelModal}
+                disabled={cancellingOrder}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="order-cancel-modal-btn ok"
+                onClick={handleCancelOrder}
+                disabled={cancellingOrder}
+              >
+                {cancellingOrder ? "Cancelling..." : "OK"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

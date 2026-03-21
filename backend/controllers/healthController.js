@@ -367,6 +367,9 @@ export const createSymptom = async (req, res) => {
     res.status(201).json({ message: "Symptom saved", item: s });
   } catch (err) {
     console.error("createSymptom error", err);
+    if (err?.name === "ValidationError" || err?.name === "CastError") {
+      return res.status(400).json({ message: err.message || "Invalid symptom payload" });
+    }
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -385,6 +388,9 @@ export const updateSymptom = async (req, res) => {
     res.json({ message: "Symptom updated", item });
   } catch (err) {
     console.error("updateSymptom error", err);
+    if (err?.name === "ValidationError" || err?.name === "CastError") {
+      return res.status(400).json({ message: err.message || "Invalid symptom payload" });
+    }
     res.status(500).json({ message: "Server error" });
   }
 };

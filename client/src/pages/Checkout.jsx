@@ -70,6 +70,32 @@ const Checkout = () => {
   const [upiPaymentId, setUpiPaymentId] = useState("");
   const [paymentInfo, setPaymentInfo] = useState("");
 
+  const loadRazorpayScript = () =>
+    new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+
+      const existingScript = document.querySelector(
+        'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
+      );
+
+      if (existingScript) {
+        existingScript.onload = () => resolve(true);
+        existingScript.onerror = () => resolve(false);
+        setTimeout(() => resolve(Boolean(window.Razorpay)), 1000);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
@@ -269,7 +295,7 @@ const Checkout = () => {
       }
 
       await createOrder(upiPaymentId || `upi_${Date.now()}`, "upi", {
-        upiId: paymentDetails.upiId.trim(),
+        upiId: paymentDetails.upiId.trim() || "razorpay@upi",
       });
     } catch (error) {
       console.error("Checkout error:", error);
@@ -286,21 +312,91 @@ const Checkout = () => {
 
     try {
       setProcessing(true);
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded || !window.Razorpay) {
+        throw new Error("Razorpay SDK failed to load. Please refresh and try again.");
+      }
+
       const amountInPaise = Math.round(totals.total * 100);
-      const response = await api.post("/payment/upi/initiate", {
-        upiId: paymentDetails.upiId.trim(),
+      const orderResponse = await api.post("/payment/create-order", {
         amount: amountInPaise,
         currency: "INR",
-        receipt: `upi_${Date.now()}`,
+        receipt: `checkout_${Date.now()}`,
+        orderType: "order",
       });
-      const initiatedPaymentId = response?.data?.paymentId;
-      if (!response?.data?.success || !initiatedPaymentId) {
-        throw new Error(response?.data?.message || "Unable to initiate UPI payment.");
+
+      const payload = orderResponse?.data;
+      const order = payload?.order;
+      const keyId = payload?.keyId;
+      if (!payload?.success || !order?.id || !keyId) {
+        throw new Error(payload?.message || "Unable to create Razorpay order.");
       }
-      setUpiPaymentId(initiatedPaymentId);
-      setUpiVerified(true);
-      setPaymentInfo("UPI ID verified successfully. You can proceed to Review Order.");
-      setErrors((prev) => ({ ...prev, upiId: "" }));
+
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+      await new Promise((resolve, reject) => {
+        const razorpay = new window.Razorpay({
+          key: keyId,
+          amount: order.amount,
+          currency: order.currency,
+          order_id: order.id,
+          name: "SafeHer",
+          description: "Checkout Payment",
+          method: {
+            upi: true,
+            card: false,
+            netbanking: false,
+            wallet: false,
+            emi: false,
+            paylater: false,
+          },
+          prefill: {
+            name: storedUser?.name || "",
+            email: storedUser?.email || "",
+            contact: form.phone || storedUser?.phone || "",
+          },
+          theme: { color: "#7c5cff" },
+          handler: async (response) => {
+            try {
+              await api.post("/payment/verify-payment", {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                orderType: "order",
+              });
+
+              setUpiPaymentId(response.razorpay_payment_id);
+              setUpiVerified(true);
+              setPaymentInfo("UPI payment successful. You can proceed to Review Order.");
+              setErrors((prev) => ({ ...prev, upiId: "" }));
+              resolve(true);
+            } catch (verifyError) {
+              reject(
+                new Error(
+                  verifyError?.response?.data?.error ||
+                    verifyError?.response?.data?.message ||
+                    "Payment verification failed."
+                )
+              );
+            }
+          },
+          modal: {
+            ondismiss: () => reject(new Error("Payment cancelled by user.")),
+          },
+        });
+
+        razorpay.on("payment.failed", (response) => {
+          reject(
+            new Error(
+              response?.error?.description ||
+                response?.error?.reason ||
+                "UPI payment failed. Please try again."
+            )
+          );
+        });
+
+        razorpay.open();
+      });
     } catch (error) {
       console.error("UPI verification failed:", error);
       setUpiVerified(false);
@@ -386,8 +482,8 @@ const Checkout = () => {
 
             <div className="checkout-v2-content">
               <section className="checkout-v2-left">
-                <div className="checkout-v2-card">
-                  <h2>
+                <div className={`checkout-v2-card ${step === 2 ? "payment-container" : ""}`}>
+                  <h2 className={step === 2 ? "payment-title" : ""}>
                     {step === 1
                       ? "Shipping Information"
                       : step === 2
@@ -584,7 +680,7 @@ const Checkout = () => {
                   {step === 2 && (
                     <>
                       <div className="checkout-v2-payment-methods">
-                        <label className="checkout-v2-payment-row">
+                        <label className="checkout-v2-payment-row payment-option">
                           <input
                             type="radio"
                             name="paymentMethod"
@@ -592,9 +688,12 @@ const Checkout = () => {
                             checked={paymentMethod === "cod"}
                             onChange={(e) => handlePaymentMethodChange(e.target.value)}
                           />
-                          <span>Cash on Delivery</span>
+                          <span className="payment-details">
+                            <span className="payment-name">Cash on Delivery</span>
+                            <span className="payment-desc">Pay in cash when your order is delivered.</span>
+                          </span>
                         </label>
-                        <label className="checkout-v2-payment-row">
+                        <label className="checkout-v2-payment-row payment-option">
                           <input
                             type="radio"
                             name="paymentMethod"
@@ -602,7 +701,10 @@ const Checkout = () => {
                             checked={paymentMethod === "upi"}
                             onChange={(e) => handlePaymentMethodChange(e.target.value)}
                           />
-                          <span>UPI Payment</span>
+                          <span className="payment-details">
+                            <span className="payment-name">UPI Payment</span>
+                            <span className="payment-desc">Secure instant payment via your UPI app.</span>
+                          </span>
                         </label>
                       </div>
 
@@ -643,17 +745,17 @@ const Checkout = () => {
                         </div>
                       )}
 
-                      <div className="checkout-v2-payment-actions">
+                      <div className="checkout-v2-payment-actions payment-actions">
                         <button
                           type="button"
-                          className="checkout-v2-secondary-btn"
+                          className="checkout-v2-secondary-btn back-btn"
                           onClick={() => setStep(1)}
                         >
                           Back
                         </button>
                         <button
                           type="button"
-                          className="checkout-v2-primary-btn"
+                          className="checkout-v2-primary-btn review-btn"
                           onClick={() => setStep(3)}
                           disabled={!isPaymentStepValid}
                         >

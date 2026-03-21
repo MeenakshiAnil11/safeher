@@ -20,6 +20,12 @@
   padding-right: 190px;
 }
 
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .products-page-title h2 {
   font-size: 20px;
   font-weight: 700;
@@ -40,6 +46,27 @@
   border-radius: 999px;
 }
 
+.create-category-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6a5af9, #8b5cf6);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+}
+
+.create-category-btn:hover {
+  filter: brightness(1.04);
+}
+
 .page-header h2 {
   font-size: 22px;
   font-weight: 700;
@@ -51,6 +78,22 @@
   font-size: 13px;
   color: #6b7280;
   margin: 0;
+}
+
+.header-btn {
+  padding: 8px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #7c5cff, #5a3fff);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  width: auto;
+  white-space: nowrap;
+}
+
+.header-btn:hover {
+  opacity: 0.9;
 }
 
 .ecommerce-page-loading {
@@ -341,39 +384,85 @@ button.stat-card {
   font-weight: 700;
   color: #1a1a2e;
   margin: 0 0 20px;
+  text-align: center;
 }
 
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+.quick-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 20px;
+  text-align: center;
 }
 
-.action-btn {
+/* Force dashboard quick actions into a single horizontal row */
+.quick-actions-section .ecom-dashboard-quick-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+}
+
+.quick-action-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 10px;
   padding: 20px;
-  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-  border: 2px solid #e5e7eb;
+  border: none;
   border-radius: 12px;
+  background: #f9fafb;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  text-align: center;
+  flex: 1;
+  min-width: 150px;
+  max-width: 200px;
+  height: 120px;
+  min-height: 120px;
+}
+
+.quick-actions-section .ecom-dashboard-quick-actions .quick-action-card {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  height: 120px;
+  flex: 0 0 auto !important;
+}
+
+.quick-action-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.quick-action-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  padding: 12px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6a5af9, #8b5cf6);
+  color: #ffffff;
+  box-sizing: border-box;
+}
+
+.quick-action-text {
+  margin: 0;
+  margin-top: 8px;
   font-size: 14px;
-  font-weight: 600;
-  color: #1a1a2e;
-}
-
-.action-btn:hover {
-  border-color: #8b5cf6;
-  background: linear-gradient(135deg, #faf5ff 0%, #ffffff 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
-}
-
-.action-icon {
-  font-size: 32px;
+  font-weight: 500;
+  color: #333333;
+  text-align: center;
 }
 
 /* Dashboard Sections */
@@ -420,6 +509,7 @@ button.stat-card {
 
 table {
   width: 100%;
+  table-layout: auto;
   border-collapse: collapse;
 }
 
@@ -631,13 +721,97 @@ tbody td:last-child {
 /* Ensure Product Management action buttons are fully visible */
 .products-table th:last-child,
 .products-table td:last-child {
-  width: 150px;
-  min-width: 150px !important;
+  width: 190px;
+  min-width: 190px !important;
   white-space: nowrap;
 }
 
 .products-table .action-buttons {
   min-width: 120px;
+}
+
+.categories-table td.actions {
+  min-width: 170px;
+  width: 170px;
+}
+
+.categories-table .category-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.categories-table .icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
+  border: none;
+  padding: 0;
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.categories-table .edit-btn {
+  background-color: #4caf50;
+}
+
+.categories-table .delete-btn {
+  background-color: #f44336;
+}
+
+.categories-table .icon-btn:hover {
+  transform: scale(1.1);
+  opacity: 0.9;
+}
+
+.categories-table .edit-btn:hover {
+  background-color: #3f9142;
+}
+
+.categories-table .delete-btn:hover {
+  background-color: #df3428;
+}
+
+.category-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  text-align: center;
+  color: #666666;
+  background: #ffffff;
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.category-empty-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.category-empty-state h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #1f2937;
+}
+
+.category-empty-state p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.category-empty-state .create-category-btn {
+  margin-top: 15px;
 }
 
 .products-table .action-buttons .btn-edit,
@@ -646,21 +820,74 @@ tbody td:last-child {
   width: 100%;
 }
 
+/* Product management: always show Edit + Delete clearly */
+.products-table td.actions {
+  min-width: 190px !important;
+  width: 190px;
+  white-space: normal;
+}
+
+.products-table .product-actions-inline {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.products-table .product-actions-inline .ecom-product-action-btn {
+  width: 100% !important;
+  min-width: 0;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 7px 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  cursor: pointer !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+.products-table .product-actions-inline .ecom-product-action-btn-edit {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.products-table .product-actions-inline .ecom-product-action-btn-edit:hover {
+  background: #1d4ed8 !important;
+}
+
+.products-table .product-actions-inline .ecom-product-action-btn-delete {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.products-table .product-actions-inline .ecom-product-action-btn-delete:hover {
+  background: #b91c1c !important;
+}
+
 /* Ensure Order Management action buttons are fully visible */
 .orders-table th:last-child,
 .orders-table td:last-child {
-  width: 150px;
-  min-width: 150px !important;
+  width: 210px;
+  min-width: 210px !important;
 }
 
 .orders-table .action-buttons {
-  min-width: 120px;
+  min-width: 180px;
 }
 
 .orders-table .action-buttons .btn-view,
-.orders-table .action-buttons .btn-edit {
-  min-width: 100px;
+.orders-table .action-buttons .btn-edit,
+.orders-table .action-buttons .btn-delete {
+  min-width: 160px;
   width: 100%;
+  white-space: nowrap;
 }
 
 .btn-edit,
@@ -715,6 +942,81 @@ tbody td:last-child {
   text-transform: uppercase;
   background: #fef3c7;
   color: #92400e;
+}
+
+.refund-request-chip {
+  margin-top: 6px;
+  display: inline-block;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.refund-decision-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  padding: 16px;
+}
+
+.refund-decision-modal {
+  width: min(460px, 100%);
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.24);
+  padding: 20px;
+}
+
+.refund-decision-modal h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #111827;
+}
+
+.refund-decision-note {
+  margin: 10px 0 0;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.refund-decision-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.refund-decision-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refund-decision-btn.cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.refund-decision-btn.ok {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.refund-decision-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Inventory Summary */
@@ -843,6 +1145,61 @@ tbody td:last-child {
   color: #6b7280;
 }
 
+.inventory-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.inventory-table {
+  overflow: visible;
+}
+
+.inventory-table table {
+  width: 100%;
+  min-width: 960px;
+  table-layout: auto;
+}
+
+.inventory-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.inventory-table .actions-cell {
+  min-width: 210px;
+}
+
+.inventory-table tbody tr {
+  height: 80px;
+}
+
+.inventory-table .status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inventory-table .actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inventory-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.inventory-table .status-badge {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 8px;
+}
+
 .threshold-badge {
   display: inline-block;
   padding: 4px 12px;
@@ -881,6 +1238,16 @@ tbody td:last-child {
   transition: all 0.2s ease;
   background: #fef2f2;
   color: #dc2626;
+  white-space: nowrap;
+}
+
+.mark-out-btn {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 8px;
 }
 
 .btn-mark-out:hover {
@@ -1021,6 +1388,95 @@ tbody td:last-child {
 }
 
 /* Coupon Management Styles */
+.coupon-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.coupon-header h2 {
+  margin: 0;
+}
+
+.coupon-subtitle {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.create-btn {
+  padding: 8px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #7c5cff, #5a3fff);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  width: auto;
+}
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.coupons-table table {
+  width: 100%;
+  min-width: 900px;
+}
+
+.coupons-table .actions-cell {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: nowrap;
+  min-width: 210px;
+}
+
+.coupons-table .action-btn {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  min-width: 62px;
+  width: auto !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+}
+
+.coupons-table .action-btn.activate-btn {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.coupons-table .action-btn.delete-btn {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.coupons-table .action-btn.edit-btn {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.coupons-table th:last-child,
+.coupons-table td:last-child {
+  min-width: 220px;
+  width: 220px;
+  white-space: nowrap;
+}
+
+.table-container::-webkit-scrollbar {
+  height: 6px;
+}
+
 .coupon-code {
   font-size: 16px;
   font-weight: 700;
@@ -1249,6 +1705,28 @@ tbody td:last-child {
   font-size: 11px;
   color: #6b7280;
   margin-top: 2px;
+}
+
+.reviews-table td.reviews-empty-state-cell {
+  text-align: center !important;
+  padding: 40px 0 !important;
+  color: #888;
+  font-size: 14px;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+.reviews-table td.reviews-empty-state-cell:last-child {
+  min-width: 0 !important;
+  width: auto !important;
+  white-space: normal !important;
+}
+
+.reviews-empty-state-text {
+  display: block;
+  font-size: 16px;
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .btn-approve {
@@ -1716,8 +2194,15 @@ tbody td:last-child {
     padding: 16px;
   }
 
-  .actions-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .quick-actions {
+    justify-content: center;
+    gap: 16px;
+    padding: 8px 0 0;
+  }
+
+  .quick-actions-section .ecom-dashboard-quick-actions {
+    justify-content: flex-start;
+    gap: 14px;
   }
 
   .dashboard-sections {
@@ -1748,6 +2233,17 @@ tbody td:last-child {
     padding: 5px 8px;
     font-size: 11px;
   }
+
+  .products-table .product-actions-inline {
+    min-width: 150px;
+    gap: 6px;
+  }
+
+  .products-table th:last-child,
+  .products-table td:last-child {
+    width: 160px;
+    min-width: 160px !important;
+  }
   
   tbody td:last-child {
     min-width: 90px;
@@ -1755,11 +2251,11 @@ tbody td:last-child {
 
   .orders-table th:last-child,
   .orders-table td:last-child {
-    width: 120px;
-    min-width: 120px !important;
+    width: 180px;
+    min-width: 180px !important;
   }
   .orders-table .action-buttons {
-    min-width: 100px;
+    min-width: 160px;
   }
 
   .reviews-table th:last-child,
@@ -1771,6 +2267,30 @@ tbody td:last-child {
   .reviews-table .action-buttons {
     min-width: 96px;
   }
+}
+
+@media (max-width: 560px) {
+  .quick-actions {
+    justify-content: center;
+    gap: 14px;
+    padding: 4px 0 0;
+  }
+
+  /* Keep one-row behavior by horizontal scroll instead of stacking */
+  .quick-actions-section .ecom-dashboard-quick-actions .quick-action-card {
+    width: 160px !important;
+    min-width: 160px !important;
+    max-width: 160px !important;
+  }
+}
+
+/* Optional debug helper: add `layout-debug` on section to visualize bounds */
+.quick-actions-section.layout-debug .ecom-dashboard-quick-actions {
+  border: 2px solid red;
+}
+
+.quick-actions-section.layout-debug .quick-action-card {
+  border: 2px solid blue;
 }
 
 /* Reports & Analytics Styles */

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import api from "../api";
 import { API_ORIGIN } from "../config/apiConfig";
 import { getProductImage, getImageUrl } from "../utils/imageUtils";
@@ -17,6 +18,17 @@ const ProductCard = ({
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production") {
+      // Debug aid: confirms what backend sends for image fields.
+      console.debug("[ProductCard] product image fields", {
+        id: product?._id,
+        image: product?.image,
+        images: product?.images,
+      });
+    }
+  }, [product?._id, product?.image, product?.images]);
 
   const discountPercentage =
     product.originalPrice && product.originalPrice > product.price
@@ -45,7 +57,10 @@ const ProductCard = ({
       })
     : [getProductImage(product)];
 
-  const directImage = typeof product.image === "string" && product.image.trim() ? product.image.trim() : "";
+  const directImage =
+    typeof product.image === "string" && product.image.trim()
+      ? getImageUrl(product.image.trim())
+      : "";
   const mainImage = directImage || productImages[selectedImageIndex] || getProductImage(product);
   const thumbnails = productImages.slice(0, 5); // Show max 5 thumbnails
   const remainingThumbnails = productImages.length > 5 ? productImages.length - 5 : 0;
@@ -85,6 +100,13 @@ const ProductCard = ({
       setAddingToCart(true);
       await api.post("/cart/add", { productId: product._id, quantity: 1 });
       window.dispatchEvent(new CustomEvent("cartUpdated"));
+      await Swal.fire({
+        title: "Success",
+        text: "Product added to cart successfully",
+        icon: "success",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#6a5af9",
+      });
     } catch (error) {
       console.error("Add to cart error:", error);
       alert(error.response?.data?.message || "Failed to add product to cart");

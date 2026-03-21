@@ -22,7 +22,7 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("");
+  const [activeTab, setActiveTab] = useState("reviews");
   const [imageZoom, setImageZoom] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
@@ -154,7 +154,7 @@ const ProductDetail = () => {
   }, [product]);
 
   useEffect(() => {
-    setActiveTab("");
+    setActiveTab("reviews");
     setSelectedImage(0);
     window.requestAnimationFrame(() => {
       if (productDescriptionRef.current) {
@@ -166,7 +166,7 @@ const ProductDetail = () => {
   }, [id]);
 
   const handleTabToggle = (tabKey) => {
-    setActiveTab((prev) => (prev === tabKey ? "" : tabKey));
+    setActiveTab(tabKey);
     if (tabKey !== "reviews") {
       setWriteReviewOpen(false);
     }
@@ -184,10 +184,18 @@ const ProductDetail = () => {
         productId: product._id,
         quantity: quantity,
       });
-      alert("Product added to cart!");
+      setReviewDialog({
+        show: true,
+        message: "Product added to cart successfully",
+        type: "success",
+      });
     } catch (error) {
       console.error("Error adding to cart:", error);
-      alert(error.response?.data?.message || "Failed to add product to cart");
+      setReviewDialog({
+        show: true,
+        message: error.response?.data?.message || "Failed to add product to cart",
+        type: "error",
+      });
     } finally {
       setAddingToCart(false);
     }
@@ -424,8 +432,18 @@ const ProductDetail = () => {
 
   // Use utility function for image URL resolution
 
-  const images = product.images || [];
-  const mainImage = getImageUrl(images[selectedImage]?.url) || "/images/placeholder-product.jpg";
+  const images = Array.isArray(product.images) ? product.images : [];
+  const normalizedImages = images
+    .map((img) => {
+      if (typeof img === "string") return { url: img };
+      if (img && typeof img === "object") return { url: img.url || img.path || img.image };
+      return null;
+    })
+    .filter((img) => img?.url);
+  const mainImage =
+    getImageUrl(normalizedImages[selectedImage]?.url) ||
+    getImageUrl(product.image) ||
+    "/images/placeholder-product.jpg";
   const approvedReviews = (product.reviews || []).filter(
     (review) => review.isApproved && !review.isHidden
   );
@@ -477,6 +495,8 @@ const ProductDetail = () => {
   const tabItems = [
     { key: "reviews", label: `Reviews (${displayReviews.length})` },
     { key: "qna", label: "Q&A" },
+    { key: "usage", label: "Usage Instructions" },
+    { key: "ingredients", label: "Ingredients" },
   ];
 
   const normalizeFeatureList = (value) => {
@@ -660,6 +680,43 @@ const ProductDetail = () => {
       );
     }
 
+    if (tabKey === "usage") {
+      return (
+        <div className="tab-panel">
+          <div className="content-section">
+            <h3>Usage Instructions</h3>
+            <div className="tab-content">
+              {product.usageInstructions?.trim()
+                ? product.usageInstructions
+                : "No usage instructions available."}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (tabKey === "ingredients") {
+      const ingredientsList = normalizeFeatureList(product.ingredients);
+      return (
+        <div className="tab-panel">
+          <div className="content-section">
+            <h3>Ingredients</h3>
+            <div className="tab-content">
+              {ingredientsList.length > 0 ? (
+                <ul className="ingredients-list">
+                  {ingredientsList.map((ingredient, index) => (
+                    <li key={`${ingredient}-${index}`}>{ingredient}</li>
+                  ))}
+                </ul>
+              ) : (
+                "No ingredients available."
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return null;
   };
 
@@ -671,8 +728,8 @@ const ProductDetail = () => {
           <div className="product-images">
             <div className="main-image-wrapper">
               <div
-                className="main-image"
-                onClick={() => images.length > 0 && setImageZoom(true)}
+                className="main-image image-container"
+                onClick={() => normalizedImages.length > 0 && setImageZoom(true)}
               >
                 {(product.isBestSeller || product.isFeatured) && (
                   <span className="pd-image-badge" aria-label={product.isBestSeller ? "Best Seller" : "New"}>
@@ -690,7 +747,11 @@ const ProductDetail = () => {
                 >
                   {inWishlist ? "♥" : "♡"}
                 </button>
-                <img src={mainImage} alt={product.name} />
+                <img
+                  className="product-image"
+                  src={mainImage}
+                  alt={product.name}
+                />
                 {discountPercentage > 0 && (
                   <span className="discount-badge">-{discountPercentage}%</span>
                 )}
@@ -698,15 +759,18 @@ const ProductDetail = () => {
                   <div className="out-of-stock-overlay">Out of Stock</div>
                 )}
               </div>
-              {images.length > 1 && (
+              {normalizedImages.length > 1 && (
                 <div className="image-thumbnails">
-                  {images.map((img, index) => (
+                  {normalizedImages.map((img, index) => (
                     <button
                       key={index}
                       className={`thumbnail ${selectedImage === index ? "active" : ""}`}
                       onClick={() => setSelectedImage(index)}
                     >
-                      <img src={getImageUrl(img.url)} alt={`${product.name} ${index + 1}`} />
+                      <img
+                        src={getImageUrl(img.url) || "/images/placeholder-product.jpg"}
+                        alt={`${product.name} ${index + 1}`}
+                      />
                     </button>
                   ))}
                 </div>
@@ -856,7 +920,7 @@ const ProductDetail = () => {
 
         {/* Tabs Section */}
         <div className="product-tabs">
-          <div className="tabs-header">
+          <div className="tabs tabs-header">
             {tabItems.map((tab) => (
               <button
                 key={tab.key}
@@ -902,15 +966,18 @@ const ProductDetail = () => {
           <div className="zoom-content" onClick={(e) => e.stopPropagation()}>
             <button className="close-zoom" onClick={() => setImageZoom(false)}>×</button>
             <img src={mainImage} alt={product.name} />
-            {images.length > 1 && (
+            {normalizedImages.length > 1 && (
               <div className="zoom-thumbnails">
-                {images.map((img, index) => (
+                {normalizedImages.map((img, index) => (
                   <button
                     key={index}
                     className={`zoom-thumbnail ${selectedImage === index ? "active" : ""}`}
                     onClick={() => setSelectedImage(index)}
                   >
-                    <img src={getImageUrl(img.url)} alt={`${product.name} ${index + 1}`} />
+                    <img
+                      src={getImageUrl(img.url) || "/images/placeholder-product.jpg"}
+                      alt={`${product.name} ${index + 1}`}
+                    />
                   </button>
                 ))}
               </div>

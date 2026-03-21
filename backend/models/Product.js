@@ -120,6 +120,7 @@ const productSchema = new mongoose.Schema(
     },
     usageInstructions: {
       type: String,
+      default: "",
     },
     safetyInformation: {
       warnings: { type: [String], default: [] },
